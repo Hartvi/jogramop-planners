@@ -24,17 +24,16 @@ namespace Burs
         void AddRobotModel(std::shared_ptr<TrPQPModel> m);
         void AddForwardRt(Burs::ForwardRt forwardRt);
         void AddObstacleModel(std::shared_ptr<TrPQPModel> m);
-        void Freeze();
         /// @brief Check closest distance between robot parts and obstacles, NEED TO SET ROTATIONS AND TRANSLATIONS BEFOREHAND
         double GetClosestDistance() const;
         bool IsColliding() const;
 
-    private:
-        bool poses_are_set = false;
-        std::vector<std::shared_ptr<TrPQPModel>> robot_models;
-        Burs::ForwardRt forwardRt;
         std::vector<std::shared_ptr<TrPQPModel>> obstacle_models;
-        bool no_more = false;
+
+    private:
+        std::vector<std::shared_ptr<TrPQPModel>> robot_models;
+        bool poses_are_set = false;
+        Burs::ForwardRt forwardRt;
     };
 }
 

@@ -1,5 +1,5 @@
 #include <iostream>
-// #include <stdio.h>
+#include <string>
 #include <Eigen/Dense>
 #include "load.h"
 #include "model.h"
@@ -11,7 +11,6 @@
 #include "math.h"
 #include "bur_funcs.h"
 
-// using namespace Burs;
 namespace test
 {
     using namespace std;
@@ -56,10 +55,14 @@ namespace test
         return {{RotationForward(configuration)}, {TranslationForward(configuration)}};
     }
 
-    Eigen::Vector3d Forward(const int &ith_distal_point, const VectorQd &configuration)
+    Eigen::Vector3d ForwardDistal(const int &ith_distal_point, const VectorQd &configuration)
     {
+        if (ith_distal_point > 2 || ith_distal_point < 0)
+        {
+            throw new std::runtime_error("Invalid index for joint/end effector");
+        }
         Eigen::Vector3d v;
-        v << 0, 0, 2 * (1 + ith_distal_point);
+        v << 0, 0, 2 * (ith_distal_point == 2);
         // Eigen::Matrix3d I = Eigen::Matrix3d::Identity();
         Eigen::Matrix3d Rx;
         Eigen::Matrix3d Ry;
@@ -72,7 +75,13 @@ namespace test
 
     double StickRadiusFunc(const int &ith_distal_point, const VectorXd &q_k)
     {
-        return 0.3;
+        // radius of cylinder in joint axis that encompasses end effector
+        if (ith_distal_point > 2 || ith_distal_point < 0)
+        {
+            throw new std::runtime_error("Invalid index for joint/end effector");
+        }
+        // radius of cylinder in joint axis that encompasses end effector
+        return 2.0;
     }
 
     void test_forward(int argc, char *argv[])
@@ -90,15 +99,18 @@ namespace test
         }
         std::cout << "bounds:" << bounds << std::endl;
 
-        Burs::ForwardKinematics fk = Forward;
+        Burs::ForwardKinematics fk = ForwardDistal;
         // BurNodeWrapper(ForwardKinematics f, int num_segments, int max_iters, double d_crit, double delta_q, double epsilon_q);
-        std::unique_ptr<Burs::BurAlgorithm> b = std::make_unique<Burs::BurAlgorithm>(q_dimensionality, fk, 1, 1, 0.1, M_PI, M_PI / 10.0, bounds, StickRadiusFunc);
+        std::unique_ptr<Burs::BurAlgorithm> b = std::make_unique<Burs::BurAlgorithm>(q_dimensionality, fk, 3, 1, 0.1, M_PI, M_PI / 10.0, bounds, StickRadiusFunc, 7);
 
         int point = 1;
         VectorQd config = VectorQd::Random();
         VectorQd config2 = VectorQd::Random();
 
-        Eigen::Vector3d result = b->forward(point, config); // Call the function through the std::function wrapper
+        std::cout << "config1: " << config.transpose() << std::endl;
+        std::cout << "config2: " << config2.transpose() << std::endl;
+
+        Eigen::Vector3d result = b->ForwardEuclideanJoint(2, config); // Call the function through the std::function wrapper
 
         // Output
         std::cout << "Result: " << result.transpose() << std::endl;
@@ -113,7 +125,16 @@ namespace test
         b_env->AddRobotModel(robot_model);
         b_env->AddForwardRt(StickRt);
         b_env->AddObstacleModel(obstacle_model);
-        b_env->Freeze();
+
+        for (int i = 0; i < b_env->obstacle_models.size(); i++)
+        {
+            // for cube
+            std::cout << "Obstacle position: " << Eigen::Vector3d(b_env->obstacle_models[i]->getT()).transpose() << std::endl;
+            b_env->obstacle_models[i]->SetTranslation(Vector3d(std::atoi(argv[3]), std::atoi(argv[4]), std::atoi(argv[5])));
+            std::cout << "Obstacle position AFTER: " << Eigen::Vector3d(b_env->obstacle_models[i]->getT()).transpose() << std::endl;
+        }
+        b->SetBurEnv(b_env);
+        b_env->SetPoses(config);
         // add obstacles to b_env
         // add robot objects to b_env
         // freeze
@@ -121,8 +142,13 @@ namespace test
         //  1. forwardRt(q)
         //  2. forward(i,q)
         //  3. r(i, q1, q2, t)
-        b->rbt_connect(config, config2, 7, b_env);
+        std::cout << "Run RbtConnect" << std::endl;
+        auto path = b->RbtConnect(config, config2);
         std::cout << "Rbt connected" << std::endl;
+        for (int i = 0; i < path.size(); i++)
+        {
+            std::cout << "step:" << i << path[i].transpose() << std::endl;
+        }
     }
 
 }

@@ -10,7 +10,7 @@ namespace Burs
 {
     using namespace Eigen;
 
-    struct BurNode
+    struct RRTNode
     {
     public:
         /// @brief Index of the node in the array
@@ -19,9 +19,20 @@ namespace Burs
         /// @brief Node location in configuration space
         VectorXd q;
 
-        BurNode(int p, VectorXd q)
+        RRTNode(int p, VectorXd q)
             : parent_idx(p),
               q(q)
+        {
+        }
+    };
+
+    struct Bur
+    {
+        VectorXd center;
+        MatrixXd endpoints;
+        Bur(VectorXd center, MatrixXd endpoints)
+            : center(center),
+              endpoints(endpoints)
         {
         }
     };
@@ -30,43 +41,45 @@ namespace Burs
     {
     public:
         BurTree(VectorXd q_location, int q_dim);
-        void add_node(int p, VectorXd q_location);
-        int nearest(double *new_point);
+        void AddNode(int p, VectorXd q_location);
+        int Nearest(double *new_point);
         VectorXd GetQ(int index);
+        int GetParentIdx(int index);
         int GetNumberOfNodes();
         ~BurTree();
 
     private:
-        int q_dim;
-        std::vector<BurNode> nodes;
-        flann::Matrix<double> data;
-        std::unique_ptr<flann::Index<flann::L2<double>>> index;
+        std::vector<RRTNode> mNodes;
+        int mQDim;
+        flann::Matrix<double> mData;
+        std::unique_ptr<flann::Index<flann::L2<double>>> mIndex;
 
-        void refreshIndex()
+        void RefreshIndex()
         {
-            this->index = std::make_unique<flann::Index<flann::L2<double>>>(this->data, flann::KDTreeIndexParams(4));
-            this->index->buildIndex();
+            this->mIndex = std::make_unique<flann::Index<flann::L2<double>>>(this->mData, flann::KDTreeIndexParams(4));
+            this->mIndex->buildIndex();
         }
 
-        void buildIndex()
+        void BuildIndex()
         {
-            this->refreshDataFromNodes();
-            this->refreshIndex();
+            this->RefreshDataFromNodes();
+            this->RefreshIndex();
         }
-        void refreshDataFromNodes()
+
+        void RefreshDataFromNodes()
         {
             // TODO: only update the last node
-            delete[] this->data.ptr();
+            delete[] this->mData.ptr();
 
-            double *_data_mtx = new double[this->nodes.size() * this->q_dim];
+            double *_data_mtx = new double[this->mNodes.size() * this->mQDim];
 
-            this->data = flann::Matrix<double>(_data_mtx, this->nodes.size(), this->q_dim);
+            this->mData = flann::Matrix<double>(_data_mtx, this->mNodes.size(), this->mQDim);
 
-            for (int i = 0; i < this->nodes.size(); ++i)
+            for (int i = 0; i < this->mNodes.size(); ++i)
             {
-                for (int k = 0; k < q_dim; ++k)
+                for (int k = 0; k < this->mQDim; ++k)
                 {
-                    this->data[i][k] = this->nodes[i].q[k];
+                    this->mData[i][k] = this->mNodes[i].q[k];
                 }
             }
         }

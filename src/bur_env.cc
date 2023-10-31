@@ -79,34 +79,17 @@ namespace Burs
 
     void BurEnv::AddRobotModel(std::shared_ptr<TrPQPModel> m)
     {
-        if (this->no_more)
-        {
-            throw std::runtime_error("Env frozen, no more editing allowed. Initialize a new env.");
-        }
         this->robot_models.push_back(m);
     }
 
     void BurEnv::AddForwardRt(Burs::ForwardRt forwardRt)
     {
-        if (this->no_more)
-        {
-            throw std::runtime_error("Env frozen, no more editing allowed. Initialize a new env.");
-        }
         this->forwardRt = forwardRt;
     }
 
     void BurEnv::AddObstacleModel(std::shared_ptr<TrPQPModel> m)
     {
-        if (this->no_more)
-        {
-            throw std::runtime_error("Env frozen, no more editing allowed. Initialize a new env.");
-        }
         this->obstacle_models.push_back(m);
-    }
-
-    void BurEnv::Freeze()
-    {
-        this->no_more = true;
     }
 
 }
