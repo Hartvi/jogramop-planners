@@ -1,0 +1,5 @@
+
+### bullet simulator
+- find out how pybullet_planning does its planning
+- find out how bullet works and if i can easily then extend it to use in python
+- find out if it's easier to use PQP or bullet's native distance checking

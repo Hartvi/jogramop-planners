@@ -30,10 +30,10 @@ public:
     [3];
     PQP_REAL *getT();
     void Rotate(Matrix<double, 3, 3> rotation);
-    void Translate(Vector3<double> translation);
+    void Translate(Vector3<double> tr);
 
     void SetRotation(Matrix<double, 3, 3> rotation);
-    void SetTranslation(Vector3<double> translation);
+    void SetTranslation(Vector3<double> tr);
 
     Vector3<PQP_REAL> GetGlobalPositionFromVector(Vector3<PQP_REAL> p) const;
     Vector3<PQP_REAL> GetGlobalPositionFromPointer(PQP_REAL p[3]) const;

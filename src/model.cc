@@ -63,16 +63,19 @@ void TrPQPModel::SetRotation(Matrix<double, 3, 3> rotation)
     Map<Matrix<PQP_REAL, 3, 3, RowMajor>>(this->rotation[0], 3, 3) = this->R;
 }
 
-void TrPQPModel::Translate(Vector3<double> translation)
+void TrPQPModel::Translate(Vector3<double> tr)
 {
-    this->t = this->t + translation;
+    this->t = this->t + tr;
     Map<Matrix<PQP_REAL, 3, 1>>(this->translation, 3) = this->t;
 }
 
-void TrPQPModel::SetTranslation(Vector3<double> translation)
+void TrPQPModel::SetTranslation(Vector3<double> tr)
 {
-    this->t = translation;
+    // std::cout << "INSIDE SET TRANSLATE: tr: " << tr.transpose() << std::endl;
+    this->t = tr;
+    // std::cout << "INSIDE SET TRANSLATE: this->t: " << this->t.transpose() << std::endl;
     Map<Matrix<PQP_REAL, 3, 1>>(this->translation, 3) = this->t;
+    // std::cout << "INSIDE SET TRANSLATE: this->translation: " << Vector3d(this->translation).transpose() << std::endl;
 }
 
 Vector3<PQP_REAL> TrPQPModel::GetGlobalPositionFromVector(Vector3<PQP_REAL> p) const
@@ -98,6 +101,9 @@ void TrPQPModel::CollideStatic(PQP_CollideResult *result, TrPQPModel *m1, TrPQPM
 
 void TrPQPModel::CheckDistance(PQP_DistanceResult *result, PQP_REAL rel_err, PQP_REAL abs_err, TrPQPModel *m2)
 {
+    // std::cout << "inside distance check" << std::endl;
+    // std::cout << "robot position " << Vector3d(this->getT()).transpose() << std::endl;
+    // std::cout << "obstacle position " << Vector3d(m2->getT()).transpose() << std::endl;
     PQP_Distance(result, this->getR(), this->getT(), this->pqpModel.get(), m2->getR(), m2->getT(), m2->pqpModel.get(), rel_err, abs_err);
 }
 

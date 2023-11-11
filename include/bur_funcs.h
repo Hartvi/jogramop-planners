@@ -15,8 +15,9 @@ namespace Burs
     using namespace Eigen;
     using ForwardKinematics = std::function<Vector3d(const int &ith_distal_point, const VectorXd &configuration)>;
     using ForwardRt = std::function<std::tuple<std::vector<Matrix3d>, std::vector<Vector3d>>(VectorXd q)>;
-    using PhiFunc = std::function<double(double)>;
     using RadiusFunc = std::function<double(const int &ith_distal_point, const VectorXd &q_k)>;
+
+    using PhiFunc = std::function<double(double)>;
 
     // // Helper function to demangle C++ type names
     // std::string demangle(const char *name)

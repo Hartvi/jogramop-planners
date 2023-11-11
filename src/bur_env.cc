@@ -17,6 +17,7 @@ namespace Burs
         {
             this->robot_models[i]->SetRotation(rotations[i]);
             this->robot_models[i]->SetTranslation(translations[i]);
+            // std::cout << "Setting robot position to " << translations[i].transpose() << std::endl;
         }
         this->poses_are_set = true;
     }

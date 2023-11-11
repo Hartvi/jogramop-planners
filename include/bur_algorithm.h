@@ -60,7 +60,7 @@ namespace Burs
     class BurAlgorithm
     {
     public:
-        BurAlgorithm(int q_dim, ForwardKinematics f, int num_distal_points, int max_iters, double d_crit, double delta_q, double epsilon_q, MatrixXd bounds, RadiusFunc radius_func, int num_spikes);
+        BurAlgorithm(int q_dim, ForwardKinematics f, int max_iters, double d_crit, double delta_q, double epsilon_q, MatrixXd bounds, RadiusFunc radius_func, int num_spikes);
 
         ~BurAlgorithm();
 
@@ -87,16 +87,16 @@ namespace Burs
         VectorXd GetEndpoint(const VectorXd &q_ei, const VectorXd &q_near, double factor) const;
 
         /// @brief Plan path using two opposing trees
-        std::vector<VectorXd> RbtConnect(const VectorXd &q_start, const VectorXd &q_goal);
+        /// @return Matrix (q_dim, n), where n is the number of steps. OTHERWISE `VectorXd()` if planning fails
+        std::optional<MatrixXd> RbtConnect(const VectorXd &q_start, const VectorXd &q_goal);
 
         Vector3d ForwardEuclideanJoint(const int &ith_distal_point, const VectorXd &configuration) const;
 
         void SetBurEnv(std::shared_ptr<BurEnv> bur_env);
 
-    private:
-        std::vector<VectorXd> Path(std::shared_ptr<BurTree> t_a, int a_closest, std::shared_ptr<BurTree> t_b, int b_closest);
+        MatrixXd Path(std::shared_ptr<BurTree> t_a, int a_closest, std::shared_ptr<BurTree> t_b, int b_closest);
 
-        std::pair<AlgorithmState, int> BurConnect(std::shared_ptr<BurTree> t, VectorXd &q);
+        AlgorithmState BurConnect(std::shared_ptr<BurTree> t, VectorXd &q);
         bool IsColliding(const VectorXd &q);
         double GetClosestDistance(const VectorXd &q);
         VectorXd Nearest(std::shared_ptr<BurTree> t, VectorXd &q);
@@ -104,12 +104,12 @@ namespace Burs
         Bur GetBur(const VectorXd &q_near, const MatrixXd &Q_e, double d_closest);
         std::shared_ptr<BurEnv> bur_env;
 
+    private:
         int num_spikes;
         RadiusFunc radius_func;
         ForwardKinematics forwardKinematics;
         int q_dim;
         MatrixXd bounds;
-        int num_distal_points;
         int max_iters;
         double d_crit;
         double delta_q;

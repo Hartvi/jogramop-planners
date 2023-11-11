@@ -10,6 +10,26 @@ namespace Burs
 {
     using namespace Eigen;
 
+    struct Bur
+    {
+        VectorXd center;
+        MatrixXd endpoints;
+        Bur(VectorXd center, MatrixXd endpoints)
+            : center(center),
+              endpoints(endpoints)
+        {
+        }
+
+        // Overload the << operator to customize output
+        friend std::ostream &operator<<(std::ostream &out, const Bur &bur)
+        {
+            out << "Center: " << bur.center.transpose() << std::endl;
+            out << "Endpoints:" << std::endl;
+            out << bur.endpoints << std::endl;
+            return out;
+        }
+    };
+
     struct RRTNode
     {
     public:
@@ -26,17 +46,6 @@ namespace Burs
         }
     };
 
-    struct Bur
-    {
-        VectorXd center;
-        MatrixXd endpoints;
-        Bur(VectorXd center, MatrixXd endpoints)
-            : center(center),
-              endpoints(endpoints)
-        {
-        }
-    };
-
     class BurTree
     {
     public:
@@ -47,6 +56,21 @@ namespace Burs
         int GetParentIdx(int index);
         int GetNumberOfNodes();
         ~BurTree();
+
+        // friend std::ostream &operator<<(std::ostream &os, const BurTree &tree);
+        friend std::ostream &operator<<(std::ostream &os, const BurTree &tree)
+        {
+            for (const auto &node : tree.mNodes)
+            {
+                os << node.parent_idx;
+                for (int j = 0; j < node.q.size(); ++j)
+                {
+                    os << ", " << node.q[j];
+                }
+                os << std::endl;
+            }
+            return os;
+        }
 
     private:
         std::vector<RRTNode> mNodes;

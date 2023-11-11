@@ -5,14 +5,15 @@
 #include <Eigen/Dense>
 #include <memory>
 #include <iostream>
+#include <fstream>
 #include "bur_funcs.h"
 
 namespace Burs
 {
     using namespace Eigen;
 
-    BurAlgorithm::BurAlgorithm(int q_dim, ForwardKinematics f, int num_distal_points, int max_iters, double d_crit, double delta_q, double epsilon_q, MatrixXd bounds, RadiusFunc radius_func, int num_spikes)
-        : q_dim(q_dim), forwardKinematics(f), num_distal_points(num_distal_points), max_iters(max_iters), d_crit(d_crit), delta_q(delta_q), epsilon_q(epsilon_q), bounds(bounds), radius_func(radius_func), num_spikes(num_spikes)
+    BurAlgorithm::BurAlgorithm(int q_dim, ForwardKinematics f, int max_iters, double d_crit, double delta_q, double epsilon_q, MatrixXd bounds, RadiusFunc radius_func, int num_spikes)
+        : q_dim(q_dim), forwardKinematics(f), max_iters(max_iters), d_crit(d_crit), delta_q(delta_q), epsilon_q(epsilon_q), bounds(bounds), radius_func(radius_func), num_spikes(num_spikes)
     {
     }
 
@@ -30,10 +31,10 @@ namespace Burs
         double max_distance = 0.0;
         auto fk = this->forwardKinematics;
 
-        for (int i = 0; i < this->num_distal_points; i++)
+        for (int i = 0; i < this->q_dim; i++)
         {
             double tmp = (fk(i, q1) - fk(i, q2)).norm();
-            std::cout << " i: " << i << " q1: " << q1.transpose() << " => " << fk(i, q1).transpose() << " q2: " << q2.transpose() << " => " << fk(i, q2).transpose() << std::endl;
+            // std::cout << " i: " << i << " q1: " << q1.transpose() << " => " << fk(i, q1).transpose() << " q2: " << q2.transpose() << " => " << fk(i, q2).transpose() << std::endl;
             if (tmp > max_distance)
             {
                 max_distance = tmp;
@@ -99,8 +100,14 @@ namespace Burs
         }
     }
 
-    std::vector<VectorXd> BurAlgorithm::RbtConnect(const VectorXd &q_start, const VectorXd &q_goal)
+    std::optional<MatrixXd> BurAlgorithm::RbtConnect(const VectorXd &q_start, const VectorXd &q_goal)
     {
+        std::ofstream myFileA;
+        std::ofstream myFileB;
+
+        myFileA.open("t_a.txt");
+        myFileB.open("t_b.txt");
+
         // start of actual algorithm
         std::shared_ptr<BurTree> t_start = std::make_shared<BurTree>(q_start, q_start.rows());
         std::shared_ptr<BurTree> t_goal = std::make_shared<BurTree>(q_goal, q_goal.rows());
@@ -133,6 +140,14 @@ namespace Burs
 
             double d_closest = this->GetClosestDistance(q_near);
             std::cout << "d_closest: " << d_closest << std::endl;
+            if (d_closest < 1e-3)
+            {
+                std::cout << "CLOSEST DISTANCE TOO SMALL" << std::endl;
+
+                myFileA.close();
+                myFileB.close();
+                return {};
+            }
 
             if (d_closest < this->d_crit)
             {
@@ -153,34 +168,42 @@ namespace Burs
             else
             {
                 Bur b = this->GetBur(q_near, Qe, d_closest);
-                std::cout << "Bur center " << b.center.transpose() << std::endl;
-                std::cout << "Bur endpoints " << b.endpoints.transpose() << std::endl;
+                // std::cout << "Bur center " << b.center.transpose() << std::endl;
+                // std::cout << "Bur endistance check" << std::endl;
+                // std::cout << "robot position " << Vector3d(this->getT()).transpose() << std::endl;
+                // std::cout << "obstacle points " << b.endpoints.transpose() << std::endl;
 
                 for (int i = 0; i < Qe.cols(); ++i)
                 {
                     t_a->AddNode(nearest_index, b.endpoints.col(i));
                 }
                 // doesn't matter which column, since they all go in random directions
-                q_new = Qe.col(0);
+                q_new = b.endpoints.col(0);
             }
 
             // if small basic rrt collides, then don't go here `continue`
 
             // if reached, then index is the closest node in `t_b` to `q_new` in `t_a`
-            auto [status, b_closest] = this->BurConnect(t_b, q_new);
+            AlgorithmState status = this->BurConnect(t_b, q_new);
             if (status == AlgorithmState::Reached)
             {
                 // TODO: closest node in t_a to q_new, closest node in t_b to q_new
                 int a_closest = t_a->Nearest(q_new.data());
+                int b_closest = t_b->Nearest(q_new.data());
+
+                myFileA.close();
+                myFileB.close();
                 return this->Path(t_a, a_closest, t_b, b_closest);
             }
 
             std::swap(t_a, t_b);
         }
-        return std::vector<VectorXd>();
+        myFileA.close();
+        myFileB.close();
+        return {};
     }
 
-    std::pair<AlgorithmState, int> BurAlgorithm::BurConnect(std::shared_ptr<BurTree> t, VectorXd &q)
+    AlgorithmState BurAlgorithm::BurConnect(std::shared_ptr<BurTree> t, VectorXd &q)
     {
         int nearest_index = t->Nearest(q.data());
 
@@ -193,6 +216,7 @@ namespace Burs
         while (delta_s >= this->d_crit)
         {
             double d_closest = this->GetClosestDistance(q_n);
+            std::cout << "d_closest: " << d_closest << std::endl;
 
             if (d_closest > this->d_crit)
             {
@@ -207,7 +231,7 @@ namespace Burs
 
                 if (q_n.isApprox(q, threshold))
                 {
-                    return {AlgorithmState::Reached, nearest_index};
+                    return AlgorithmState::Reached;
                 }
             }
             else
@@ -221,16 +245,16 @@ namespace Burs
                 }
                 else
                 {
-                    return {AlgorithmState::Trapped, -1};
+                    return AlgorithmState::Trapped;
                 }
 
                 if ((q_n - q_0).norm() >= (q - q_0).norm())
                 {
-                    return {AlgorithmState::Reached, nearest_index};
+                    return AlgorithmState::Reached;
                 }
             }
         }
-        return {AlgorithmState::Trapped, -1};
+        return AlgorithmState::Trapped;
     }
 
     VectorXd BurAlgorithm::Nearest(std::shared_ptr<BurTree> t, VectorXd &q)
@@ -256,7 +280,7 @@ namespace Burs
 
     Bur BurAlgorithm::GetBur(const VectorXd &q_near, const MatrixXd &Q_e, double d_closest)
     {
-        std::cout << "Calculating bur for " << q_near.transpose() << std::endl;
+        // std::cout << "Calculating bur for " << q_near.transpose() << std::endl;
         double d_small = 0.1 * d_closest;
         MatrixXd endpoints = MatrixXd::Zero(this->q_dim, Q_e.cols());
 
@@ -271,28 +295,30 @@ namespace Burs
 
             // std::cout << "q_near: " << q_near.transpose() << std::endl;
 
-            std::cout << "q_ei: " << Q_e.col(i).transpose() << std::endl;
+            // std::cout << "q_ei: " << Q_e.col(i).transpose() << std::endl;
             const VectorXd q_e = Q_e.col(i);
+            // std::cout << std::endl;
             while (phi_result > d_small)
             {
-                std::cout << "phi_result: " << phi_result << " tk: " << tk;
-                std::cout << " q_k: " << q_k.transpose() << std::endl;
                 // CHECK: this is indeed PI away from q_near
                 // d_closest - this->RhoR(q_near, q_k);
                 // phi_result = this->GetPhiFunction(d_closest, q_near, Q_e.col(i), tk);
                 // std::cout << " RhoR: " << this->RhoR(q_near, q_k) << std::endl;
                 phi_result = d_closest - this->RhoR(q_near, q_k);
+                // std::cout << "phi_result: " << phi_result << " tk: " << tk << std::endl;
+                // std::cout << " q_k: " << q_k.transpose() << std::endl;
                 double delta_tk = this->GetDeltaTk(phi_result, tk, q_e, q_k);
                 tk = tk + delta_tk;
                 if (tk > 1)
                 {
-                    std::cout << "tk exceeded 1: " << tk << std::endl;
+                    // std::cout << "tk exceeded 1: " << tk << std::endl;
                     q_k = q_e;
                     break;
                 }
                 q_k = q_near + tk * (q_e - q_near);
             }
             endpoints.col(i).array() = q_k;
+            // std::cout << "final q_k: " << q_k.transpose() << std::endl;
         }
         Bur myBur(q_near, endpoints);
         return myBur;
@@ -304,8 +330,11 @@ namespace Burs
         return this->bur_env->IsColliding();
     }
 
-    std::vector<VectorXd> BurAlgorithm::Path(std::shared_ptr<BurTree> t_a, int a_closest, std::shared_ptr<BurTree> t_b, int b_closest)
+    MatrixXd BurAlgorithm::Path(std::shared_ptr<BurTree> t_a, int a_closest, std::shared_ptr<BurTree> t_b, int b_closest)
     {
+        std::cout << "PATH: " << std::endl;
+        std::cout << "A closest: " << t_a->GetQ(a_closest).transpose() << std::endl;
+        std::cout << "B closest: " << t_b->GetQ(b_closest).transpose() << std::endl;
         std::vector<int> res_a;
         std::vector<int> res_b;
 
@@ -323,20 +352,26 @@ namespace Burs
             node_id_b = t_a->GetParentIdx(node_id_b);
         } while (node_id_b != -1);
 
-        std::vector<VectorXd> final_path(res_a.size() + res_b.size());
+        MatrixXd final_path(this->q_dim, res_a.size() + res_b.size());
 
         std::reverse(res_a.begin(), res_a.end());
 
+        int k = 0;
         for (int i = 0; i < res_a.size(); ++i)
         {
-            final_path.push_back(t_a->GetQ(res_a[i]));
+            // std::cout << "Qa: " << t_a->GetQ(res_a[i]) << std::endl;
+            final_path.col(k).array() = t_a->GetQ(res_a[i]);
+            ++k;
         }
 
         for (int i = 0; i < res_b.size(); ++i)
         {
-            final_path.push_back(t_b->GetQ(res_b[i]));
+            // std::cout << "Qb: " << t_b->GetQ(res_b[i]) << std::endl;
+            final_path.col(k).array() = t_b->GetQ(res_b[i]);
+            ++k;
         }
 
+        std::cout << "END PATH" << std::endl;
         return final_path;
     }
 }

@@ -163,5 +163,19 @@ namespace printing
         std::cout << m2->GetGlobalPositionFromPointer(res.p2) << std::endl;
         std::cout << std::endl;
     }
+
+    // std::string CSVifyEigen(MatrixXd m)
+    // {
+    //     ostream
+    //     std::string stringifiedMatrix = "";
+    //     for (int i = 0; i < m.rows(); ++i)
+    //     {
+    //         for (int k = 0; k < m.cols(); ++k)
+    //         {
+    //             stringifiedMatrix = << m(i, k) + ",";
+    //         }
+    //         stringifiedMatrix = stringifiedMatrix + std::endl;
+    //     }
+    // }
 }
 #endif
