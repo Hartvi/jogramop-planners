@@ -1,17 +1,19 @@
 #include <iostream>
 #include <string>
 #include <Eigen/Dense>
-#include "load.h"
-#include "model.h"
+#include "model_related/pqp_load.h"
+#include "model_related/rt_model.h"
 #include <flann/flann.hpp>
 #include "printing.h"
-#include "bur_tree.h"
-#include "bur_algorithm.h"
+#include "bur_related/bur_tree.h"
+#include "bur_related/base_planner.h"
 #include <functional>
 #include "math.h"
-#include "bur_funcs.h"
-#include "stick_robot.h"
+#include "bur_related/bur_funcs.h"
+#include "test_related/stick_robot.h"
 #include <fstream>
+
+#include "test_related/test_urdf.h"
 
 namespace test
 {
@@ -131,7 +133,7 @@ namespace test
         double delta_q = M_PI;
         double epsilon_q = M_PI / 10.0;
         int num_spikes = 7;
-        std::unique_ptr<Burs::BurAlgorithm> b = std::make_unique<Burs::BurAlgorithm>(stick_robot->NUM_SEGMENTS, fk, max_iters, d_crit, delta_q, epsilon_q, bounds, rf, num_spikes);
+        std::unique_ptr<Burs::BasePlanner> b = std::make_unique<Burs::BasePlanner>(stick_robot->NUM_SEGMENTS, fk, max_iters, d_crit, delta_q, epsilon_q, bounds, rf, num_spikes);
 
         int point = 1;
         VectorXd config(2);
@@ -151,14 +153,14 @@ namespace test
         std::cout << std::endl;
         // TESTING TOGETHER
 
-        std::shared_ptr<Burs::BurEnv> b_env = std::make_shared<Burs::BurEnv>();
+        std::shared_ptr<Burs::BaseEnv> b_env = std::make_shared<Burs::BaseEnv>();
 
-        std::shared_ptr<TrPQPModel> robot_model = std::make_shared<TrPQPModel>(argv[1]);
-        std::shared_ptr<TrPQPModel> obstacle_model = std::make_shared<TrPQPModel>(argv[2]);
+        std::shared_ptr<RtModels::RtModel> robot_model = std::make_shared<RtModels::RtModel>(argv[1]);
+        std::shared_ptr<RtModels::RtModel> obstacle_model = std::make_shared<RtModels::RtModel>(argv[2]);
 
         b_env->AddRobotModel(robot_model);
         b_env->AddForwardRt(srt);
-        b_env->AddObstacleModel(obstacle_model);
+        b_env->AddObstacle(argv[2]);
 
         MatrixXd m(6, 3);
         std::cout << "m: " << m << std::endl;
@@ -197,14 +199,18 @@ namespace test
 
         std::cout << "TEST RBTCONNECT" << std::endl;
         // std::cout << "START CHECK: CLOSEST DISTANCE: " << b->GetClosestDistance(config) << std::endl;
-        std::optional<MatrixXd> path = b->RbtConnect(config, config2);
+        std::optional<std::vector<Eigen::VectorXd>> path = b->RbtConnect(config, config2);
         if (!path)
         {
             std::cout << "test_forward: path not found" << std::endl;
             return;
         }
-        MatrixXd myPath = path.value();
-        std::cout << "Path: " << myPath << std::endl;
+        std::vector<Eigen::VectorXd> myPath = path.value();
+        std::cout << "Path: " << std::endl;
+        for (int i = 0; i < myPath.size(); ++i)
+        {
+            std::cout << myPath[i].transpose() << std::endl;
+        }
         std::ofstream myFileA;
 
         myFileA.open("path.txt");
@@ -219,16 +225,16 @@ namespace test
         }
         myFileA << std::endl;
 
-        std::cout
-            << "Cols: " << myPath.cols() << "  Rows: " << myPath.rows() << std::endl;
+        // std::cout
+        //     << "Cols: " << myPath.cols() << "  Rows: " << myPath.rows() << std::endl;
 
         myFileA << "path," << std::endl;
-        for (int i = 0; i < myPath.cols(); i++)
+        for (int i = 0; i < myPath.size(); i++)
         {
-            VectorXd result = myPath.col(i);
-            for (int k = 0; k < myPath.rows(); ++k)
+            VectorXd result = myPath[i];
+            for (int k = 0; k < result.size(); ++k)
             {
-                myFileA << result.row(k) << ",";
+                myFileA << result(k) << ",";
             }
             myFileA << std::endl;
         }
@@ -236,10 +242,19 @@ namespace test
 
         std::cout << std::endl;
 
-        for (int i = 0; i < myPath.cols(); i++)
+        for (int i = 0; i < myPath.size(); i++)
         {
-            std::cout << "step " << i << ": " << myPath.col(i).transpose() << " delta distance [m]: " << fk(1, myPath.col(i)).transpose() << std::endl;
+            std::cout << "step " << i << ": " << myPath[i].transpose() << " delta distance [m]: " << fk(1, myPath[i]).transpose() << std::endl;
         }
         std::cout << "END TEST RBTCONNECT" << std::endl;
+        std::cout << std::endl;
+
+        std::cout << "BEGIN TEST URDF" << std::endl;
+        if (argc > 6)
+        {
+            test_urdf(argv[6]);
+        }
+        std::cout << "END TEST URDF" << std::endl;
+        std::cout << std::endl;
     }
 }

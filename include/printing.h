@@ -1,10 +1,13 @@
-#include <iostream> // cout
-#include <sstream>  // ostringstream
-// #include <fstream>  // idk
-#include "model.h"
 
 #ifndef PRINTING_H
 #define PRINTING_H
+
+#include <iostream> // cout
+#include <sstream>  // ostringstream
+#include <iomanip>
+// #include <fstream>  // idk
+#include "model_related/rt_model.h"
+
 namespace printing
 {
     template <typename T>
@@ -40,14 +43,14 @@ namespace printing
         return oss.str();
     }
 
-    std::string print_state(TrPQPModel *m1, TrPQPModel *m2)
+    std::string print_state(RtModels::RtModel *m1, RtModels::RtModel *m2)
     {
         PQP_REAL rel_err = 0.0;
         PQP_REAL abs_err = 0.0;
         PQP_DistanceResult res;
         std::ostringstream oss;
 
-        TrPQPModel::CheckDistanceStatic(&res, rel_err, abs_err, m1, m2);
+        RtModels::RtModel::CheckDistanceStatic(&res, rel_err, abs_err, m1, m2);
 
         oss << "p1,";
         oss << printing::join(3, res.p1);
@@ -74,7 +77,7 @@ namespace printing
         oss << std::endl;
         return oss.str();
     }
-    void loop_rotation(TrPQPModel *m1, TrPQPModel *m2, std::string outfile)
+    void loop_rotation(RtModels::RtModel *m1, RtModels::RtModel *m2, std::string outfile)
     {
         // Eigen::Matrix3d I = Eigen::Matrix3d::Identity();
         Eigen::Matrix3d Rx2;
@@ -119,7 +122,7 @@ namespace printing
         myfile.close();
     }
 
-    void check_collision(TrPQPModel *m1, TrPQPModel *m2)
+    void check_collision(RtModels::RtModel *m1, RtModels::RtModel *m2)
     {
         // rotation
         Eigen::Matrix3d I = Eigen::Matrix3d::Identity();
@@ -143,7 +146,7 @@ namespace printing
         m1->Translate(t1);
         m2->Translate(-t1);
         // m1->getR();
-        TrPQPModel::CheckDistanceStatic(&res, rel_err, abs_err, m1, m2);
+        RtModels::RtModel::CheckDistanceStatic(&res, rel_err, abs_err, m1, m2);
 
         std::cout << "Result: p1 ";
         for (int i = 0; i < 3; i++)
@@ -177,5 +180,26 @@ namespace printing
     //         stringifiedMatrix = stringifiedMatrix + std::endl;
     //     }
     // }
+    template <typename T>
+    void WriteModelsToFile(const std::vector<std::shared_ptr<T>> &robot_models, const std::string &filename)
+    {
+        // Open a file in write mode.
+        std::ofstream file(filename);
+
+        if (!file.is_open())
+        {
+            std::cerr << "Failed to open file: " << filename << std::endl;
+            return;
+        }
+
+        for (const auto &model : robot_models)
+        {
+            std::cout << "Model: " << model << std::endl;
+            file << model;
+        }
+        // Set precision for floating-point numbers
+        file << std::fixed << std::setprecision(3);
+        file.close();
+    }
 }
 #endif

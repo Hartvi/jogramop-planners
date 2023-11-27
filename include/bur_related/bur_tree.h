@@ -1,7 +1,7 @@
 #include <flann/flann.hpp>
 #include <Eigen/Dense>
 #include <memory>
-#include "bur_funcs.h"
+#include "bur_related/bur_funcs.h"
 
 #ifndef BUR_TREE_H
 #define BUR_TREE_H

@@ -1,16 +1,18 @@
+#include "bur_related/burs.h"
+
 #include <memory>
 #include <vector>
 #include <Eigen/Dense>
-#include "model.h"
-#include "bur_funcs.h"
+#include "model_related/rt_model.h"
 
-#ifndef BUR_ENV_H
-#define BUR_ENV_H
+#ifndef BASE_ENV_H
+#define BASE_ENV_H
 
 namespace Burs
 {
     using namespace Eigen;
-    class BurEnv
+
+    class BaseEnv
     {
     public:
         /* What I need from outside:
@@ -21,17 +23,20 @@ namespace Burs
         */
 
         void SetPoses(VectorXd q);
-        void AddRobotModel(std::shared_ptr<TrPQPModel> m);
+        void AddRobotModel(std::shared_ptr<RtModels::RtModel> m);
         void AddForwardRt(Burs::ForwardRt forwardRt);
-        void AddObstacleModel(std::shared_ptr<TrPQPModel> m);
         /// @brief Check closest distance between robot parts and obstacles, NEED TO SET ROTATIONS AND TRANSLATIONS BEFOREHAND
         double GetClosestDistance() const;
         bool IsColliding() const;
+        /*If you want to add other robots, make an environment for them and add the other robot as an obstacle to this one.*/
+        int
+        AddObstacle(std::string obstacle_file, Eigen::Matrix3d R = Eigen::Matrix3d::Identity(), Eigen::Vector3d t = Eigen::Vector3d::Zero());
 
-        std::vector<std::shared_ptr<TrPQPModel>> obstacle_models;
+        std::vector<std::shared_ptr<RtModels::RtModel>> obstacle_models;
+        std::vector<std::shared_ptr<RtModels::RtModel>> robot_models;
+        std::vector<std::string> obstacle_map;
 
     private:
-        std::vector<std::shared_ptr<TrPQPModel>> robot_models;
         bool poses_are_set = false;
         Burs::ForwardRt forwardRt;
     };

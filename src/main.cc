@@ -1,17 +1,17 @@
 // tinyobjloader must be first
 #define TINYOBJLOADER_IMPLEMENTATION
-#include "tiny_obj_loader.h"
+#include "model_related/tiny_obj_loader.h"
 
 #include <iostream>
 // #include <stdio.h>
 #include <Eigen/Dense>
-#include "load.h"
-#include "model.h"
+#include "model_related/pqp_load.h"
+#include "model_related/rt_model.h"
 #include <flann/flann.hpp>
 #include "printing.h"
-#include "bur_tree.h"
-#include "bur_algorithm.h"
-#include "test.h"
+#include "bur_related/bur_tree.h"
+#include "bur_related/base_planner.h"
+#include "test_related/test.h"
 
 using namespace std;
 
@@ -30,7 +30,7 @@ int main(int argc, char **argv)
     //     return 1;
     // }
 
-    // auto model1 = std::make_shared<TrPQPModel>(argv[1]);
+    // auto model1 = std::make_shared<RtModel>(argv[1]);
 
     // double world_bound = 10;
     // std::string name(argv[3]);

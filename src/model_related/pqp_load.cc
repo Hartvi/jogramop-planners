@@ -1,5 +1,5 @@
 #include <iostream>
-#include "tiny_obj_loader.h"
+#include "model_related/tiny_obj_loader.h"
 #include "PQP.h"
 #include <filesystem>
 
@@ -57,7 +57,7 @@ namespace pqploader
         auto &materials = reader.GetMaterials();
 
         // Loop over shapes
-        std::cout << "[INFO] TinyObjReader: number of shapes: " << shapes.size() << std::endl;
+        // std::cout << "[INFO] TinyObjReader: number of shapes: " << shapes.size() << std::endl;
 
         for (size_t s = 0; s < shapes.size(); s++)
         {
@@ -122,7 +122,7 @@ namespace pqploader
         auto &materials = reader.GetMaterials();
 
         // Loop over shapes
-        std::cout << "[INFO] TinyObjReader: number of shapes: " << shapes.size() << std::endl;
+        // std::cout << "[INFO] TinyObjReader: number of shapes: " << shapes.size() << std::endl;
 
         target_model->BeginModel();
         for (int s = 0; s < shapes.size(); s++)
@@ -131,7 +131,7 @@ namespace pqploader
             // Loop over faces(polygon)
             size_t index_offset = 0;
 
-            std::cout << "[INFO] TinyObjReader: number of faces: " << shape.mesh.num_face_vertices.size() << std::endl;
+            // std::cout << "[INFO] TinyObjReader: number of faces: " << shape.mesh.num_face_vertices.size() << std::endl;
             for (size_t f = 0; f < shape.mesh.num_face_vertices.size(); f++)
             {
                 size_t fv = size_t(shape.mesh.num_face_vertices[f]);

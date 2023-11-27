@@ -1,7 +1,7 @@
 #include <memory>
 #include <stdexcept>
-#include "bur_env.h"
-#include "model.h"
+#include "bur_related/burs.h"
+#include "model_related/rt_model.h"
 #include "PQP.h"
 
 namespace Burs
@@ -9,7 +9,8 @@ namespace Burs
 
     using namespace Eigen;
 
-    void BurEnv::SetPoses(VectorXd q)
+    void
+    BaseEnv::SetPoses(VectorXd q)
     {
         auto [rotations, translations] = this->forwardRt(q);
 
@@ -22,7 +23,19 @@ namespace Burs
         this->poses_are_set = true;
     }
 
-    bool BurEnv::IsColliding() const
+    // void BaseEnv::SetObstaclePose(Matrix3d R, Vector3d t)
+    // {
+    //     for (int i = 0; i < rotations.size(); ++i)
+    //     {
+    //         this->robot_models[i]->SetRotation(rotations[i]);
+    //         this->robot_models[i]->SetTranslation(translations[i]);
+    //         // std::cout << "Setting robot position to " << translations[i].transpose() << std::endl;
+    //     }
+    //     this->obstacle_poses_are_set = true;
+    // }
+
+    bool
+    BaseEnv::IsColliding() const
     {
         if (!this->poses_are_set)
         {
@@ -35,7 +48,7 @@ namespace Burs
 
         for (int i = 0; i < this->robot_models.size(); i++)
         {
-            std::shared_ptr<TrPQPModel> current_robot_part = this->robot_models[i];
+            std::shared_ptr<RtModels::RtModel> current_robot_part = this->robot_models[i];
             for (int k = 0; k < this->obstacle_models.size(); k++)
             {
                 auto obs = this->obstacle_models[k];
@@ -50,7 +63,8 @@ namespace Burs
         return false;
     }
 
-    double BurEnv::GetClosestDistance() const
+    double
+    BaseEnv::GetClosestDistance() const
     {
         if (!this->poses_are_set)
         {
@@ -63,7 +77,7 @@ namespace Burs
 
         for (int i = 0; i < this->robot_models.size(); i++)
         {
-            std::shared_ptr<TrPQPModel> current_robot_part = this->robot_models[i];
+            std::shared_ptr<RtModels::RtModel> current_robot_part = this->robot_models[i];
             for (int k = 0; k < this->obstacle_models.size(); k++)
             {
                 auto obs = this->obstacle_models[k];
@@ -78,19 +92,26 @@ namespace Burs
         return min_dist;
     }
 
-    void BurEnv::AddRobotModel(std::shared_ptr<TrPQPModel> m)
+    void
+    BaseEnv::AddRobotModel(std::shared_ptr<RtModels::RtModel> m)
     {
         this->robot_models.push_back(m);
     }
 
-    void BurEnv::AddForwardRt(Burs::ForwardRt forwardRt)
+    void
+    BaseEnv::AddForwardRt(Burs::ForwardRt forwardRt)
     {
         this->forwardRt = forwardRt;
     }
 
-    void BurEnv::AddObstacleModel(std::shared_ptr<TrPQPModel> m)
+    /*If you want to add other robots, make an environment for them and add the other robot as an obstacle to this one.*/
+    int
+    BaseEnv::AddObstacle(std::string obstacle_file, Eigen::Matrix3d R, Eigen::Vector3d t)
     {
-        this->obstacle_models.push_back(m);
-    }
 
+        std::shared_ptr<RtModels::RtModel> obstacle_model = std::make_shared<RtModels::RtModel>(obstacle_file);
+        this->obstacle_models.push_back(obstacle_model);
+        this->obstacle_map.push_back(obstacle_file);
+        return this->obstacle_models.size() - 1;
+    }
 }

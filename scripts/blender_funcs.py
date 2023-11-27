@@ -113,7 +113,7 @@ def set_creation_time(scene):
             obj["creation_time"] = time.time()
 
 
-def import_obj(filepath) -> str:
+def import_obj(filepath):
     # blender importing seems to be weird.
     # It switches y and z and shift the third object by 2 in the x axis
     bpy.ops.import_scene.obj(filepath=filepath, axis_forward='Y', axis_up='Z')
