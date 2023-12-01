@@ -9,6 +9,8 @@ namespace Burs
         std::filesystem::path urdf_path(urdf_filename);
         std::filesystem::path urdf_dir = urdf_path.parent_path();
 
+        this->urdf_filename = urdf_dir / urdf_path;
+
         int numModels = 0;
         // Initialization specific to RobotCollision
         // std::cout << "number of segments " << this->kdl_chain.getNrOfSegments() << std::endl;
@@ -19,6 +21,10 @@ namespace Burs
                 // add relative path to urdf file
                 // std::cout << "\nADDING MODEL " << this->segmentIdToFile[i] << std::endl;
                 std::filesystem::path model_path = urdf_dir / this->segmentIdToFile[i];
+
+                // for later visualization purposess
+                this->mObjs.push_back(model_path);
+
                 std::shared_ptr<RtModels::RtModel> trpqpmodel = std::make_shared<RtModels::RtModel>(model_path);
                 this->segmentIdToModel.push_back(trpqpmodel);
                 numModels++;

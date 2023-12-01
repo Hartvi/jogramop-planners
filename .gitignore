@@ -1,3 +1,13 @@
+# images
+*.png
+*.jpg
+*.bmp
+*.gif
+*.tif
+
+# cache
+*cache*
+
 # Prerequisites
 *.d
 

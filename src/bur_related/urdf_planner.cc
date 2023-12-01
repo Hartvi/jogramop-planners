@@ -1,5 +1,7 @@
 #include "bur_related/urdf_planner.h"
 #include <string>
+#include <sstream>
+#include "printing.h"
 
 namespace Burs
 {
@@ -53,6 +55,41 @@ namespace Burs
         std::optional<std::vector<Eigen::VectorXd>> path_opt = this->mBasePlanner->RbtConnect(start, goal);
 
         return path_opt;
+    }
+
+    int
+    URDFPlanner::AddObstacle(std::string obstacle_file, Eigen::Matrix3d R, Eigen::Vector3d t)
+    {
+        std::cout << "URDFPlanner: adding obstacle " << obstacle_file << std::endl;
+        return this->mCollisionEnv->AddObstacle(obstacle_file, R, t);
+    }
+
+    void
+    URDFPlanner::SetObstacleRotation(int id, Eigen::Matrix3d R, Eigen::Vector3d t)
+    {
+        std::shared_ptr<RtModels::RtModel> model = this->mCollisionEnv->obstacle_models[id];
+        model->SetRotation(R);
+        model->SetTranslation(t);
+    }
+
+    std::string
+    URDFPlanner::ToString(const Eigen::VectorXd &q_in)
+    {
+        std::ostringstream output;
+        auto env = this->mCollisionEnv;
+        env->SetPoses(q_in);
+
+        for (int i = 0; i < env->robot_models.size(); ++i)
+        {
+            // environment has the OBJs
+            output << env->robot_models[i]->ToString();
+        }
+        std::cout << "URDFPlanner: number of obstacles: " << env->obstacle_models.size() << std::endl;
+        for (int i = 0; i < env->obstacle_models.size(); ++i)
+        {
+            output << env->obstacle_models[i]->ToString();
+        }
+        return output.str();
     }
 
 }

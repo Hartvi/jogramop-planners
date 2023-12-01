@@ -105,12 +105,6 @@ namespace Burs
 
     std::optional<std::vector<Eigen::VectorXd>> BasePlanner::RbtConnect(const VectorXd &q_start, const VectorXd &q_goal)
     {
-        // std::ofstream myFileA;
-        // std::ofstream myFileB;
-
-        // myFileA.open("t_a.txt");
-        // myFileB.open("t_b.txt");
-
         // start of actual algorithm
         std::shared_ptr<BurTree> t_start = std::make_shared<BurTree>(q_start, q_start.rows());
         std::shared_ptr<BurTree> t_goal = std::make_shared<BurTree>(q_goal, q_goal.rows());
@@ -122,23 +116,17 @@ namespace Burs
             VectorXd q_new(this->q_dim);
             Eigen::MatrixXd Qe = this->GetRandomQ(num_spikes);
 
-            // std::cout << "Qe: " << Qe << std::endl;
-
             // random growth direction; can be any other among the random vectors from Qe
             VectorXd q_e_0 = Qe.col(0);
-            // int nearest_index = current_tree->Nearest(q_e_0.data());
             int nearest_index = this->NearestIndex(t_a, q_e_0);
-            // std::cout << "nearest_index: " << nearest_index << std::endl;
 
             const VectorXd q_near = t_a->GetQ(nearest_index);
-            // std::cout << "q_near: " << q_near.transpose() << std::endl;
 
             for (int i = 0; i < num_spikes; i++)
             {
                 VectorXd q_e_i = Qe.col(i);
                 q_e_i = this->GetEndpoint(q_e_i, q_near, this->delta_q);
                 Qe.col(i).array() = q_e_i;
-                // std::cout << "q_e_" << i << ": " << q_e_i.transpose() << std::endl;
             }
 
             double d_closest = this->GetClosestDistance(q_near);
@@ -147,8 +135,6 @@ namespace Burs
             {
                 std::cout << "CLOSEST DISTANCE TOO SMALL" << std::endl;
 
-                // myFileA.close();
-                // myFileB.close();
                 return {};
             }
 
@@ -171,10 +157,6 @@ namespace Burs
             else
             {
                 Bur b = this->GetBur(q_near, Qe, d_closest);
-                // std::cout << "Bur center " << b.center.transpose() << std::endl;
-                // std::cout << "Bur endistance check" << std::endl;
-                // std::cout << "robot position " << Vector3d(this->getT()).transpose() << std::endl;
-                // std::cout << "obstacle points " << b.endpoints.transpose() << std::endl;
 
                 for (int i = 0; i < Qe.cols(); ++i)
                 {
@@ -190,12 +172,9 @@ namespace Burs
             AlgorithmState status = this->BurConnect(t_b, q_new);
             if (status == AlgorithmState::Reached)
             {
-                // TODO: closest node in t_a to q_new, closest node in t_b to q_new
                 int a_closest = t_a->Nearest(q_new.data());
                 int b_closest = t_b->Nearest(q_new.data());
 
-                // myFileA.close();
-                // myFileB.close();
                 return this->Path(t_a, a_closest, t_b, b_closest);
             }
 
@@ -283,45 +262,33 @@ namespace Burs
 
     Bur BasePlanner::GetBur(const VectorXd &q_near, const MatrixXd &Q_e, double d_closest)
     {
-        // std::cout << "Calculating bur for " << q_near.transpose() << std::endl;
         double d_small = 0.1 * d_closest;
         MatrixXd endpoints = MatrixXd::Zero(this->q_dim, Q_e.cols());
 
         for (int i = 0; i < Q_e.cols(); ++i)
         {
-            // Burs::PhiFunc phi_f = this->GetPhiFunction(d_closest, q_near, Q_e.col(i));
             double tk = 0;
 
             // always start out from the center
             VectorXd q_k(q_near);
             double phi_result = d_closest;
 
-            // std::cout << "q_near: " << q_near.transpose() << std::endl;
-
-            // std::cout << "q_ei: " << Q_e.col(i).transpose() << std::endl;
             const VectorXd q_e = Q_e.col(i);
-            // std::cout << std::endl;
+
             while (phi_result > d_small)
             {
                 // CHECK: this is indeed PI away from q_near
-                // d_closest - this->RhoR(q_near, q_k);
-                // phi_result = this->GetPhiFunction(d_closest, q_near, Q_e.col(i), tk);
-                // std::cout << " RhoR: " << this->RhoR(q_near, q_k) << std::endl;
                 phi_result = d_closest - this->RhoR(q_near, q_k);
-                // std::cout << "phi_result: " << phi_result << " tk: " << tk << std::endl;
-                // std::cout << " q_k: " << q_k.transpose() << std::endl;
                 double delta_tk = this->GetDeltaTk(phi_result, tk, q_e, q_k);
                 tk = tk + delta_tk;
                 if (tk > 1)
                 {
-                    // std::cout << "tk exceeded 1: " << tk << std::endl;
                     q_k = q_e;
                     break;
                 }
                 q_k = q_near + tk * (q_e - q_near);
             }
             endpoints.col(i).array() = q_k;
-            // std::cout << "final q_k: " << q_k.transpose() << std::endl;
         }
         Bur myBur(q_near, endpoints);
         return myBur;

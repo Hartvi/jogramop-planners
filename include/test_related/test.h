@@ -12,6 +12,8 @@
 #include "bur_related/bur_funcs.h"
 #include "test_related/stick_robot.h"
 #include <fstream>
+// #include <yaml-cpp/yaml.h>
+#include <cstdlib>
 
 #include "test_related/test_urdf.h"
 
@@ -19,6 +21,115 @@ namespace test
 {
     using namespace std;
     using namespace Burs;
+
+    Eigen::Matrix3d eulerToRotationMatrix(double x, double y, double z)
+    {
+        Eigen::Matrix3d Rx, Ry, Rz;
+
+        // Rotation matrix around the X-axis
+        Rx << 1, 0, 0,
+            0, cos(x), -sin(x),
+            0, sin(x), cos(x);
+
+        // Rotation matrix around the Y-axis
+        Ry << cos(y), 0, sin(y),
+            0, 1, 0,
+            -sin(y), 0, cos(y);
+
+        // Rotation matrix around the Z-axis
+        Rz << cos(z), -sin(z), 0,
+            sin(z), cos(z), 0,
+            0, 0, 1;
+
+        // Combined rotation matrix, R = Rz * Ry * Rx
+        Eigen::Matrix3d R = Rz * Ry * Rx;
+
+        return R;
+    }
+
+    void main_test()
+    {
+        // TODO
+        // test
+        // visualize path
+        std::string obstacle_path = "/home/hartvi/Documents/CVUT/diploma_thesis/Models/cube.obj";
+        Eigen::Vector3d obstacle_position = Eigen::Vector3d(-0.5, -1.5, -0.5);
+        Eigen::Vector3d obstacle_position = Eigen::Vector3d(0.5, 1.5, -0.5);
+        std::string robot_urdf_path = "/home/hartvi/Documents/CVUT/diploma_thesis/burs_of_free_space/jogramop/robots/franka_panda/mobile_panda.urdf";
+
+        // URDFPlanner(std::string urdf_file, int max_iters, double d_crit, double delta_q, double epsilon_q, int num_spikes);
+        int max_iters = 5;
+        Meters d_crit = 0.1;
+        Relative delta_q = 1.0;
+        Relative epsilon_q = 0.1;
+        int num_spikes = 7;
+        URDFPlanner urdf_planner(robot_urdf_path, max_iters, d_crit, delta_q, epsilon_q, num_spikes);
+
+        urdf_planner.AddObstacle(obstacle_path, eulerToRotationMatrix(1.57, 0, 0), obstacle_position);
+
+        Eigen::VectorXd zero_config = Eigen::VectorXd::Zero(urdf_planner.GetNrOfJoints());
+        Eigen::VectorXd min_q = Eigen::VectorXd(urdf_planner.GetNrOfJoints());
+        Eigen::VectorXd max_q = Eigen::VectorXd(urdf_planner.GetNrOfJoints());
+        auto minmax = urdf_planner.mCollisionEnv->myURDFRobot->GetMinMaxBounds();
+
+        for (int i = 0; i < min_q.size(); ++i)
+        {
+            min_q(i) = minmax[i][0];
+            max_q(i) = minmax[i][1];
+        }
+        std::cout << "Min q: " << min_q.transpose() << std::endl;
+        std::cout << "max q: " << max_q.transpose() << std::endl;
+        min_q(0) = 0;
+        min_q(1) = 0;
+        max_q(0) = 0;
+        max_q(1) = 0;
+
+        // plan path
+        Eigen::VectorXd start = min_q;
+        Eigen::VectorXd goal = max_q;
+
+        auto opt_path = urdf_planner.PlanPath(start, goal);
+
+        std::vector<Eigen::VectorXd> path;
+        if (opt_path)
+        {
+            path = opt_path.value();
+        }
+        else
+        {
+            std::cout << "URDFPlanner: PlanPath: failed to plan path from " << start.transpose() << " to " << goal.transpose() << std::endl;
+            std::cout << "Quitting..." << std::endl;
+            return;
+        }
+
+        std::string test_file_name = "test_file.txt";
+        std::ofstream test_file(test_file_name);
+        // for (int i = 0; i <)
+        //     urdf_planner.mCollisionEnv->SetPoses(q_waypoint);
+        std::cout << "Closest distance from robot to obstacles: " << urdf_planner.mCollisionEnv->GetClosestDistance() << std::endl;
+        // urdf_planner.mCollisionEnv->myURDFRobot->
+        if (test_file.is_open())
+        {
+            for (Eigen::VectorXd &point : path)
+            {
+                test_file << urdf_planner.ToString(point);
+            }
+            test_file.close();
+            const char *command = "python3.10 ../scripts/render_scene.py test_file.txt";
+            int result = system(command);
+
+            if (result != 0)
+            {
+                std::cout << "Calling `" << command << "` failed" << std::endl;
+            }
+        }
+        else
+        {
+            std::cout << "Could not open " << test_file_name << std::endl;
+        }
+
+        // auto opt_path = urdf_planner.PlanPath();
+    }
 
     void testFunctions(int argc, char *argv[])
     {

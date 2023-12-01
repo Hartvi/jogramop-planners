@@ -26,10 +26,10 @@ namespace RtModels
         [3];
         PQP_REAL *getT();
         void Rotate(Eigen::Matrix<double, 3, 3> rotation);
-        void Translate(Eigen::Vector3<double> tr);
+        void Translate(Eigen::Vector3d tr);
 
         void SetRotation(Eigen::Matrix<double, 3, 3> rotation);
-        void SetTranslation(Eigen::Vector3<double> tr);
+        void SetTranslation(Eigen::Vector3d tr);
 
         Eigen::Vector3<PQP_REAL> GetGlobalPositionFromVector(Eigen::Vector3<PQP_REAL> p) const;
         Eigen::Vector3<PQP_REAL> GetGlobalPositionFromPointer(PQP_REAL p[3]) const;

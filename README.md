@@ -1,12 +1,14 @@
 # Burs
 
 ## TODO:
-- add function to accept `model path`, `R`, `t` to add as a scenario
+- use relative steps in q because of different min-max values for each joint
+- interpolate path by small steps
 - create python binding
   - expose:
     - robot class: robot_class(urdf_path), add_obstacle(path, R, t), plan(start, goal)
 
-- done: formalize correctly the forward kinematic functions
+- Done: add function to accept `model path`, `R`, `t` to add as a scenario
+- Done: formalize correctly the forward kinematic functions
   - this should enable me to check if the algorithm has been implemented correctly
 
 

@@ -20,6 +20,15 @@ namespace Burs
 
         std::optional<std::vector<Eigen::VectorXd>>
         PlanPath(Eigen::VectorXd start, Eigen::VectorXd goal);
+
+        int
+        AddObstacle(std::string obstacle_file, Eigen::Matrix3d R, Eigen::Vector3d t);
+
+        void
+        SetObstacleRotation(int id, Eigen::Matrix3d R, Eigen::Vector3d t);
+
+        std::string
+        ToString(const Eigen::VectorXd &q_in);
     };
 }
 

@@ -17,7 +17,11 @@ namespace Burs
     using ForwardRt = std::function<std::tuple<std::vector<Matrix3d>, std::vector<Vector3d>>(VectorXd q)>;
     using RadiusFunc = std::function<double(const int &ith_distal_point, const VectorXd &q_k)>;
 
-    using PhiFunc = std::function<double(double)>;
+    typedef double Meters;
+    typedef double Qunit;
+    typedef double Relative;
+
+    // using PhiFunc = std::function<double(double)>;
 
     // // Helper function to demangle C++ type names
     // std::string demangle(const char *name)

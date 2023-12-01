@@ -108,10 +108,21 @@ namespace Burs
     int
     BaseEnv::AddObstacle(std::string obstacle_file, Eigen::Matrix3d R, Eigen::Vector3d t)
     {
-
         std::shared_ptr<RtModels::RtModel> obstacle_model = std::make_shared<RtModels::RtModel>(obstacle_file);
+
+        obstacle_model->SetRotation(R);
+        obstacle_model->SetTranslation(t);
+
         this->obstacle_models.push_back(obstacle_model);
         this->obstacle_map.push_back(obstacle_file);
         return this->obstacle_models.size() - 1;
+    }
+
+    void
+    BaseEnv::SetObstacleRotation(int id, Eigen::Matrix3d R, Eigen::Vector3d t)
+    {
+        std::shared_ptr<RtModels::RtModel> model = this->obstacle_models[id];
+        model->SetRotation(R);
+        model->SetTranslation(t);
     }
 }

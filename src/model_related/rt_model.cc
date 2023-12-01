@@ -46,9 +46,11 @@ namespace RtModels
     {
         std::ostringstream os;
 
-        os << "file," << std::endl;
+        os << std::fixed << std::setprecision(4);
+
+        os << "file" << std::endl;
         os << this->GetFilePath() << std::endl;
-        os << "R," << std::endl;
+        os << "R" << std::endl;
 
         auto R = this->getR();
         for (size_t i = 0; i < 3; ++i)
@@ -61,7 +63,7 @@ namespace RtModels
             os << std::endl;
         }
 
-        os << "t," << std::endl;
+        os << "t" << std::endl;
         auto T = this->getT();
         for (size_t i = 0; i < 3; ++i)
         {

@@ -1,12 +1,11 @@
-
-#ifndef PRINTING_H
-#define PRINTING_H
-
 #include <iostream> // cout
 #include <sstream>  // ostringstream
 #include <iomanip>
 // #include <fstream>  // idk
 #include "model_related/rt_model.h"
+
+#ifndef PRINTING_H
+#define PRINTING_H
 
 namespace printing
 {
@@ -43,129 +42,130 @@ namespace printing
         return oss.str();
     }
 
-    std::string print_state(RtModels::RtModel *m1, RtModels::RtModel *m2)
-    {
-        PQP_REAL rel_err = 0.0;
-        PQP_REAL abs_err = 0.0;
-        PQP_DistanceResult res;
-        std::ostringstream oss;
+    // std::string print_state(RtModels::RtModel *m1, RtModels::RtModel *m2)
+    // {
+    //     PQP_REAL rel_err = 0.0;
+    //     PQP_REAL abs_err = 0.0;
+    //     PQP_DistanceResult res;
+    //     std::ostringstream oss;
 
-        RtModels::RtModel::CheckDistanceStatic(&res, rel_err, abs_err, m1, m2);
+    //     RtModels::RtModel::CheckDistanceStatic(&res, rel_err, abs_err, m1, m2);
 
-        oss << "p1,";
-        oss << printing::join(3, res.p1);
-        oss << std::endl;
+    //     oss << "p1,";
+    //     oss << printing::join(3, res.p1);
+    //     oss << std::endl;
 
-        oss << "R1,";
-        oss << printing::join(m1->R.eulerAngles(0, 1, 2));
-        oss << std::endl;
+    //     oss << "R1,";
+    //     oss << printing::join(m1->R.eulerAngles(0, 1, 2));
+    //     oss << std::endl;
 
-        oss << "t1,";
-        oss << printing::join(m1->GetGlobalPositionFromPointer(res.p1));
-        oss << std::endl;
+    //     oss << "t1,";
+    //     oss << printing::join(m1->GetGlobalPositionFromPointer(res.p1));
+    //     oss << std::endl;
 
-        oss << "p2,";
-        oss << printing::join(3, res.p2);
-        oss << std::endl;
+    //     oss << "p2,";
+    //     oss << printing::join(3, res.p2);
+    //     oss << std::endl;
 
-        oss << "R2,";
-        oss << printing::join(m2->R.eulerAngles(0, 1, 2));
-        oss << std::endl;
+    //     oss << "R2,";
+    //     oss << printing::join(m2->R.eulerAngles(0, 1, 2));
+    //     oss << std::endl;
 
-        oss << "t2,";
-        oss << printing::join(m2->GetGlobalPositionFromPointer(res.p2));
-        oss << std::endl;
-        return oss.str();
-    }
-    void loop_rotation(RtModels::RtModel *m1, RtModels::RtModel *m2, std::string outfile)
-    {
-        // Eigen::Matrix3d I = Eigen::Matrix3d::Identity();
-        Eigen::Matrix3d Rx2;
-        Eigen::Matrix3d Ry2;
-        Eigen::Matrix3d Rz2;
-        int steps = 20;
-        Rx2 = Eigen::AngleAxisd(M_PI / steps, Eigen::Vector3d::UnitX());
-        Ry2 = Eigen::AngleAxisd(M_PI / steps, Eigen::Vector3d::UnitY());
-        Rz2 = Eigen::AngleAxisd(M_PI / steps, Eigen::Vector3d::UnitZ());
+    //     oss << "t2,";
+    //     oss << printing::join(m2->GetGlobalPositionFromPointer(res.p2));
+    //     oss << std::endl;
+    //     return oss.str();
+    // }
 
-        Eigen::Vector3d t1(0.9, 0.0, 0.0);
-        Eigen::Vector3d t2(-0.9, 0.0, 0.0);
+    // void loop_rotation(RtModels::RtModel *m1, RtModels::RtModel *m2, std::string outfile)
+    // {
+    //     // Eigen::Matrix3d I = Eigen::Matrix3d::Identity();
+    //     Eigen::Matrix3d Rx2;
+    //     Eigen::Matrix3d Ry2;
+    //     Eigen::Matrix3d Rz2;
+    //     int steps = 20;
+    //     Rx2 = Eigen::AngleAxisd(M_PI / steps, Eigen::Vector3d::UnitX());
+    //     Ry2 = Eigen::AngleAxisd(M_PI / steps, Eigen::Vector3d::UnitY());
+    //     Rz2 = Eigen::AngleAxisd(M_PI / steps, Eigen::Vector3d::UnitZ());
 
-        // PQP_REAL rel_err = 0.0;
-        // PQP_REAL abs_err = 0.0;
-        // PQP_DistanceResult res;
+    //     Eigen::Vector3d t1(0.9, 0.0, 0.0);
+    //     Eigen::Vector3d t2(-0.9, 0.0, 0.0);
 
-        // begin animation
-        m1->Translate(t1);
-        m2->Translate(t2);
+    //     // PQP_REAL rel_err = 0.0;
+    //     // PQP_REAL abs_err = 0.0;
+    //     // PQP_DistanceResult res;
 
-        std::ofstream myfile;
-        myfile.open(outfile);
-        myfile << "f1," << m1->filePath << std::endl;
-        myfile << "f2," << m2->filePath << std::endl;
+    //     // begin animation
+    //     m1->Translate(t1);
+    //     m2->Translate(t2);
 
-        for (int i = 0; i < steps; i++)
-        {
-            myfile << printing::print_state(m1, m2);
-            m1->Rotate(Rx2);
-        }
-        for (int i = 0; i < steps; i++)
-        {
-            myfile << printing::print_state(m1, m2);
-            m1->Rotate(Ry2);
-        }
-        for (int i = 0; i < steps; i++)
-        {
-            myfile << printing::print_state(m1, m2);
-            m1->Rotate(Rz2);
-        }
-        myfile.close();
-    }
+    //     std::ofstream myfile;
+    //     myfile.open(outfile);
+    //     myfile << "f1," << m1->filePath << std::endl;
+    //     myfile << "f2," << m2->filePath << std::endl;
 
-    void check_collision(RtModels::RtModel *m1, RtModels::RtModel *m2)
-    {
-        // rotation
-        Eigen::Matrix3d I = Eigen::Matrix3d::Identity();
+    //     for (int i = 0; i < steps; i++)
+    //     {
+    //         myfile << printing::print_state(m1, m2);
+    //         m1->Rotate(Rx2);
+    //     }
+    //     for (int i = 0; i < steps; i++)
+    //     {
+    //         myfile << printing::print_state(m1, m2);
+    //         m1->Rotate(Ry2);
+    //     }
+    //     for (int i = 0; i < steps; i++)
+    //     {
+    //         myfile << printing::print_state(m1, m2);
+    //         m1->Rotate(Rz2);
+    //     }
+    //     myfile.close();
+    // }
 
-        Eigen::Matrix3d Rx2;
-        Eigen::Matrix3d Ry2;
-        Eigen::Matrix3d Rz2;
-        Rx2 = Eigen::AngleAxisd(M_PI / 4, Eigen::Vector3d::UnitX());
-        Ry2 = Eigen::AngleAxisd(M_PI / 4, Eigen::Vector3d::UnitY());
-        Rz2 = Eigen::AngleAxisd(M_PI / 4, Eigen::Vector3d::UnitZ());
-        // Eigen::Matrix3d result = I * Rx2;
-        Eigen::Vector3d t1(2.0, 0.0, 0.0); // Just an example, you can set whatever values you need.
+    // void check_collision(RtModels::RtModel *m1, RtModels::RtModel *m2)
+    // {
+    //     // rotation
+    //     Eigen::Matrix3d I = Eigen::Matrix3d::Identity();
 
-        PQP_REAL rel_err = 0.0;
-        PQP_REAL abs_err = 0.0;
-        PQP_DistanceResult res;
-        // m1->getR();
-        std::cout << Rx2 << std::endl;
-        std::cout << Rx2 * I << std::endl;
-        m1->Rotate(Ry2.transpose());
-        m1->Translate(t1);
-        m2->Translate(-t1);
-        // m1->getR();
-        RtModels::RtModel::CheckDistanceStatic(&res, rel_err, abs_err, m1, m2);
+    //     Eigen::Matrix3d Rx2;
+    //     Eigen::Matrix3d Ry2;
+    //     Eigen::Matrix3d Rz2;
+    //     Rx2 = Eigen::AngleAxisd(M_PI / 4, Eigen::Vector3d::UnitX());
+    //     Ry2 = Eigen::AngleAxisd(M_PI / 4, Eigen::Vector3d::UnitY());
+    //     Rz2 = Eigen::AngleAxisd(M_PI / 4, Eigen::Vector3d::UnitZ());
+    //     // Eigen::Matrix3d result = I * Rx2;
+    //     Eigen::Vector3d t1(2.0, 0.0, 0.0); // Just an example, you can set whatever values you need.
 
-        std::cout << "Result: p1 ";
-        for (int i = 0; i < 3; i++)
-        {
-            std::cout << res.p1[i] << ", ";
-        }
-        std::cout << std::endl;
-        std::cout << m1->GetGlobalPositionFromPointer(res.p1) << std::endl;
+    //     PQP_REAL rel_err = 0.0;
+    //     PQP_REAL abs_err = 0.0;
+    //     PQP_DistanceResult res;
+    //     // m1->getR();
+    //     std::cout << Rx2 << std::endl;
+    //     std::cout << Rx2 * I << std::endl;
+    //     m1->Rotate(Ry2.transpose());
+    //     m1->Translate(t1);
+    //     m2->Translate(-t1);
+    //     // m1->getR();
+    //     RtModels::RtModel::CheckDistanceStatic(&res, rel_err, abs_err, m1, m2);
 
-        std::cout << std::endl;
-        std::cout << "Result: p2 ";
-        for (int i = 0; i < 3; i++)
-        {
-            std::cout << res.p2[i] << ", ";
-        }
-        std::cout << std::endl;
-        std::cout << m2->GetGlobalPositionFromPointer(res.p2) << std::endl;
-        std::cout << std::endl;
-    }
+    //     std::cout << "Result: p1 ";
+    //     for (int i = 0; i < 3; i++)
+    //     {
+    //         std::cout << res.p1[i] << ", ";
+    //     }
+    //     std::cout << std::endl;
+    //     std::cout << m1->GetGlobalPositionFromPointer(res.p1) << std::endl;
+
+    //     std::cout << std::endl;
+    //     std::cout << "Result: p2 ";
+    //     for (int i = 0; i < 3; i++)
+    //     {
+    //         std::cout << res.p2[i] << ", ";
+    //     }
+    //     std::cout << std::endl;
+    //     std::cout << m2->GetGlobalPositionFromPointer(res.p2) << std::endl;
+    //     std::cout << std::endl;
+    // }
 
     // std::string CSVifyEigen(MatrixXd m)
     // {

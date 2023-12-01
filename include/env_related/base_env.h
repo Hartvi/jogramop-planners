@@ -32,6 +32,9 @@ namespace Burs
         int
         AddObstacle(std::string obstacle_file, Eigen::Matrix3d R = Eigen::Matrix3d::Identity(), Eigen::Vector3d t = Eigen::Vector3d::Zero());
 
+        void
+        SetObstacleRotation(int id, Eigen::Matrix3d R, Eigen::Vector3d t);
+
         std::vector<std::shared_ptr<RtModels::RtModel>> obstacle_models;
         std::vector<std::shared_ptr<RtModels::RtModel>> robot_models;
         std::vector<std::string> obstacle_map;

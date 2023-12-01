@@ -18,11 +18,20 @@ using namespace std;
 int main(int argc, char **argv)
 {
     // run: make clean && make && valgrind --leak-check=full ./load_obj_test ../Models/cube.obj ../Models/cube.obj out.txt
+
+    std::cout << "Arg 1: " << argv[1] << std::endl;
+    std::string arg1 = std::string(argv[1]);
+    if (arg1 == "test")
+    {
+        std::cout << "ARGUMENT 1 WAS TEST" << std::endl;
+        // TODO: test: load test yaml or sth
+        // test::test_forward(argc, argv);
+        test::main_test();
+        std::cout << "END TEST" << std::endl;
+    }
     std::cout << "argc: ";
     std::cout << argc;
     std::cout << "\n";
-
-    test::test_forward(argc, argv);
 
     // if (argc < 5)
     // {

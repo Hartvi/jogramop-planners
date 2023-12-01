@@ -20,6 +20,9 @@ namespace Burs
         std::vector<std::optional<std::shared_ptr<RtModels::RtModel>>> segmentIdToModel;
         int numberOfModels;
 
+        std::string urdf_filename;
+        std::vector<std::string> mObjs;
+
         // Constructor
         RobotCollision(std::string urdf_filename);
 
