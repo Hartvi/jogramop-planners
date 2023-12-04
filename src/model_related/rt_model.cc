@@ -28,7 +28,7 @@ namespace RtModels
         this->pqpModel = obj1;
 
         this->SetRotation(Eigen::Matrix<PQP_REAL, 3, 3>::Identity()); // Initialized as identity matrix
-        this->SetTranslation(Eigen::Vector3<PQP_REAL>::Zero());       // Initialized as zero vector
+        this->SetTranslation(Eigen::Vector3d::Zero());                // Initialized as zero vector
         std::cout << "RtModel: Loaded " << filePath << std::endl;
 
         // this->filePath = filePath;
@@ -110,13 +110,13 @@ namespace RtModels
         Eigen::Map<Eigen::Matrix<PQP_REAL, 3, 3, Eigen::RowMajor>>(this->rotation[0], 3, 3) = this->R;
     }
 
-    void RtModel::Translate(Eigen::Vector3<double> tr)
+    void RtModel::Translate(Eigen::Vector3d tr)
     {
         this->t = this->t + tr;
         Eigen::Map<Eigen::Matrix<PQP_REAL, 3, 1>>(this->translation, 3) = this->t;
     }
 
-    void RtModel::SetTranslation(Eigen::Vector3<double> tr)
+    void RtModel::SetTranslation(Eigen::Vector3d tr)
     {
         // std::cout << "INSIDE SET TRANSLATE: tr: " << tr.transpose() << std::endl;
         this->t = tr;
@@ -125,12 +125,12 @@ namespace RtModels
         // std::cout << "INSIDE SET TRANSLATE: this->translation: " << Vector3d(this->translation).transpose() << std::endl;
     }
 
-    Eigen::Vector3<PQP_REAL> RtModel::GetGlobalPositionFromVector(Eigen::Vector3<PQP_REAL> p) const
+    Eigen::Vector3d RtModel::GetGlobalPositionFromVector(Eigen::Vector3d p) const
     {
         return this->t + this->R * p;
     }
 
-    Eigen::Vector3<PQP_REAL> RtModel::GetGlobalPositionFromPointer(PQP_REAL p[3]) const
+    Eigen::Vector3d RtModel::GetGlobalPositionFromPointer(PQP_REAL p[3]) const
     {
         Eigen::Map<Eigen::Matrix<PQP_REAL, 3, 1>> pVector(p);
         return this->t + this->R * pVector;

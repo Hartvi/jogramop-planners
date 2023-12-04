@@ -1,6 +1,7 @@
 #include <flann/flann.hpp>
 #include <Eigen/Dense>
 #include <memory>
+#include <optional>
 #include "env_related/base_env.h"
 #include "bur_related/bur_funcs.h"
 #include "bur_related/bur_tree.h"

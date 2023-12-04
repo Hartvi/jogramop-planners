@@ -1,3 +1,4 @@
+#include <optional>
 
 #ifndef BURS_H
 #define BURS_H

@@ -92,4 +92,28 @@ namespace Burs
         return output.str();
     }
 
+    std::vector<Eigen::VectorXd>
+    URDFPlanner::InterpolatePath(std::vector<Eigen::VectorXd> path, Qunit threshold)
+    {
+        std::vector<Eigen::VectorXd> dense_path;
+        dense_path.push_back(path[0]);
+        for (int i = 0; i < path.size() - 1; ++i)
+        {
+            Eigen::VectorXd last_point = dense_path[dense_path.size() - 1];
+            Eigen::VectorXd delta_path = path[i + 1] - last_point;
+            while (delta_path.norm() > threshold)
+            {
+                Eigen::VectorXd new_point = last_point + threshold * delta_path.normalized();
+                // std::cout << "Dense path length: " << dense_path.size() << std::endl;
+                dense_path.push_back(new_point);
+
+                last_point = new_point;
+                delta_path = path[i + 1] - last_point;
+            }
+            dense_path.push_back(path[i + 1]);
+        }
+
+        return dense_path;
+    }
+
 }

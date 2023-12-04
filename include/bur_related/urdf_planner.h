@@ -29,6 +29,9 @@ namespace Burs
 
         std::string
         ToString(const Eigen::VectorXd &q_in);
+
+        static std::vector<Eigen::VectorXd>
+        InterpolatePath(std::vector<Eigen::VectorXd> path, Qunit threshold = 1.0);
     };
 }
 

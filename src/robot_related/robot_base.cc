@@ -19,7 +19,7 @@ namespace Burs
 
         if (!opt_robot)
         {
-            throw std::runtime_error("Failed to parse robot URDF.");
+            throw std::runtime_error("Failed to parse robot URDF from path " + urdf_filename);
         }
 
         this->robot_model = opt_robot.value();

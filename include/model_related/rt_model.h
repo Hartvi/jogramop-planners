@@ -31,8 +31,8 @@ namespace RtModels
         void SetRotation(Eigen::Matrix<double, 3, 3> rotation);
         void SetTranslation(Eigen::Vector3d tr);
 
-        Eigen::Vector3<PQP_REAL> GetGlobalPositionFromVector(Eigen::Vector3<PQP_REAL> p) const;
-        Eigen::Vector3<PQP_REAL> GetGlobalPositionFromPointer(PQP_REAL p[3]) const;
+        Eigen::Vector3d GetGlobalPositionFromVector(Eigen::Vector3d p) const;
+        Eigen::Vector3d GetGlobalPositionFromPointer(PQP_REAL p[3]) const;
 
         /// @brief Intance-wise distance check
         void CheckDistance(PQP_DistanceResult *result, PQP_REAL rel_err, PQP_REAL abs_err, RtModel *m2);
