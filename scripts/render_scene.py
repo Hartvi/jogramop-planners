@@ -1,4 +1,5 @@
 import sys, os
+sys.path.append("/usr/local/lib/python3.10/site-packages")
 import bpy
 import numpy as np
 from scipy.spatial.transform import Rotation
@@ -199,9 +200,9 @@ def render_env(path_to_file):
         os.remove(test_png_path)
 
     camera = bpy.data.objects["Camera"]
-    camera.location = (2, 2, 2)
+    camera.location = (-2, 2, 2)
 
-    center_point = create_point((0, 0, 0), (1, 0, 0, 0.5), 0.05)
+    center_point = create_point((0, 0, 0), (1, 0, 0, 0.5), 0.01)
     look_at_object(center_point)
 
     # CANNOT OVERWRITE FILES

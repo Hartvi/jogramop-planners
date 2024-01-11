@@ -35,7 +35,7 @@ namespace Burs
             }
         }
         this->numberOfModels = numModels;
-        std::cout << "Initialized RobotCollision. Number of models: " << this->numberOfModels << std::endl;
+        // std::cout << "Initialized RobotCollision. Number of models: " << this->numberOfModels << std::endl;
     }
 
     // ForwardQ returns N rotations and translation, but we have M <= N objects, select only transforms relevant to existing meshes

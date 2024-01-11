@@ -1,9 +1,10 @@
 # Burs
 
 ## TODO:
-- use relative steps in q because of different min-max values for each joint
-- interpolate path by small steps
-- create python binding
+- Test it with jogramop environment
+- Already doing this: use relative steps in q because of different min-max values for each joint
+- Done: interpolate path by small steps
+- Done: create python binding
   - expose:
     - robot class: robot_class(urdf_path), add_obstacle(path, R, t), plan(start, goal)
 

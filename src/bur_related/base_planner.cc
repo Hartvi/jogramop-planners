@@ -60,7 +60,8 @@ namespace Burs
     //     return phi_func;
     // }
 
-    double BasePlanner::GetDeltaTk(double phi_tk, double tk, const VectorXd &q_e, const VectorXd &q_k) const
+    double
+    BasePlanner::GetDeltaTk(double phi_tk, double tk, const VectorXd &q_e, const VectorXd &q_k) const
     {
         double numerator_sum = 0;
 
@@ -74,7 +75,8 @@ namespace Burs
         return phi_tk * (1 - tk) / (r_vec.transpose() * (q_e - q_k).cwiseAbs());
     }
 
-    MatrixXd BasePlanner::GetRandomQ(const int &num_spikes) const
+    MatrixXd
+    BasePlanner::GetRandomQ(const int &num_spikes) const
     {
         MatrixXd m = MatrixXd::Random(this->q_dim, num_spikes);
         m.array() += 1.0; // Using .array() allows element-wise addition
@@ -130,7 +132,7 @@ namespace Burs
             }
 
             double d_closest = this->GetClosestDistance(q_near);
-            std::cout << "d_closest: " << d_closest << std::endl;
+            // std::cout << "d_closest: " << d_closest << std::endl;
             if (d_closest < 1e-3)
             {
                 std::cout << "CLOSEST DISTANCE TOO SMALL" << std::endl;
@@ -198,7 +200,7 @@ namespace Burs
         while (delta_s >= this->d_crit)
         {
             double d_closest = this->GetClosestDistance(q_n);
-            std::cout << "d_closest: " << d_closest << std::endl;
+            // std::cout << "d_closest: " << d_closest << std::endl;
 
             if (d_closest > this->d_crit)
             {
@@ -302,12 +304,13 @@ namespace Burs
 
     std::vector<Eigen::VectorXd> BasePlanner::Path(std::shared_ptr<BurTree> t_a, int a_closest, std::shared_ptr<BurTree> t_b, int b_closest)
     {
-        std::cout << "PATH: " << std::endl;
-        std::cout << "A closest: " << t_a->GetQ(a_closest).transpose() << std::endl;
-        std::cout << "B closest: " << t_b->GetQ(b_closest).transpose() << std::endl;
+        // std::cout << "PATH: " << std::endl;
+        // std::cout << "A closest: " << t_a->GetQ(a_closest).transpose() << std::endl;
+        // std::cout << "B closest: " << t_b->GetQ(b_closest).transpose() << std::endl;
         std::vector<int> res_a;
         std::vector<int> res_b;
 
+        // connect the two path from the two trees, NODE B and NODE A to each tree's roots respectively
         int node_id_a = a_closest;
         do
         {
@@ -315,11 +318,12 @@ namespace Burs
             node_id_a = t_a->GetParentIdx(node_id_a);
         } while (node_id_a != -1);
 
+        // connect the two path from the two trees, NODE B and NODE A to each tree's roots respectively
         int node_id_b = b_closest;
         do
         {
             res_b.push_back(node_id_b);
-            node_id_b = t_a->GetParentIdx(node_id_b);
+            node_id_b = t_b->GetParentIdx(node_id_b);
         } while (node_id_b != -1);
 
         std::vector<Eigen::VectorXd> final_path(res_a.size() + res_b.size());
@@ -341,7 +345,7 @@ namespace Burs
             ++k;
         }
 
-        std::cout << "END PATH" << std::endl;
+        // std::cout << "END PATH" << std::endl;
         return final_path;
     }
 }

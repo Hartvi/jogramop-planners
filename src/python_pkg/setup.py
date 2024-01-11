@@ -20,7 +20,8 @@ def main():
             up + robot_related + "robot_base.cc",
             up + robot_related + "robot_collision.cc",
         ],
-        include_dirs=['/home/hartvi/Documents/CVUT/diploma_thesis/burs_of_free_space/include/', '/usr/include/eigen3/', '/usr/include/', '/usr/include/python3.8', '/home/hartvi/Documents/CVUT/diploma_thesis/PQP/include/'],  
+        # include_dirs=['/home/hartvi/Documents/CVUT/diploma_thesis/burs_of_free_space/include/', '/usr/include/eigen3/', '/usr/include/', '/usr/include/python3.8', '/home/hartvi/Documents/CVUT/diploma_thesis/PQP/include/'],  
+        include_dirs=['/home/hartvi/Documents/CVUT/diploma_thesis/burs_of_free_space/include/', '/usr/include/eigen3/', '/usr/include/', '/usr/include/python3.9', '/home/hartvi/Documents/CVUT/diploma_thesis/PQP/include/'],  
         library_dirs=['/home/hartvi/Documents/CVUT/diploma_thesis/PQP/lib/'],  # Add any library directories if you're linking against external libraries
         libraries=['kdl_parser', 'urdf', 'lz4', 'PQP', 'flann'],  # Add the names of the libraries you're linking against (without 'lib' prefix and '.so' or '.dll' suffix)
         extra_compile_args=['-std=c++17',  '-Wall', '-Wextra', '-Wpedantic']  # Specify C++17 standard

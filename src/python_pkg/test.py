@@ -1,14 +1,6 @@
 import sys
 import Burs
 
-# Check if the major and minor version of Python is 3.8
-if sys.version_info.major == 3 and sys.version_info.minor == 8:
-    # Your code here
-    print("Running on Python 3.8.x")
-else:
-    # Exit the script if not running on Python 3.8
-    print("This script requires Python 3.8.x")
-    sys.exit(1)
 
 
 def main(args):

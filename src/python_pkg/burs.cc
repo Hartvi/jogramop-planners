@@ -1,9 +1,17 @@
 #define TINYOBJLOADER_IMPLEMENTATION
 #include "model_related/tiny_obj_loader.h"
-#include <python3.8/Python.h>
+#include <python3.9/Python.h>
+#include <fstream>
 
 #include "bur_related/urdf_planner.h"
 #include <Python.h>
+
+/*
+TODOs
+- animation
+- random obstacle generation
+- connect to simulation environment
+*/
 
 Eigen::VectorXd PyListToVectorXd(PyObject *pyList)
 {
@@ -272,10 +280,10 @@ static PyObject *URDFPlanner_SetObstacleRotation(URDFPlannerObject *self, PyObje
 
 static PyObject *URDFPlanner_ToString(URDFPlannerObject *self, PyObject *args)
 {
-    PyObject *py_q_in;
+    PyObject *py_q_in, *py_obstacles;
 
     // Extract arguments from Python
-    if (!PyArg_ParseTuple(args, "O", &py_q_in))
+    if (!PyArg_ParseTuple(args, "Op", &py_q_in, &py_obstacles))
     {
         return NULL;
     }
@@ -283,8 +291,13 @@ static PyObject *URDFPlanner_ToString(URDFPlannerObject *self, PyObject *args)
     try
     {
         Eigen::VectorXd q_in = PyListToVectorXd(py_q_in);
-        std::string result = self->planner->ToString(q_in);
-        return PyUnicode_FromString(result.c_str());
+        bool obstacle_only = PyObject_IsTrue(py_obstacles);
+
+        std::ostringstream res;
+
+        res << self->planner->ToString(q_in, obstacle_only);
+
+        return PyUnicode_FromString(res.str().c_str());
     }
     catch (const std::exception &e)
     {
@@ -292,6 +305,32 @@ static PyObject *URDFPlanner_ToString(URDFPlannerObject *self, PyObject *args)
         return NULL;
     }
 }
+
+// static PyObject *URDFPlanner_StringifyPath(URDFPlannerObject *self, PyObject *args)
+// {
+//     PyObject *py_path;
+
+//     // Extract arguments from Python
+//     if (!PyArg_ParseTuple(args, "O", &py_path))
+//     {
+//         return NULL;
+//     }
+
+//     try
+//     {
+//         Eigen::VectorXd q_in = PyListToVectorXd(py_q_in);
+//         std::ostringstream res;
+
+//         res << self->planner->StringifyPath(q_in, true);
+//         res << self->planner->ToString(q_in, false);
+//         return PyUnicode_FromString(res.str().c_str());
+//     }
+//     catch (const std::exception &e)
+//     {
+//         PyErr_SetString(PyExc_RuntimeError, e.what());
+//         return NULL;
+//     }
+// }
 
 static PyObject *URDFPlanner_InterpolatePath(URDFPlannerObject *self, PyObject *args)
 {

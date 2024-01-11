@@ -29,7 +29,7 @@ namespace RtModels
 
         this->SetRotation(Eigen::Matrix<PQP_REAL, 3, 3>::Identity()); // Initialized as identity matrix
         this->SetTranslation(Eigen::Vector3d::Zero());                // Initialized as zero vector
-        std::cout << "RtModel: Loaded " << filePath << std::endl;
+        // std::cout << "RtModel: Loaded " << filePath << std::endl;
 
         // this->filePath = filePath;
     }

@@ -20,7 +20,7 @@ namespace pqploader
 
         if (!reader.Warning().empty())
         {
-            std::cout << "[WARN] TinyObjReader: " << reader.Warning();
+            // std::cout << "[WARN] TinyObjReader: " << reader.Warning();
         }
     }
 
@@ -49,7 +49,7 @@ namespace pqploader
 
         if (!reader.Warning().empty())
         {
-            std::cout << "[WARN] TinyObjReader: " << reader.Warning();
+            // std::cout << "[WARN] TinyObjReader: " << reader.Warning();
         }
 
         auto &attrib = reader.GetAttrib();
@@ -108,7 +108,7 @@ namespace pqploader
     {
         if (!reader.Warning().empty())
         {
-            std::cout << "[WARN] TinyObjReader: " << reader.Warning() << std::endl;
+            // std::cout << "[WARN] TinyObjReader: " << reader.Warning() << std::endl;
         }
 
         auto &attrib = reader.GetAttrib();

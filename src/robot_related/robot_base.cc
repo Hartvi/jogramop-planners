@@ -416,45 +416,60 @@ namespace Burs
             joint_positions(i) = q_in(i);
         }
 
-        KDL::Frame segment_pose;
-        if (fk_solver.JntToCart(joint_positions, segment_pose, ith_distal_point) >= 0)
+        // why does it fail when i use segment_poses instead of just a single pose
+        // CAUSE: it returns -1 for all errors, regardless of what you did wrong
+        // solution: https://github.com/orocos/orocos_kinematics_dynamics/blob/master/orocos_kdl/src/chainfksolverpos_recursive.cpp
+
+        std::vector<KDL::Frame> segment_poses(this->kdl_chain.getNrOfSegments());
+        double radius = 0.0;
+        if (fk_solver.JntToCart(joint_positions, segment_poses) >= 0)
         {
-            Eigen::Vector3d position(segment_pose.p.x(), segment_pose.p.y(), segment_pose.p.z());
-            // std::cout << "GetRadius position: " << position.transpose() << std::endl;
-
-            KDL::Vector joint_axis_local = this->kdl_chain.getSegment(ith_distal_point).getJoint().JointAxis();
-
-            KDL::Frame end_effector_pose;
-            if (fk_solver.JntToCart(joint_positions, end_effector_pose) >= 0)
+            for (unsigned int i = 0; i < segment_poses.size(); ++i)
             {
-                KDL::Vector end_effector_kdl = end_effector_pose.p;
-                Eigen::Vector3d end_effector(end_effector_kdl.x(), end_effector_kdl.y(), end_effector_kdl.z());
+                auto segment_pose = segment_poses[i];
 
-                // Transform the local joint axis to the world reference frame
-                KDL::Vector joint_axis_world = segment_pose.M * joint_axis_local;
-                // std::cout << "GetRadius axis: " << joint_axis_world << std::endl;
-                Eigen::Vector3d joint_axis(joint_axis_world.x(), joint_axis_world.y(), joint_axis_world.z());
+                Eigen::Vector3d position(segment_pose.p.x(), segment_pose.p.y(), segment_pose.p.z());
+                // std::cout << "GetRadius position: " << position.transpose() << std::endl;
 
-                Eigen::Vector3d diff = end_effector - position;
-                // Project the end effector onto the plane defined by the joint axis
-                double dot_product = diff.dot(joint_axis);
-                // joint_axis has norm = 1 => NO NORMALIZATION NECESSARY
-                Eigen::Vector3d projection = diff - dot_product * joint_axis;
+                KDL::Vector joint_axis_local = this->kdl_chain.getSegment(ith_distal_point).getJoint().JointAxis();
 
-                // Return the norm (distance) of the projection
+                KDL::Frame end_effector_pose;
+                if (fk_solver.JntToCart(joint_positions, end_effector_pose) >= 0)
+                {
+                    KDL::Vector end_effector_kdl = end_effector_pose.p;
+                    Eigen::Vector3d end_effector(end_effector_kdl.x(), end_effector_kdl.y(), end_effector_kdl.z());
 
-                // std::cout << "Radius distance " << ith_distal_point << ": " << projection.norm() << std::endl;
-                return projection.norm();
-            }
-            else
-            {
-                throw std::runtime_error("Failed to calculate end-effector pose for radius calculation.");
+                    // Transform the local joint axis to the world reference frame
+                    KDL::Vector joint_axis_world = segment_pose.M * joint_axis_local;
+                    // std::cout << "GetRadius axis: " << joint_axis_world << std::endl;
+                    Eigen::Vector3d joint_axis(joint_axis_world.x(), joint_axis_world.y(), joint_axis_world.z());
+
+                    Eigen::Vector3d diff = end_effector - position;
+                    // Project the end effector onto the plane defined by the joint axis
+                    double dot_product = diff.dot(joint_axis);
+
+                    // joint_axis has norm = 1 => NO NORMALIZATION NECESSARY
+                    Eigen::Vector3d projection = diff - dot_product * joint_axis;
+
+                    // Update the radius
+                    // std::cout << "Radius distance " << ith_distal_point << ": " << projection.norm() << std::endl;
+                    double tmp_radius = projection.norm();
+                    if (tmp_radius > radius)
+                    {
+                        radius = tmp_radius;
+                    }
+                }
+                else
+                {
+                    throw std::runtime_error("Failed to calculate end-effector pose for radius calculation.");
+                }
             }
         }
         else
         {
             throw std::runtime_error("Forward kinematics solver failed at segment " + std::to_string(ith_distal_point));
         }
+        return radius;
     }
 
     RadiusFunc

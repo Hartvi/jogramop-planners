@@ -14,6 +14,9 @@
 #include <fstream>
 // #include <yaml-cpp/yaml.h>
 #include <cstdlib>
+#include <chrono>
+#include <iomanip>
+#include <time.h>
 
 #include "test_related/test_urdf.h"
 
@@ -47,11 +50,129 @@ namespace test
         return R;
     }
 
+    std::string getCurrentTimestamp()
+    {
+        // Get current time
+        auto now = std::chrono::system_clock::now();
+        auto in_time_t = std::chrono::system_clock::to_time_t(now);
+
+        // Convert to local time
+        std::tm buf;
+        localtime_r(&in_time_t, &buf); // Using localtime_r for thread safety
+
+        // Format the time as a string
+        std::ostringstream ss;
+        ss << std::put_time(&buf, "%Y-%m-%d_%H-%M-%S");
+        return ss.str();
+    }
+
+    std::string joinWithCurrentDirectory(const std::string &filename)
+    {
+        std::filesystem::path currentDir = std::filesystem::current_path();
+        std::filesystem::path fullPath = currentDir / filename;
+        return fullPath.string();
+    }
+
+    // return random 2D vector in the inter-circular area of two concentric circles in the origin with radii `min` and `max`
+    Eigen::Vector3d GetRandom2DPosition(double min, double max)
+    {
+        Eigen::Vector2d a = Eigen::Vector2d::Random();
+        double random_angle = a(0) * M_PI;
+        double random_distance = (a(1) + 1) / 2.0 * (max - min) + min;
+        Eigen::Vector3d v = Eigen::Vector3d(random_distance * cos(random_angle), random_distance * sin(random_angle), 0.0);
+        return v;
+    }
+
+    std::string GenerateRandomExperiment(const unsigned int &num_obstacles)
+    {
+        std::string obstacle_path = "/home/hartvi/Documents/CVUT/diploma_thesis/Models/cube.obj";
+        std::string robot_urdf_path = "/home/hartvi/Documents/CVUT/diploma_thesis/burs_of_free_space/jogramop/robots/franka_panda/mobile_panda.urdf";
+        int max_iters = 100;
+        Meters d_crit = 0.1;
+        Relative delta_q = 1.0;
+        Relative epsilon_q = 0.028;
+        int num_spikes = 7;
+
+        double minDistanceFromCenter = 1.5; // cube is 1 meter in radius => this will be 0.5 from the center, 0.3 for diagonal positions
+        double maxDistanceFromCenter = 2.0;
+
+        URDFPlanner urdf_planner(robot_urdf_path, max_iters, d_crit, delta_q, epsilon_q, num_spikes);
+
+        for (unsigned int i = 0; i < num_obstacles; ++i)
+        {
+            // random position not colliding with the robot by default (I hope)
+            Eigen::Vector3d obstacle_position = GetRandom2DPosition(minDistanceFromCenter, maxDistanceFromCenter);
+
+            // std::cout << "random obstacle position: " << obstacle_position.transpose() << std::endl;
+            urdf_planner.AddObstacle(obstacle_path, Eigen::Matrix3d::Identity(), obstacle_position);
+        }
+
+        Eigen::MatrixXd start_goal = urdf_planner.mBasePlanner->GetRandomQ(2);
+
+        // plan path
+        Eigen::VectorXd start = start_goal.col(0);
+        Eigen::VectorXd goal = start_goal.col(1);
+
+        auto path_opt = urdf_planner.PlanPath(start, goal);
+        if (path_opt)
+        {
+            auto path = path_opt.value();
+            path = Burs::URDFPlanner::InterpolatePath(path, 0.1);
+
+            std::string test_file_name = "file_" + getCurrentTimestamp() + ".txt";
+
+            std::ofstream test_file(test_file_name);
+
+            if (test_file.is_open())
+            {
+                test_file << urdf_planner.StringifyPath(path);
+                test_file.close();
+            }
+            return test_file_name;
+
+            // TODO: create random cubes in positions in this range and check if start and goal are collision free, then try to plan a path and then VISUALIZE
+        }
+        else
+        {
+            std::cout << "Path planning failed" << std::endl;
+            return "";
+        }
+    }
+
     void main_test()
     {
         // TODO
         // test
         // visualize path
+
+        for (unsigned int i = 0; i < 1000; ++i)
+        {
+            unsigned int num_obstacles = 0;
+
+            std::string file_name = GenerateRandomExperiment(num_obstacles);
+            // std::cout << "Just planned a path" << std::endl;
+
+            continue;
+            if (file_name != "")
+            {
+                std::string path_name = joinWithCurrentDirectory(file_name);
+                std::string str_command = "python3.10 ../scripts/animate_scene.py " + path_name;
+                const char *command = str_command.c_str();
+                int result = system(command);
+
+                if (result != 0)
+                {
+                    std::cout << "Calling `" << command << "` failed" << std::endl;
+                }
+            }
+            else
+            {
+                std::cout << "Path returned by path planner was invalid" << std::endl;
+            }
+        }
+
+        return;
+
         std::string obstacle_path = "/home/hartvi/Documents/CVUT/diploma_thesis/Models/cube.obj";
         Eigen::Vector3d obstacle_position = Eigen::Vector3d(-0.5, -1.5, -0.5);
         Eigen::Vector3d obstacle_position2 = Eigen::Vector3d(1.6477, 0.25852, 0.66459);
@@ -84,10 +205,13 @@ namespace test
         min_q(1) = 0;
         max_q(0) = 0;
         max_q(1) = 0;
+        Eigen::MatrixXd start_goal = urdf_planner.mBasePlanner->GetRandomQ(2);
 
         // plan path
-        Eigen::VectorXd start = min_q;
-        Eigen::VectorXd goal = max_q;
+        // Eigen::VectorXd start = min_q;
+        // Eigen::VectorXd goal = max_q;
+        Eigen::VectorXd start = start_goal.col(0);
+        Eigen::VectorXd goal = start_goal.col(1);
 
         auto opt_path = urdf_planner.PlanPath(start, goal);
 
@@ -96,7 +220,7 @@ namespace test
         {
             path = opt_path.value();
             std::cout << "START: Interpolate path" << std::endl;
-            path = URDFPlanner::InterpolatePath(path);
+            path = URDFPlanner::InterpolatePath(path, 0.5);
             std::cout << "FINISH: Interpolate path. Length: " << path.size() << std::endl;
         }
         else
@@ -108,16 +232,12 @@ namespace test
 
         std::string test_file_name = "test_file.txt";
         std::ofstream test_file(test_file_name);
-        // for (int i = 0; i <)
-        //     urdf_planner.mCollisionEnv->SetPoses(q_waypoint);
+
         std::cout << "Closest distance from robot to obstacles: " << urdf_planner.mCollisionEnv->GetClosestDistance() << std::endl;
         // urdf_planner.mCollisionEnv->myURDFRobot->
         if (test_file.is_open())
         {
-            for (Eigen::VectorXd &point : path)
-            {
-                test_file << urdf_planner.ToString(point);
-            }
+            test_file << urdf_planner.StringifyPath(path);
             test_file.close();
             const char *command = "python3.10 ../scripts/render_scene.py test_file.txt";
             int result = system(command);

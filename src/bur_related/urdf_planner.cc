@@ -14,7 +14,7 @@ namespace Burs
         this->mCollisionEnv = std::make_shared<CollisionEnv>(urdf_file);
 
         int q_dim = this->GetNrOfJoints();
-        std::cout << "Starting URDFPlanner..\n File: " << urdf_file << "\nq_dim: " << q_dim << std::endl;
+        // std::cout << "Starting URDFPlanner..\n File: " << urdf_file << "\nq_dim: " << q_dim << std::endl;
 
         ForwardKinematics fk = this->mCollisionEnv->myURDFRobot->GetForwardPointFunc();
         RadiusFunc rf = this->mCollisionEnv->myURDFRobot->GetRadiusFunc();
@@ -60,7 +60,7 @@ namespace Burs
     int
     URDFPlanner::AddObstacle(std::string obstacle_file, Eigen::Matrix3d R, Eigen::Vector3d t)
     {
-        std::cout << "URDFPlanner: adding obstacle " << obstacle_file << std::endl;
+        // std::cout << "URDFPlanner: adding obstacle " << obstacle_file << std::endl;
         return this->mCollisionEnv->AddObstacle(obstacle_file, R, t);
     }
 
@@ -73,25 +73,50 @@ namespace Burs
     }
 
     std::string
-    URDFPlanner::ToString(const Eigen::VectorXd &q_in)
+    URDFPlanner::ToString(const Eigen::VectorXd &q_in, bool obstacles)
     {
         std::ostringstream output;
         auto env = this->mCollisionEnv;
         env->SetPoses(q_in);
 
-        for (int i = 0; i < env->robot_models.size(); ++i)
+        if (obstacles)
         {
-            // environment has the OBJs
-            output << env->robot_models[i]->ToString();
+            // std::cout << "URDFPlanner: number of obstacles: " << env->obstacle_models.size() << std::endl;
+            for (int i = 0; i < env->obstacle_models.size(); ++i)
+            {
+                output << "obstacle," << i << std::endl;
+                output << env->obstacle_models[i]->ToString();
+            }
         }
-        std::cout << "URDFPlanner: number of obstacles: " << env->obstacle_models.size() << std::endl;
-        for (int i = 0; i < env->obstacle_models.size(); ++i)
+        else
         {
-            output << env->obstacle_models[i]->ToString();
+            for (int i = 0; i < env->robot_models.size(); ++i)
+            {
+                // environment has the OBJs
+                output << "robot," << i << std::endl;
+                output << env->robot_models[i]->ToString();
+            }
         }
         return output.str();
     }
 
+    std::string
+    URDFPlanner::StringifyPath(std::vector<Eigen::VectorXd> path)
+    {
+        std::ostringstream output;
+
+        // first set the obstacles. Planning is time independent, so the obstacles are set once before planning.
+        output << this->ToString(path[0], true);
+
+        // go through all intermediate configurations to visualize the path
+        for (Eigen::VectorXd &point : path)
+        {
+            output << this->ToString(point, false);
+        }
+        return output.str();
+    }
+
+    // static methods
     std::vector<Eigen::VectorXd>
     URDFPlanner::InterpolatePath(std::vector<Eigen::VectorXd> path, Qunit threshold)
     {
@@ -115,5 +140,4 @@ namespace Burs
 
         return dense_path;
     }
-
 }

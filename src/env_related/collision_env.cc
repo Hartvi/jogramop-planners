@@ -9,7 +9,7 @@ namespace Burs
 
         std::vector<std::shared_ptr<RtModels::RtModel>> mm = this->myURDFRobot->GetModels();
 
-        std::cout << "CollisionEnv: Number of objects: " << mm.size() << std::endl;
+        // std::cout << "CollisionEnv: Number of objects: " << mm.size() << std::endl;
 
         for (auto &m : this->myURDFRobot->GetModels())
         {

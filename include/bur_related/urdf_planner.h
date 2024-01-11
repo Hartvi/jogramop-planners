@@ -28,10 +28,12 @@ namespace Burs
         SetObstacleRotation(int id, Eigen::Matrix3d R, Eigen::Vector3d t);
 
         std::string
-        ToString(const Eigen::VectorXd &q_in);
+        ToString(const Eigen::VectorXd &q_in, bool include_obstacles);
 
-        static std::vector<Eigen::VectorXd>
-        InterpolatePath(std::vector<Eigen::VectorXd> path, Qunit threshold = 1.0);
+        std::string
+        StringifyPath(std::vector<Eigen::VectorXd> path);
+
+        static std::vector<Eigen::VectorXd> InterpolatePath(std::vector<Eigen::VectorXd> path, Qunit threshold = 1.0);
     };
 }
 
