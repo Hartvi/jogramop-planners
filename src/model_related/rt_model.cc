@@ -34,7 +34,8 @@ namespace RtModels
         // this->filePath = filePath;
     }
 
-    std::string RtModel::GetFilePath() const
+    std::string
+    RtModel::GetFilePath() const
     {
         std::filesystem::path cwd = std::filesystem::current_path();
         std::filesystem::path relPath(this->filePath);
@@ -42,7 +43,8 @@ namespace RtModels
         return absPath.string();
     }
 
-    std::string RtModel::ToString()
+    std::string
+    RtModel::ToString()
     {
         std::ostringstream os;
 
@@ -98,25 +100,29 @@ namespace RtModels
         return this->translation;
     }
 
-    void RtModel::Rotate(Eigen::Matrix<double, 3, 3> rotation)
+    void
+    RtModel::Rotate(Eigen::Matrix<double, 3, 3> rotation)
     {
         this->R = rotation * this->R;
         Eigen::Map<Eigen::Matrix<PQP_REAL, 3, 3, Eigen::RowMajor>>(this->rotation[0], 3, 3) = this->R;
     }
 
-    void RtModel::SetRotation(Eigen::Matrix<double, 3, 3> rotation)
+    void
+    RtModel::SetRotation(Eigen::Matrix<double, 3, 3> rotation)
     {
         this->R = rotation;
         Eigen::Map<Eigen::Matrix<PQP_REAL, 3, 3, Eigen::RowMajor>>(this->rotation[0], 3, 3) = this->R;
     }
 
-    void RtModel::Translate(Eigen::Vector3d tr)
+    void
+    RtModel::Translate(Eigen::Vector3d tr)
     {
         this->t = this->t + tr;
         Eigen::Map<Eigen::Matrix<PQP_REAL, 3, 1>>(this->translation, 3) = this->t;
     }
 
-    void RtModel::SetTranslation(Eigen::Vector3d tr)
+    void
+    RtModel::SetTranslation(Eigen::Vector3d tr)
     {
         // std::cout << "INSIDE SET TRANSLATE: tr: " << tr.transpose() << std::endl;
         this->t = tr;
@@ -125,28 +131,33 @@ namespace RtModels
         // std::cout << "INSIDE SET TRANSLATE: this->translation: " << Vector3d(this->translation).transpose() << std::endl;
     }
 
-    Eigen::Vector3d RtModel::GetGlobalPositionFromVector(Eigen::Vector3d p) const
+    Eigen::Vector3d
+    RtModel::GetGlobalPositionFromVector(Eigen::Vector3d p) const
     {
         return this->t + this->R * p;
     }
 
-    Eigen::Vector3d RtModel::GetGlobalPositionFromPointer(PQP_REAL p[3]) const
+    Eigen::Vector3d
+    RtModel::GetGlobalPositionFromPointer(PQP_REAL p[3]) const
     {
         Eigen::Map<Eigen::Matrix<PQP_REAL, 3, 1>> pVector(p);
         return this->t + this->R * pVector;
     }
 
-    void RtModel::CheckDistanceStatic(PQP_DistanceResult *result, PQP_REAL rel_err, PQP_REAL abs_err, RtModel *m1, RtModel *m2)
+    void
+    RtModel::CheckDistanceStatic(PQP_DistanceResult *result, PQP_REAL rel_err, PQP_REAL abs_err, RtModel *m1, RtModel *m2)
     {
         PQP_Distance(result, m1->getR(), m1->getT(), m1->pqpModel.get(), m2->getR(), m2->getT(), m2->pqpModel.get(), rel_err, abs_err);
     }
 
-    void RtModel::CollideStatic(PQP_CollideResult *result, RtModel *m1, RtModel *m2)
+    void
+    RtModel::CollideStatic(PQP_CollideResult *result, RtModel *m1, RtModel *m2)
     {
         PQP_Collide(result, m1->getR(), m1->getT(), m1->pqpModel.get(), m2->getR(), m2->getT(), m2->pqpModel.get());
     }
 
-    void RtModel::CheckDistance(PQP_DistanceResult *result, PQP_REAL rel_err, PQP_REAL abs_err, RtModel *m2)
+    void
+    RtModel::CheckDistance(PQP_DistanceResult *result, PQP_REAL rel_err, PQP_REAL abs_err, RtModel *m2)
     {
         // std::cout << "inside distance check" << std::endl;
         // std::cout << "robot position " << Vector3d(this->getT()).transpose() << std::endl;
@@ -154,7 +165,8 @@ namespace RtModels
         PQP_Distance(result, this->getR(), this->getT(), this->pqpModel.get(), m2->getR(), m2->getT(), m2->pqpModel.get(), rel_err, abs_err);
     }
 
-    void RtModel::Collide(PQP_CollideResult *result, RtModel *m2)
+    void
+    RtModel::Collide(PQP_CollideResult *result, RtModel *m2)
     {
         // std::cout << "Checkin collision at m1: " << Vector3d(this->getT()) << " m2: " << Vector3d(m2->getT()) << std::endl;
         PQP_Collide(result, this->getR(), this->getT(), this->pqpModel.get(), m2->getR(), m2->getT(), m2->pqpModel.get());

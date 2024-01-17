@@ -16,8 +16,9 @@ namespace Burs
         int q_dim = this->GetNrOfJoints();
         // std::cout << "Starting URDFPlanner..\n File: " << urdf_file << "\nq_dim: " << q_dim << std::endl;
 
-        ForwardKinematics fk = this->mCollisionEnv->myURDFRobot->GetForwardPointFunc();
-        RadiusFunc rf = this->mCollisionEnv->myURDFRobot->GetRadiusFunc();
+        // ForwardKinematics fk = this->mCollisionEnv->myURDFRobot->GetForwardPointFunc();
+        ForwardKinematicsParallel fkp = this->mCollisionEnv->myURDFRobot->GetForwardPointParallelFunc();
+        RadiusFuncParallel rf = this->mCollisionEnv->myURDFRobot->GetRadiusFunc();
         ForwardRt frt = this->mCollisionEnv->myURDFRobot->GetSelectedForwardRtFunc();
 
         std::vector<std::vector<double>> min_max_bounds = this->mCollisionEnv->myURDFRobot->GetMinMaxBounds();
@@ -38,7 +39,7 @@ namespace Burs
         }
         // BasePlanner(int q_dim, ForwardKinematics f, int max_iters, double d_crit, double delta_q, double epsilon_q, MatrixXd bounds, RadiusFunc radius_func, int num_spikes);
         this->mBasePlanner = std::make_shared<BasePlanner>(
-            q_dim, fk, max_iters, d_crit, delta_q, epsilon_q, minMaxBounds, rf, num_spikes);
+            q_dim, fkp, max_iters, d_crit, delta_q, epsilon_q, minMaxBounds, rf, num_spikes);
 
         this->mBasePlanner->SetBurEnv(this->mCollisionEnv);
     }

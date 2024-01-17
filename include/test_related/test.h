@@ -83,11 +83,11 @@ namespace test
         return v;
     }
 
-    std::string GenerateRandomExperiment(const unsigned int &num_obstacles)
+    URDFPlanner GenerateRandomScenario(const unsigned int &num_obstacles)
     {
         std::string obstacle_path = "/home/hartvi/Documents/CVUT/diploma_thesis/Models/cube.obj";
         std::string robot_urdf_path = "/home/hartvi/Documents/CVUT/diploma_thesis/burs_of_free_space/jogramop/robots/franka_panda/mobile_panda.urdf";
-        int max_iters = 100;
+        int max_iters = 1000;
         Meters d_crit = 0.1;
         Relative delta_q = 1.0;
         Relative epsilon_q = 0.028;
@@ -110,6 +110,80 @@ namespace test
         Eigen::MatrixXd start_goal = urdf_planner.mBasePlanner->GetRandomQ(2);
 
         // plan path
+        // Eigen::VectorXd start = start_goal.col(0);
+        // Eigen::VectorXd goal = start_goal.col(1);
+        return urdf_planner;
+    }
+
+    std::string GenerateFailingCase(const unsigned int &num_obstacles)
+    {
+        auto urdf_planner = GenerateRandomScenario(num_obstacles);
+        Eigen::MatrixXd start_goal = urdf_planner.mBasePlanner->GetRandomQ(2);
+
+        Eigen::VectorXd start = start_goal.col(0);
+        Eigen::VectorXd goal = start_goal.col(1);
+
+        auto path_opt = urdf_planner.PlanPath(start, goal);
+        if (!path_opt)
+        {
+
+            std::string test_file_name = "fail_file_" + getCurrentTimestamp() + ".txt";
+            std::vector<Eigen::VectorXd> path(2);
+            path[0] = start;
+            path[1] = goal;
+            if (!urdf_planner.mBasePlanner->IsColliding(start) && !urdf_planner.mBasePlanner->IsColliding(goal))
+            {
+                std::ofstream test_file(test_file_name);
+
+                if (test_file.is_open())
+                {
+                    // test_file << urdf_planner.StringifyPath(path);
+                    test_file << urdf_planner.mCollisionEnv->ToScenarioString(start, goal);
+                    test_file.close();
+                }
+                std::cout << "Path planning failed" << std::endl;
+                return test_file_name;
+            }
+            else
+            {
+                return "";
+            }
+        }
+        else
+        {
+            return "";
+        }
+    }
+
+    std::string GenerateRandomExperiment(const unsigned int &num_obstacles)
+    {
+        auto urdf_planner = GenerateRandomScenario(num_obstacles);
+        // std::string obstacle_path = "/home/hartvi/Documents/CVUT/diploma_thesis/Models/cube.obj";
+        // std::string robot_urdf_path = "/home/hartvi/Documents/CVUT/diploma_thesis/burs_of_free_space/jogramop/robots/franka_panda/mobile_panda.urdf";
+        // int max_iters = 1000;
+        // Meters d_crit = 0.1;
+        // Relative delta_q = 1.0;
+        // Relative epsilon_q = 0.028;
+        // int num_spikes = 7;
+
+        // double minDistanceFromCenter = 1.5; // cube is 1 meter in radius => this will be 0.5 from the center, 0.3 for diagonal positions
+        // double maxDistanceFromCenter = 2.0;
+
+        // URDFPlanner urdf_planner(robot_urdf_path, max_iters, d_crit, delta_q, epsilon_q, num_spikes);
+
+        // for (unsigned int i = 0; i < num_obstacles; ++i)
+        // {
+        //     // random position not colliding with the robot by default (I hope)
+        //     Eigen::Vector3d obstacle_position = GetRandom2DPosition(minDistanceFromCenter, maxDistanceFromCenter);
+
+        //     // std::cout << "random obstacle position: " << obstacle_position.transpose() << std::endl;
+        //     urdf_planner.AddObstacle(obstacle_path, Eigen::Matrix3d::Identity(), obstacle_position);
+        // }
+
+        // Eigen::MatrixXd start_goal = urdf_planner.mBasePlanner->GetRandomQ(2);
+
+        Eigen::MatrixXd start_goal = urdf_planner.mBasePlanner->GetRandomQ(2);
+        // // plan path
         Eigen::VectorXd start = start_goal.col(0);
         Eigen::VectorXd goal = start_goal.col(1);
 
@@ -128,35 +202,63 @@ namespace test
                 test_file << urdf_planner.StringifyPath(path);
                 test_file.close();
             }
+            // return "";
             return test_file_name;
 
             // TODO: create random cubes in positions in this range and check if start and goal are collision free, then try to plan a path and then VISUALIZE
         }
         else
         {
-            std::cout << "Path planning failed" << std::endl;
-            return "";
+
+            std::string test_file_name = "fail_file_" + getCurrentTimestamp() + ".txt";
+            std::vector<Eigen::VectorXd> path(2);
+            path[0] = start;
+            path[1] = goal;
+            if (!urdf_planner.mBasePlanner->IsColliding(start) && !urdf_planner.mBasePlanner->IsColliding(goal))
+            {
+                std::ofstream test_file(test_file_name);
+
+                if (test_file.is_open())
+                {
+                    test_file << urdf_planner.StringifyPath(path);
+                    test_file.close();
+                }
+                std::cout << "Path planning failed" << std::endl;
+                return "";
+                // return test_file_name;
+            }
+            else
+            {
+                return "";
+            }
         }
     }
 
     void main_test()
     {
         // TODO
-        // test
+        // test correctness of algorithm
         // visualize path
 
         for (unsigned int i = 0; i < 1000; ++i)
         {
-            unsigned int num_obstacles = 0;
+            unsigned int num_obstacles = 3;
 
             std::string file_name = GenerateRandomExperiment(num_obstacles);
+
+            // std::string file_name = GenerateFailingCase(num_obstacles);
             // std::cout << "Just planned a path" << std::endl;
 
-            continue;
+            // if (file_name != "")
+            // {
+            //     std::cout << "Created fail case" << std::endl;
+            // }
+            // continue;
             if (file_name != "")
             {
                 std::string path_name = joinWithCurrentDirectory(file_name);
                 std::string str_command = "python3.10 ../scripts/animate_scene.py " + path_name;
+                // std::string str_command = "python3.10 ../scripts/render_path_positions.py " + path_name;
                 const char *command = str_command.c_str();
                 int result = system(command);
 

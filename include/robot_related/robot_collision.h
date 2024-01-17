@@ -17,7 +17,14 @@ namespace Burs
     class RobotCollision : public RobotBase
     {
     public:
+        /* let's say it has 8 joints and 9 segment.
+         two joints could be in one and the same location without a mesh inbetween
+          that is when the optional is false
+         e.g.:
+         [====] JOINT JOINT [====] JOINT [====]
+         */
         std::vector<std::optional<std::shared_ptr<RtModels::RtModel>>> segmentIdToModel;
+
         int numberOfModels;
 
         std::string urdf_filename;
@@ -32,7 +39,8 @@ namespace Burs
 
         ForwardRt GetSelectedForwardRtFunc();
 
-        std::vector<std::shared_ptr<RtModels::RtModel>> GetModels();
+        std::vector<std::shared_ptr<RtModels::RtModel>>
+        GetModels();
     };
 
     /* Accept the three functions from outside. Link the URDF to the bur-planning algorithm. */

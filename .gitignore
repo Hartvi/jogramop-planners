@@ -1,3 +1,10 @@
+# videos
+*.mp4
+
+# misc
+*-info
+.vscode/
+
 # images
 *.png
 *.jpg

@@ -10,6 +10,7 @@
 #include <fstream>
 #include <memory>
 #include <map>
+#include <filesystem>
 
 #include <Eigen/Dense>
 
@@ -23,6 +24,8 @@ namespace Burs
     class RobotBase
     {
     public:
+        std::filesystem::path urdf_file;
+
         urdf::ModelInterfaceSharedPtr robot_model;
         KDL::Tree kdl_tree;
         std::vector<std::string> end_links;
@@ -70,17 +73,29 @@ namespace Burs
         Eigen::Vector3d
         GetForwardPoint(const int &ith_distal_point, const Eigen::VectorXd &q_in);
 
-        ForwardKinematics GetForwardPointFunc();
+        std::vector<Eigen::Vector3d>
+        GetForwardPointParallel(const Eigen::VectorXd &q_in);
+
+        ForwardKinematics
+        GetForwardPointFunc();
+
+        ForwardKinematicsParallel
+        GetForwardPointParallelFunc();
 
         // pqp_handler.kdl_chain.getNrOfSegments() gets the end-effector
-        double
-        GetRadius(const int &ith_distal_point, const Eigen::VectorXd &q_in);
+        double GetRadius(const int &ith_distal_point, const Eigen::VectorXd &q_in);
 
-        RadiusFunc
+        RadiusFuncParallel
         GetRadiusFunc();
+
+        Eigen::VectorXd
+        GetRadii(const Eigen::VectorXd &q_in);
 
         std::vector<std::vector<double>>
         GetMinMaxBounds();
+
+        std::string
+        ToString();
     };
 }
 #endif

@@ -1,4 +1,5 @@
 #include <memory>
+#include <Eigen/Dense>
 #include <string>
 #include "robot_related/robot_collision.h"
 #include "env_related/base_env.h"
@@ -18,6 +19,11 @@ namespace Burs
 
         /*Check how the jogramop environment keeps track of the object names. Maybe pass an int as obstacle ID when creating it.*/
         // void SetObstaclePose(){}
+        std::string
+        ToString();
+
+        std::string
+        ToScenarioString(Eigen::VectorXd start_q, Eigen::VectorXd goal_q);
     };
 }
 

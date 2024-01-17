@@ -15,6 +15,8 @@ namespace Burs
 
     RobotBase::RobotBase(std::string urdf_filename)
     {
+        this->urdf_file = std::filesystem::absolute(urdf_filename);
+
         auto opt_robot = this->GetRobotURDF(urdf_filename);
 
         if (!opt_robot)
@@ -391,11 +393,65 @@ namespace Burs
         }
     }
 
-    ForwardKinematics RobotBase::GetForwardPointFunc()
+    std::vector<Eigen::Vector3d>
+    RobotBase::GetForwardPointParallel(const Eigen::VectorXd &q_in)
+    {
+        KDL::ChainFkSolverPos_recursive fk_solver(this->kdl_chain);
+        // Convert Eigen vector to KDL joint array
+        size_t num_joints = this->kdl_chain.getNrOfJoints();
+
+        assert(q_in.size() == num_joints);
+
+        KDL::JntArray joint_positions(num_joints);
+
+        // theoretically don't need the joint angles after (i+1)
+        for (unsigned int i = 0; i < num_joints; ++i)
+        {
+            joint_positions(i) = q_in(i);
+        }
+
+        std::vector<KDL::Frame> segment_poses(this->kdl_chain.getNrOfSegments());
+        std::vector<Eigen::Vector3d> segment_positions(this->kdl_chain.getNrOfSegments());
+        if (fk_solver.JntToCart(joint_positions, segment_poses) >= 0)
+        {
+
+            for (unsigned int i = 0; i < this->kdl_chain.getNrOfSegments(); ++i)
+            {
+                auto segment_pose = segment_poses[i];
+                // Convert KDL position to Eigen vector
+                Eigen::Vector3d position(segment_pose.p.x(), segment_pose.p.y(), segment_pose.p.z());
+                segment_positions[i] = position;
+                // std::cout << "Forward point " << ith_distal_point << ": " << position.transpose() << std::endl;
+            }
+            // return position;
+        }
+        else
+        {
+            // Handle the error case if FK solver failed
+            // Depending on how you want to handle errors, you might throw an exception
+            // or handle it in some other way
+            // std::cout << "segment pose: " << segment_pose << std::endl;
+            throw std::runtime_error("Forward kinematics solver failed in GetForwardPointParallel");
+        }
+        return segment_positions;
+    }
+
+    ForwardKinematics
+    RobotBase::GetForwardPointFunc()
     {
         ForwardKinematics fpf = [this](const int &ith_distal_point, const VectorXd &configuration) -> Vector3d
         {
             return this->GetForwardPoint(ith_distal_point, configuration);
+        };
+        return fpf;
+    }
+
+    ForwardKinematicsParallel
+    RobotBase::GetForwardPointParallelFunc()
+    {
+        ForwardKinematicsParallel fpf = [this](const VectorXd &configuration) -> std::vector<Eigen::Vector3d>
+        {
+            return this->GetForwardPointParallel(configuration);
         };
         return fpf;
     }
@@ -416,26 +472,25 @@ namespace Burs
             joint_positions(i) = q_in(i);
         }
 
-        // why does it fail when i use segment_poses instead of just a single pose
+        // Why does it fail when i use segment_poses instead of just a single pose
         // CAUSE: it returns -1 for all errors, regardless of what you did wrong
-        // solution: https://github.com/orocos/orocos_kinematics_dynamics/blob/master/orocos_kdl/src/chainfksolverpos_recursive.cpp
+        // Solution: https://github.com/orocos/orocos_kinematics_dynamics/blob/master/orocos_kdl/src/chainfksolverpos_recursive.cpp
 
         std::vector<KDL::Frame> segment_poses(this->kdl_chain.getNrOfSegments());
         double radius = 0.0;
+        // TOOD: from position i to position i+1:end
         if (fk_solver.JntToCart(joint_positions, segment_poses) >= 0)
         {
             for (unsigned int i = 0; i < segment_poses.size(); ++i)
             {
                 auto segment_pose = segment_poses[i];
-
                 Eigen::Vector3d position(segment_pose.p.x(), segment_pose.p.y(), segment_pose.p.z());
-                // std::cout << "GetRadius position: " << position.transpose() << std::endl;
 
+                // Local axis: https://docs.ros.org/en/indigo/api/orocos_kdl/html/classKDL_1_1Joint.html#a57c97b32765b0caeb84b303d66a96a1b
                 KDL::Vector joint_axis_local = this->kdl_chain.getSegment(ith_distal_point).getJoint().JointAxis();
-
-                KDL::Frame end_effector_pose;
-                if (fk_solver.JntToCart(joint_positions, end_effector_pose) >= 0)
+                for (unsigned int k = 0; k < segment_poses.size(); ++k)
                 {
+                    KDL::Frame end_effector_pose = segment_poses[k];
                     KDL::Vector end_effector_kdl = end_effector_pose.p;
                     Eigen::Vector3d end_effector(end_effector_kdl.x(), end_effector_kdl.y(), end_effector_kdl.z());
 
@@ -459,10 +514,39 @@ namespace Burs
                         radius = tmp_radius;
                     }
                 }
-                else
-                {
-                    throw std::runtime_error("Failed to calculate end-effector pose for radius calculation.");
-                }
+
+                // std::cout << "GetRadius position: " << position.transpose() << std::endl;
+
+                // KDL::Frame end_effector_pose;
+                // if (fk_solver.JntToCart(joint_positions, end_effector_pose) >= 0)
+                // {
+                //     KDL::Vector end_effector_kdl = end_effector_pose.p;
+                //     Eigen::Vector3d end_effector(end_effector_kdl.x(), end_effector_kdl.y(), end_effector_kdl.z());
+
+                //     // Transform the local joint axis to the world reference frame
+                //     KDL::Vector joint_axis_world = segment_pose.M * joint_axis_local;
+                //     // std::cout << "GetRadius axis: " << joint_axis_world << std::endl;
+                //     Eigen::Vector3d joint_axis(joint_axis_world.x(), joint_axis_world.y(), joint_axis_world.z());
+
+                //     Eigen::Vector3d diff = end_effector - position;
+                //     // Project the end effector onto the plane defined by the joint axis
+                //     double dot_product = diff.dot(joint_axis);
+
+                //     // joint_axis has norm = 1 => NO NORMALIZATION NECESSARY
+                //     Eigen::Vector3d projection = diff - dot_product * joint_axis;
+
+                //     // Update the radius
+                //     // std::cout << "Radius distance " << ith_distal_point << ": " << projection.norm() << std::endl;
+                //     double tmp_radius = projection.norm();
+                //     if (tmp_radius > radius)
+                //     {
+                //         radius = tmp_radius;
+                //     }
+                // }
+                // else
+                // {
+                //     throw std::runtime_error("Failed to calculate end-effector pose for radius calculation.");
+                // }
             }
         }
         else
@@ -472,13 +556,124 @@ namespace Burs
         return radius;
     }
 
-    RadiusFunc
+    Eigen::VectorXd
+    RobotBase::GetRadii(const Eigen::VectorXd &q_in)
+    {
+        unsigned int num_segments = this->kdl_chain.getNrOfSegments();
+        unsigned int num_joints = this->kdl_chain.getNrOfJoints();
+        // std::cout << "Number of joints: " << num_joints << "  Number of segments: " << num_segments << std::endl;
+
+        Eigen::VectorXd radii(q_in.size());
+
+        KDL::ChainFkSolverPos_recursive fk_solver(this->kdl_chain);
+
+        assert(q_in.size() == num_joints);
+
+        KDL::JntArray joint_positions(num_joints);
+
+        for (unsigned int i = 0; i < num_joints; ++i)
+        {
+            joint_positions(i) = q_in(i);
+        }
+
+        // Why does it fail when i use segment_poses instead of just a single pose
+        // CAUSE: it returns -1 for all errors, regardless of what you did wrong
+        // Solution: https://github.com/orocos/orocos_kinematics_dynamics/blob/master/orocos_kdl/src/chainfksolverpos_recursive.cpp
+
+        std::vector<KDL::Frame> segment_poses(num_segments);
+
+        if (fk_solver.JntToCart(joint_positions, segment_poses) >= 0)
+        {
+            unsigned int j = 0;
+            for (unsigned int i = 0; i < segment_poses.size() - 1; ++i)
+            {
+                auto segment_pose = segment_poses[i];
+                Eigen::Vector3d position(segment_pose.p.x(), segment_pose.p.y(), segment_pose.p.z());
+
+                // Local axis: https://docs.ros.org/en/indigo/api/orocos_kdl/html/classKDL_1_1Joint.html#a57c97b32765b0caeb84b303d66a96a1b
+                auto joint = this->kdl_chain.getSegment(i).getJoint();
+                KDL::Vector joint_axis_local = joint.JointAxis();
+
+                // typedef enum { RotAxis,RotX,RotY,RotZ,TransAxis,TransX,TransY,TransZ,None} JointType;
+                // std::cout << "Joint: " << joint.getTypeName() << " Axis: " << joint.JointAxis() << std::endl;
+
+                if (joint.getType() == KDL::Joint::JointType::None)
+                {
+                    continue;
+                }
+
+                // Adjust the joint axis for translational joints
+                // TODO: this should actually be a flat plane, since translation joints have their axes in infinity
+                //  A small cylinder like this actually does take into account at least the direction the joint can move
+                switch (joint.getType())
+                {
+                case KDL::Joint::TransX:
+                    joint_axis_local = KDL::Vector(0, 1, 0);
+                    break;
+                case KDL::Joint::TransY:
+                    joint_axis_local = KDL::Vector(0, 0, 1);
+                    break;
+                case KDL::Joint::TransZ:
+                    joint_axis_local = KDL::Vector(1, 0, 0);
+                    break;
+                default:
+                    break;
+                }
+
+                double radius = 0.0;
+
+                for (unsigned int k = i + 1; k < segment_poses.size(); ++k)
+                {
+                    KDL::Frame next_segment_pose = segment_poses[k];
+                    KDL::Vector next_segment_kdl = next_segment_pose.p;
+                    Eigen::Vector3d next_segment(next_segment_kdl.x(), next_segment_kdl.y(), next_segment_kdl.z());
+
+                    // Transform the local joint axis to the world reference frame
+                    KDL::Vector joint_axis_world = segment_pose.M * joint_axis_local;
+                    // std::cout << "GetRadius axis: " << joint_axis_world << std::endl;
+                    Eigen::Vector3d joint_axis(joint_axis_world.x(), joint_axis_world.y(), joint_axis_world.z());
+
+                    Eigen::Vector3d diff = next_segment - position;
+                    // Project the end effector onto the plane defined by the joint axis
+                    double dot_product = diff.dot(joint_axis);
+
+                    // joint_axis has norm = 1 => NO NORMALIZATION NECESSARY
+                    Eigen::Vector3d projection = diff - dot_product * joint_axis;
+
+                    // Update the radius
+                    // std::cout << "Radius distance " << ith_distal_point << ": " << projection.norm() << std::endl;
+                    double tmp_radius = projection.norm();
+                    if (tmp_radius > radius)
+                    {
+                        radius = tmp_radius;
+                    }
+                }
+
+                radii(j) = radius;
+                ++j;
+            }
+        }
+        else
+        {
+            throw std::runtime_error("Forward kinematics solver failed in GetRadii");
+        }
+        return radii;
+    }
+
+    RadiusFuncParallel
     RobotBase::GetRadiusFunc()
     {
-        RadiusFunc rf = [this](const int &ith_distal_point, const VectorXd &configuration) -> double
+        RadiusFuncParallel rf = [this](const VectorXd &configuration) -> Eigen::VectorXd
         {
-            return this->GetRadius(ith_distal_point, configuration);
+            // return this->GetRadius(ith_distal_point, configuration);
+            return this->GetRadii(configuration);
         };
         return rf;
+    }
+
+    std::string
+    RobotBase::ToString()
+    {
+        return this->urdf_file.string();
     }
 }
