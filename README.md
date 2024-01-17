@@ -22,7 +22,8 @@ add_subdirectory(../PQP PQP_build)
 ```
 mkdir build
 cd build
-cmake --build .
+cmake ..
+make
 ```
 - Run test: `./burs_of_free_space test`
 
