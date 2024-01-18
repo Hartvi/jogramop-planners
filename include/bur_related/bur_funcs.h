@@ -1,3 +1,4 @@
+#include <cmath>
 #include <iostream>
 #include <functional>
 #include <vector>
@@ -10,8 +11,11 @@
 #ifndef BUR_FUNCS_H
 #define BUR_FUNCS_H
 
+#define rad_to_deg (180.0 / M_PI)
+
 namespace Burs
 {
+
     using namespace Eigen;
     using ForwardKinematics = std::function<Vector3d(const int &ith_distal_point, const VectorXd &configuration)>;
     using ForwardKinematicsParallel = std::function<std::vector<Vector3d>(const VectorXd &configuration)>;
@@ -22,6 +26,22 @@ namespace Burs
     typedef double Meters;
     typedef double Qunit;
     typedef double Relative;
+
+    inline double normalizeAngle(double angle)
+    {
+        const double TwoPi = 2.0 * M_PI;
+
+        while (angle > M_PI)
+        {
+            angle -= TwoPi;
+        }
+        while (angle <= -M_PI)
+        {
+            angle += TwoPi;
+        }
+
+        return angle;
+    }
 
     // using PhiFunc = std::function<double(double)>;
 

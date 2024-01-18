@@ -107,7 +107,7 @@ namespace test
             urdf_planner.AddObstacle(obstacle_path, Eigen::Matrix3d::Identity(), obstacle_position);
         }
 
-        Eigen::MatrixXd start_goal = urdf_planner.mBasePlanner->GetRandomQ(2);
+        Eigen::MatrixXd start_goal = urdf_planner.GetRandomQ(2);
 
         // plan path
         // Eigen::VectorXd start = start_goal.col(0);
@@ -118,7 +118,7 @@ namespace test
     std::string GenerateFailingCase(const unsigned int &num_obstacles)
     {
         auto urdf_planner = GenerateRandomScenario(num_obstacles);
-        Eigen::MatrixXd start_goal = urdf_planner.mBasePlanner->GetRandomQ(2);
+        Eigen::MatrixXd start_goal = urdf_planner.GetRandomQ(2);
 
         Eigen::VectorXd start = start_goal.col(0);
         Eigen::VectorXd goal = start_goal.col(1);
@@ -131,14 +131,14 @@ namespace test
             std::vector<Eigen::VectorXd> path(2);
             path[0] = start;
             path[1] = goal;
-            if (!urdf_planner.mBasePlanner->IsColliding(start) && !urdf_planner.mBasePlanner->IsColliding(goal))
+            if (!urdf_planner.IsColliding(start) && !urdf_planner.IsColliding(goal))
             {
                 std::ofstream test_file(test_file_name);
 
                 if (test_file.is_open())
                 {
                     // test_file << urdf_planner.StringifyPath(path);
-                    test_file << urdf_planner.mCollisionEnv->ToScenarioString(start, goal);
+                    test_file << urdf_planner.GetBurEnv<CollisionEnv>()->ToScenarioString(start, goal);
                     test_file.close();
                 }
                 std::cout << "Path planning failed" << std::endl;
@@ -182,7 +182,7 @@ namespace test
 
         // Eigen::MatrixXd start_goal = urdf_planner.mBasePlanner->GetRandomQ(2);
 
-        Eigen::MatrixXd start_goal = urdf_planner.mBasePlanner->GetRandomQ(2);
+        Eigen::MatrixXd start_goal = urdf_planner.GetRandomQ(2);
         // // plan path
         Eigen::VectorXd start = start_goal.col(0);
         Eigen::VectorXd goal = start_goal.col(1);
@@ -214,7 +214,7 @@ namespace test
             std::vector<Eigen::VectorXd> path(2);
             path[0] = start;
             path[1] = goal;
-            if (!urdf_planner.mBasePlanner->IsColliding(start) && !urdf_planner.mBasePlanner->IsColliding(goal))
+            if (!urdf_planner.IsColliding(start) && !urdf_planner.IsColliding(goal))
             {
                 std::ofstream test_file(test_file_name);
 
@@ -240,6 +240,12 @@ namespace test
         // test correctness of algorithm
         // visualize path
 
+        // auto test_urdf_planner = GenerateRandomScenario(0);
+        // auto c_env = test_urdf_planner.GetBurEnv<CollisionEnv>();
+        // KDL::
+        // c_env.myURDFRobot->
+
+        // return;
         for (unsigned int i = 0; i < 1000; ++i)
         {
             unsigned int num_obstacles = 3;
@@ -294,7 +300,7 @@ namespace test
         Eigen::VectorXd zero_config = Eigen::VectorXd::Zero(urdf_planner.GetNrOfJoints());
         Eigen::VectorXd min_q = Eigen::VectorXd(urdf_planner.GetNrOfJoints());
         Eigen::VectorXd max_q = Eigen::VectorXd(urdf_planner.GetNrOfJoints());
-        auto minmax = urdf_planner.mCollisionEnv->myURDFRobot->GetMinMaxBounds();
+        auto minmax = urdf_planner.GetBurEnv<CollisionEnv>()->myURDFRobot->GetMinMaxBounds();
 
         for (int i = 0; i < min_q.size(); ++i)
         {
@@ -307,7 +313,7 @@ namespace test
         min_q(1) = 0;
         max_q(0) = 0;
         max_q(1) = 0;
-        Eigen::MatrixXd start_goal = urdf_planner.mBasePlanner->GetRandomQ(2);
+        Eigen::MatrixXd start_goal = urdf_planner.GetRandomQ(2);
 
         // plan path
         // Eigen::VectorXd start = min_q;
@@ -335,7 +341,7 @@ namespace test
         std::string test_file_name = "test_file.txt";
         std::ofstream test_file(test_file_name);
 
-        std::cout << "Closest distance from robot to obstacles: " << urdf_planner.mCollisionEnv->GetClosestDistance() << std::endl;
+        std::cout << "Closest distance from robot to obstacles: " << urdf_planner.GetBurEnv<CollisionEnv>()->GetClosestDistance() << std::endl;
         // urdf_planner.mCollisionEnv->myURDFRobot->
         if (test_file.is_open())
         {

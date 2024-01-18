@@ -602,25 +602,32 @@ namespace Burs
                     continue;
                 }
 
-                // Adjust the joint axis for translational joints
-                // TODO: this should actually be a flat plane, since translation joints have their axes in infinity
-                //  A small cylinder like this actually does take into account at least the direction the joint can move
-                switch (joint.getType())
-                {
-                case KDL::Joint::TransX:
-                    joint_axis_local = KDL::Vector(0, 1, 0);
-                    break;
-                case KDL::Joint::TransY:
-                    joint_axis_local = KDL::Vector(0, 0, 1);
-                    break;
-                case KDL::Joint::TransZ:
-                    joint_axis_local = KDL::Vector(1, 0, 0);
-                    break;
-                default:
-                    break;
-                }
+                /*
+                The expression \sum^n_{i=1} r_i |y_i − q_i| is a conservative upper bound on the displacement of any point on the manipulator
+                  when the configuration changes from q = (q_1 . . . q_n)T to y = (y_1 . . . y_n)^T .
+
+                In short: it is the first order derivative of the mapping from configuration value q_i to euclidean space
+
+                Ergo: translational joints: d(distance)/dq = 1
+                rotational joints: d(phi*r)/dphi = r - the radius
+                */
 
                 double radius = 0.0;
+                switch (joint.getType())
+                {
+                case KDL::Joint::JointType::TransAxis:
+                case KDL::Joint::JointType::TransX:
+                case KDL::Joint::JointType::TransY:
+                case KDL::Joint::JointType::TransZ:
+                {
+                    radius = 1;
+                    break;
+                }
+                default:
+                {
+                    break;
+                }
+                }
 
                 for (unsigned int k = i + 1; k < segment_poses.size(); ++k)
                 {

@@ -15,6 +15,8 @@ namespace Burs
     class BaseEnv
     {
     public:
+        virtual ~BaseEnv() = default;
+
         /* What I need from outside:
             ForwardKinematics(i, configuration) - point-wise kinematics of the end-points
             Robot .obj files - segments of the robot that adhere to the below ForwardRt function

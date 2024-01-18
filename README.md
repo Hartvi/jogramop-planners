@@ -2,7 +2,9 @@
 
 ## How to run
 Assuming you have CMake setup for this project:
-- requires PQP library in directory above `burs_of_free_space/` and others installed according to the `CMakeLists.txt`
+- requires PQP library in directory next to `burs_of_free_space/` and others installed according to the `CMakeLists.txt`
+  - `burs_of_free_space/`, `PQP/`
+
 ```
 find_package(urdfdom REQUIRED)
 # find_package(orocos_kdl REQUIRED)
@@ -18,6 +20,12 @@ include_directories(include /usr/local/include /usr/include /usr/local/include/e
 # Add subdirectory for PQP
 add_subdirectory(../PQP PQP_build)
 ```
+- also install libraries:
+```
+sudo apt-get install liburdfdom-dev
+sudo apt-get install libkdl-parser-dev
+```
+- then you can build it
 
 ```
 mkdir build
@@ -25,6 +33,7 @@ cd build
 cmake ..
 make
 ```
+
 - Run test: `./burs_of_free_space test`
 
 
@@ -50,9 +59,5 @@ make
   - this should enable me to check if the algorithm has been implemented correctly
 
 
-```
-sudo apt-get install liburdfdom-dev
-sudo apt-get install libkdl-parser-dev
-```
 
 `./burs_of_free_space ../../Models/stick_robot.obj ../../Models/cube.obj 5 5 5 ../jogramop/robots/franka_panda/panda.urdf `

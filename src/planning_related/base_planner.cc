@@ -19,6 +19,10 @@ namespace Burs
     {
     }
 
+    BasePlanner::BasePlanner()
+    {
+    }
+
     BasePlanner::~BasePlanner()
     {
     }
@@ -106,7 +110,7 @@ namespace Burs
     {
         MatrixXd m = MatrixXd::Random(this->q_dim, num_spikes);
         m.array() += 1.0; // Using .array() allows element-wise addition
-        m.array() /= 2.0;
+        m.array() *= 0.5;
 
         for (int i = 0; i < this->q_dim; i++)
         {
@@ -277,28 +281,50 @@ namespace Burs
         return AlgorithmState::Trapped;
     }
 
-    VectorXd BasePlanner::Nearest(std::shared_ptr<BurTree> t, VectorXd &q)
+    Eigen::VectorXd
+    BasePlanner::Nearest(std::shared_ptr<BurTree> t, VectorXd &q)
     {
         return t->GetQ(t->Nearest(q.data()));
     }
 
-    int BasePlanner::NearestIndex(std::shared_ptr<BurTree> t, VectorXd &q)
+    int
+    BasePlanner::NearestIndex(std::shared_ptr<BurTree> t, VectorXd &q)
     {
         return t->Nearest(q.data());
     }
 
-    double BasePlanner::GetClosestDistance(const VectorXd &q)
+    double
+    BasePlanner::GetClosestDistance(const VectorXd &q)
     {
         this->bur_env->SetPoses(q);
         return this->bur_env->GetClosestDistance();
     }
 
-    void BasePlanner::SetBurEnv(std::shared_ptr<BaseEnv> bur_env)
+    void
+    BasePlanner::SetBurEnv(std::shared_ptr<BaseEnv> bur_env)
     {
         this->bur_env = bur_env;
     }
 
-    Bur BasePlanner::GetBur(const VectorXd &q_near, const MatrixXd &Q_e, double d_closest)
+    // template <typename T>
+    // std::shared_ptr<T>
+    // BasePlanner::GetBurEnv()
+    // {
+    //     std::shared_ptr<T> ret_env = std::dynamic_pointer_cast<T>(bur_env);
+    //     if (ret_env != nullptr)
+    //     {
+    //         return ret_env;
+    //     }
+    //     else
+    //     {
+    //         throw std::runtime_error("Could not get BurEnv. The actual type is not " + std::string(typeid(T).name()) + ".");
+    //     }
+    // }
+    template std::shared_ptr<CollisionEnv>
+    BasePlanner::GetBurEnv<CollisionEnv>();
+
+    Bur
+    BasePlanner::GetBur(const VectorXd &q_near, const MatrixXd &Q_e, double d_closest)
     {
         double d_small = 0.1 * d_closest;
         MatrixXd endpoints = MatrixXd::Zero(this->q_dim, Q_e.cols());
@@ -313,17 +339,17 @@ namespace Burs
 
             const VectorXd q_e = Q_e.col(i);
 
-            // they said 4-5 iterations to reach 0.1*closest_distance
-            // so either:
-            // 1. iterate until 0.1*dc
-            // 2. 4-5 iterations
+            // They said 4-5 iterations to reach 0.1*closest_distance
+            // So either:
+            //  1. iterate until 0.1*dc
+            //  2. 4-5 iterations
             while (phi_result > d_small)
             {
                 // CHECK: this is indeed PI away from q_near
                 phi_result = d_closest - this->RhoR(q_near, q_k);
                 double delta_tk = this->GetDeltaTk(phi_result, tk, q_e, q_k);
                 tk = tk + delta_tk;
-                if (tk > 1)
+                if (tk > 1.001) // some tolerance
                 {
                     q_k = q_e;
                     std::runtime_error("t_k was greater than 1. This shouldn't happen.");
@@ -337,13 +363,15 @@ namespace Burs
         return myBur;
     }
 
-    bool BasePlanner::IsColliding(const VectorXd &q)
+    bool
+    BasePlanner::IsColliding(const VectorXd &q)
     {
         this->bur_env->SetPoses(q);
         return this->bur_env->IsColliding();
     }
 
-    std::vector<Eigen::VectorXd> BasePlanner::Path(std::shared_ptr<BurTree> t_a, int a_closest, std::shared_ptr<BurTree> t_b, int b_closest)
+    std::vector<Eigen::VectorXd>
+    BasePlanner::Path(std::shared_ptr<BurTree> t_a, int a_closest, std::shared_ptr<BurTree> t_b, int b_closest)
     {
         // std::cout << "PATH: " << std::endl;
         // std::cout << "A closest: " << t_a->GetQ(a_closest).transpose() << std::endl;

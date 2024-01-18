@@ -35,6 +35,8 @@ namespace Burs
                     RadiusFuncParallel radius_func,
                     int num_spikes);
 
+        BasePlanner();
+
         ~BasePlanner();
 
         /// @brief maximum distance of any segment's movement between configuration points q1 and q2
@@ -69,14 +71,14 @@ namespace Burs
         std::optional<std::vector<Eigen::VectorXd>>
         RbtConnect(const VectorXd &q_start, const VectorXd &q_goal);
 
-        std::optional<std::vector<Eigen::VectorXd>>
-        JPlusRbt(const VectorXd &q_start, const VectorXd &q_goal);
-
         void
         SetBurEnv(std::shared_ptr<BaseEnv> bur_env);
 
-        std::vector<Eigen::VectorXd>
-        Path(std::shared_ptr<BurTree> t_a, int a_closest, std::shared_ptr<BurTree> t_b, int b_closest);
+        template <typename T>
+        std::shared_ptr<T>
+        GetBurEnv();
+
+        std::vector<Eigen::VectorXd> Path(std::shared_ptr<BurTree> t_a, int a_closest, std::shared_ptr<BurTree> t_b, int b_closest);
 
         AlgorithmState
         BurConnect(std::shared_ptr<BurTree> t, VectorXd &q);
@@ -98,11 +100,10 @@ namespace Burs
 
         std::shared_ptr<BaseEnv> bur_env;
 
-    private:
-        int num_spikes;
+    protected:
         RadiusFuncParallel radius_func;
-        // ForwardKinematics forwardKinematics;
         ForwardKinematicsParallel forwardKinematicsParallel;
+        int num_spikes;
         int q_dim;
         MatrixXd bounds;
         int max_iters;
@@ -111,6 +112,20 @@ namespace Burs
         double epsilon_q;
     };
 
+    template <typename T>
+    std::shared_ptr<T>
+    BasePlanner::GetBurEnv()
+    {
+        std::shared_ptr<T> ret_env = std::dynamic_pointer_cast<T>(bur_env);
+        if (ret_env != nullptr)
+        {
+            return ret_env;
+        }
+        else
+        {
+            throw std::runtime_error("Could not get BurEnv. The actual type is not " + std::string(typeid(T).name()) + ".");
+        }
+    }
 }
 
 #endif
