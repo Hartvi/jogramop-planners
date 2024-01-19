@@ -1,8 +1,8 @@
 #include <iostream>
 #include <string>
-#include "model_related/rt_model.h"
-#include "model_related/tiny_obj_loader.h"
-#include "model_related/pqp_load.h"
+#include "rt_model.h"
+#include "tiny_obj_loader.h"
+#include "pqp_load.h"
 
 namespace RtModels
 {

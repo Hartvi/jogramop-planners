@@ -9,9 +9,9 @@
 #include <memory>
 #include <map>
 
-#include "robot_related/robot_base.h"
-#include "robot_related/robot_collision.h"
-#include "bur_related/urdf_planner.h"
+#include "robot_base.h"
+#include "robot_collision.h"
+#include "urdf_planner.h"
 
 int test_urdf(std::string urdf_filename)
 {
@@ -33,7 +33,7 @@ int test_urdf(std::string urdf_filename)
     std::cout << "SelectedForwardQ" << std::endl;
 
     // burenv > pqp_urdf_handler > urdf_handler
-    Burs::CollisionEnv burenv(urdf_filename);
+    Burs::URDFEnv burenv(urdf_filename);
     // 1/3 This contains the ForwardRt
     burenv.SetPoses(zerojoints);
 

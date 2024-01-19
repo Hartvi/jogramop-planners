@@ -2,7 +2,7 @@
 #include <sstream>  // ostringstream
 #include <iomanip>
 // #include <fstream>  // idk
-#include "model_related/rt_model.h"
+#include "rt_model.h"
 
 #ifndef PRINTING_H
 #define PRINTING_H

@@ -7,8 +7,8 @@
 
 #include <string>
 
-#include "robot_related/robot_base.h"
-#include "bur_related/bur_funcs.h"
+#include "robot_base.h"
+#include "bur_funcs.h"
 
 namespace Burs
 {

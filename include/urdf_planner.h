@@ -1,17 +1,18 @@
-#include "bur_related/base_planner.h"
-#include "env_related/collision_env.h"
-#include "robot_related/robot_base.h"
+#include "base_planner.h"
+#include "rbt_planner.h"
+#include "collision_env.h"
+#include "robot_base.h"
 
 #ifndef URDF_PLANNER_H
 #define URDF_PLANNER_H
 
 namespace Burs
 {
-    class URDFPlanner : public BasePlanner
+    class URDFPlanner : public RbtPlanner
     {
     public:
-        // std::shared_ptr<CollisionEnv> mCollisionEnv;
-        // std::shared_ptr<BasePlanner> mBasePlanner;
+        // std::shared_ptr<URDFEnv> mCollisionEnv;
+        // std::shared_ptr<RbtPlanner> mBasePlanner;
 
         URDFPlanner(std::string urdf_file, int max_iters, double d_crit, double delta_q, double epsilon_q, int num_spikes);
 

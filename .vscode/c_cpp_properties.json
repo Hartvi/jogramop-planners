@@ -4,6 +4,7 @@
             "name": "Linux",
             "includePath": [
                 "${workspaceFolder}/**",
+                "${workspaceFolder}/include/",
                 "${workspaceFolder}/../**",
                 "/usr/include/SDL2",
                 "/usr/include/cairo",

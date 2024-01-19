@@ -1,8 +1,7 @@
-#include "bur_related/burs.h"
-// #include "bur_related/bur_env.h"
-// #include "bur_related/bur_algorithm.h"
-// #include "bur_related/bur_tree.h"
-// #include "bur_related/bur_funcs.h"
+// #include "burs.h"
+#include "base_planner.h"
+#include "bur_funcs.h"
+#include "rbt_planner.h"
 #include <flann/flann.hpp>
 #include <Eigen/Dense>
 #include <memory>
@@ -14,31 +13,24 @@ namespace Burs
 {
     using namespace Eigen;
 
-    BasePlanner::BasePlanner(int q_dim, ForwardKinematicsParallel f, int max_iters, double d_crit, double delta_q, double epsilon_q, MatrixXd bounds, RadiusFuncParallel radius_func, int num_spikes)
-        : q_dim(q_dim), forwardKinematicsParallel(f), max_iters(max_iters), d_crit(d_crit), delta_q(delta_q), epsilon_q(epsilon_q), bounds(bounds), radius_func(radius_func), num_spikes(num_spikes)
-    {
-    }
-
-    BasePlanner::BasePlanner()
-    {
-    }
-
-    BasePlanner::~BasePlanner()
-    {
-    }
-
-    // Vector3d
-    // BasePlanner::ForwardEuclideanJoint(const int &ith_distal_point, const VectorXd &configuration) const
+    // RbtPlanner::RbtPlanner(int q_dim, ForwardKinematicsParallel f, int max_iters, double d_crit, double delta_q, double epsilon_q, Eigen::MatrixXd bounds, RadiusFuncParallel radius_func, int num_spikes)
+    //     : BasePlanner(q_dim, max_iters, epsilon_q, bounds), // Initialize the BasePlanner part of the object
+    //       forwardKinematicsParallel(f), d_crit(d_crit), delta_q(delta_q), radius_func(radius_func), num_spikes(num_spikes)
     // {
-    //     return this->forwardKinematics(ith_distal_point, configuration);
     // }
+    RbtPlanner::RbtPlanner(std::string path_to_urdf_file)
+        : BasePlanner(path_to_urdf_file)
+    {
+    }
+
+    RbtPlanner::RbtPlanner() : BasePlanner()
+    {
+    }
 
     double
-    BasePlanner::RhoR(const VectorXd &q1, const VectorXd &q2) const
+    RbtPlanner::RhoR(const VectorXd &q1, const VectorXd &q2) const
     {
         double max_distance = 0.0;
-        // auto fk = this->forwardKinematics;
-        // auto fkp = this->forwardKinematicsParallel;
 
         auto res1 = this->forwardKinematicsParallel(q1);
         auto res2 = this->forwardKinematicsParallel(q2);
@@ -51,84 +43,20 @@ namespace Burs
                 max_distance = tmp;
             }
         }
-        // for (int i = 0; i < this->q_dim; i++)
-        // {
-        //     // std::cout << "i: " << i << " q1 " << q1.transpose() << " q2: " << q2.transpose() << std::endl;
-        //     // std::cout << "fk(i, q1): " << fk(i, q1) << std::endl;
-        //     double tmp = (fk(i, q1) - fk(i, q2)).norm();
-        //     // std::cout << " i: " << i << " q1: " << q1.transpose() << " => " << fk(i, q1).transpose() << " q2: " << q2.transpose() << " => " << fk(i, q2).transpose() << std::endl;
-        //     if (tmp > max_distance)
-        //     {
-        //         max_distance = tmp;
-        //     }
-        // }
         return max_distance;
     }
 
-    // double
-    // BasePlanner::GetPhiFunction(const double &d_closest, const VectorXd &q, const VectorXd &q_e, const double &t) const
-    // {
-    //     return d_closest - RhoR(q, q + t * (q_e - q));
-    // }
-
-    // typename Burs::PhiFunc BasePlanner::GetPhiFunction(const double &d_closest, const VectorXd &q, const VectorXd &q_e) const
-    // {
-    //     PhiFunc phi_func = [=](double t) -> double
-    //     {
-    //         return d_closest - RhoR(q, q + t * (q_e - q));
-    //     };
-    //     return phi_func;
-    // }
-
     double
-    BasePlanner::GetDeltaTk(double phi_tk, double tk, const VectorXd &q_e, const VectorXd &q_k) const
+    RbtPlanner::GetDeltaTk(double phi_tk, double tk, const VectorXd &q_e, const VectorXd &q_k) const
     {
-        // double numerator_sum = 0;
-
-        // VectorXd r_vec(this->q_dim);
-
-        // for (int i = 0; i < this->q_dim; i++)
-        // {
-        //     r_vec[i] = this->radius_func(i, q_k);
-        // }
         VectorXd r_vec = this->radius_func(q_k);
-
-        // for (int i = 0; i < this->q_dim; i++)
-        // {
-        //     r_vec[i] = this->radius_func(i, q_k);
-        // }
-
-        // std::cout << "r_vec: " << r_vec.transpose() << " q_e-q_k: " << (q_e - q_k).cwiseAbs().transpose() << std::endl;
-        // std::cout << "SIZES: r_vec: " << r_vec.size() << " q_e-q_k: " << (q_e - q_k).cwiseAbs().size() << std::endl;
 
         double denominator = (q_e - q_k).cwiseAbs().dot(r_vec);
         return phi_tk * (1.0 - tk) / denominator;
     }
 
-    MatrixXd
-    BasePlanner::GetRandomQ(const int &num_spikes) const
-    {
-        MatrixXd m = MatrixXd::Random(this->q_dim, num_spikes);
-        m.array() += 1.0; // Using .array() allows element-wise addition
-        m.array() *= 0.5;
-
-        for (int i = 0; i < this->q_dim; i++)
-        {
-            double range = this->bounds(i, 1) - this->bounds(i, 0);
-            m.row(i).array() *= range;
-            m.row(i).array() += this->bounds(i, 0); // Element-wise addition
-        }
-        return m;
-    }
-
-    VectorXd
-    BasePlanner::GetEndpoint(const VectorXd &q_ei, const VectorXd &q_near, double factor) const
-    {
-        return q_near + factor * (q_ei - q_near).normalized();
-    }
-
     void
-    BasePlanner::GetEndpoints(MatrixXd &Qe, const VectorXd &q_near, double factor) const
+    RbtPlanner::GetEndpoints(MatrixXd &Qe, const VectorXd &q_near, double factor) const
     {
         // MatrixXd normalized_Qe = Qe; // Create a copy of Qe to store the normalized results
         for (int j = 0; j < Qe.cols(); ++j)
@@ -138,7 +66,7 @@ namespace Burs
     }
 
     std::optional<std::vector<Eigen::VectorXd>>
-    BasePlanner::RbtConnect(const VectorXd &q_start, const VectorXd &q_goal)
+    RbtPlanner::RbtConnect(const VectorXd &q_start, const VectorXd &q_goal)
     {
         // start of actual algorithm
         std::shared_ptr<BurTree> t_start = std::make_shared<BurTree>(q_start, q_start.rows());
@@ -213,21 +141,19 @@ namespace Burs
             AlgorithmState status = this->BurConnect(t_b, q_new);
             if (status == AlgorithmState::Reached)
             {
-                int a_closest = t_a->Nearest(q_new.data());
-                int b_closest = t_b->Nearest(q_new.data());
+                int a_closest = t_start->Nearest(q_new.data());
+                int b_closest = t_goal->Nearest(q_new.data());
 
-                return this->Path(t_a, a_closest, t_b, b_closest);
+                return this->Path(t_start, a_closest, t_goal, b_closest);
             }
 
             std::swap(t_a, t_b);
         }
-        // myFileA.close();
-        // myFileB.close();
         return {};
     }
 
     AlgorithmState
-    BasePlanner::BurConnect(std::shared_ptr<BurTree> t, VectorXd &q)
+    RbtPlanner::BurConnect(std::shared_ptr<BurTree> t, VectorXd &q)
     {
         int nearest_index = t->Nearest(q.data());
 
@@ -240,7 +166,6 @@ namespace Burs
         while (delta_s >= this->d_crit)
         {
             double d_closest = this->GetClosestDistance(q_n);
-            // std::cout << "d_closest: " << d_closest << std::endl;
 
             if (d_closest > this->d_crit)
             {
@@ -281,50 +206,8 @@ namespace Burs
         return AlgorithmState::Trapped;
     }
 
-    Eigen::VectorXd
-    BasePlanner::Nearest(std::shared_ptr<BurTree> t, VectorXd &q)
-    {
-        return t->GetQ(t->Nearest(q.data()));
-    }
-
-    int
-    BasePlanner::NearestIndex(std::shared_ptr<BurTree> t, VectorXd &q)
-    {
-        return t->Nearest(q.data());
-    }
-
-    double
-    BasePlanner::GetClosestDistance(const VectorXd &q)
-    {
-        this->bur_env->SetPoses(q);
-        return this->bur_env->GetClosestDistance();
-    }
-
-    void
-    BasePlanner::SetBurEnv(std::shared_ptr<BaseEnv> bur_env)
-    {
-        this->bur_env = bur_env;
-    }
-
-    // template <typename T>
-    // std::shared_ptr<T>
-    // BasePlanner::GetBurEnv()
-    // {
-    //     std::shared_ptr<T> ret_env = std::dynamic_pointer_cast<T>(bur_env);
-    //     if (ret_env != nullptr)
-    //     {
-    //         return ret_env;
-    //     }
-    //     else
-    //     {
-    //         throw std::runtime_error("Could not get BurEnv. The actual type is not " + std::string(typeid(T).name()) + ".");
-    //     }
-    // }
-    template std::shared_ptr<CollisionEnv>
-    BasePlanner::GetBurEnv<CollisionEnv>();
-
     Bur
-    BasePlanner::GetBur(const VectorXd &q_near, const MatrixXd &Q_e, double d_closest)
+    RbtPlanner::GetBur(const VectorXd &q_near, const MatrixXd &Q_e, double d_closest)
     {
         double d_small = 0.1 * d_closest;
         MatrixXd endpoints = MatrixXd::Zero(this->q_dim, Q_e.cols());
@@ -363,15 +246,8 @@ namespace Burs
         return myBur;
     }
 
-    bool
-    BasePlanner::IsColliding(const VectorXd &q)
-    {
-        this->bur_env->SetPoses(q);
-        return this->bur_env->IsColliding();
-    }
-
     std::vector<Eigen::VectorXd>
-    BasePlanner::Path(std::shared_ptr<BurTree> t_a, int a_closest, std::shared_ptr<BurTree> t_b, int b_closest)
+    RbtPlanner::Path(std::shared_ptr<BurTree> t_a, int a_closest, std::shared_ptr<BurTree> t_b, int b_closest)
     {
         // std::cout << "PATH: " << std::endl;
         // std::cout << "A closest: " << t_a->GetQ(a_closest).transpose() << std::endl;

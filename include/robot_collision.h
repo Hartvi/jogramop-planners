@@ -1,9 +1,9 @@
 #include <filesystem>
 
-#include "bur_related/bur_funcs.h"
-#include "env_related/base_env.h"
-#include "robot_related/robot_base.h"
-#include "model_related/rt_model.h"
+#include "bur_funcs.h"
+#include "base_env.h"
+#include "robot_base.h"
+#include "rt_model.h"
 
 #ifndef ROBOT_COLLISION_H
 #define ROBOT_COLLISION_H

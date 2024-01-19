@@ -1,26 +1,25 @@
-
 #include <sstream>
-#include "env_related/collision_env.h"
+#include "collision_env.h"
 
 namespace Burs
 {
-    CollisionEnv::CollisionEnv(std::string urdf_filename)
+    URDFEnv::URDFEnv(std::string urdf_filename)
     {
         this->myURDFRobot = std::make_shared<RobotCollision>(urdf_filename);
 
         std::vector<std::shared_ptr<RtModels::RtModel>> mm = this->myURDFRobot->GetModels();
 
-        // std::cout << "CollisionEnv: Number of objects: " << mm.size() << std::endl;
+        // std::cout << "URDFEnv: Number of objects: " << mm.size() << std::endl;
 
         for (auto &m : this->myURDFRobot->GetModels())
         {
             this->AddRobotModel(m);
         }
-        this->AddForwardRt(this->myURDFRobot->GetSelectedForwardRtFunc());
+        this->SetForwardRt(this->myURDFRobot->GetSelectedForwardRtFunc());
     }
 
     std::string
-    CollisionEnv::ToString()
+    URDFEnv::ToString()
     {
         std::stringstream ss;
         auto robot_str = this->myURDFRobot->ToString();
@@ -38,7 +37,7 @@ namespace Burs
     }
 
     std::string
-    CollisionEnv::ToScenarioString(Eigen::VectorXd start_q, Eigen::VectorXd goal_q)
+    URDFEnv::ToScenarioString(Eigen::VectorXd start_q, Eigen::VectorXd goal_q)
     {
         std::stringstream ss;
 

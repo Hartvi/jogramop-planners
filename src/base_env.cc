@@ -1,7 +1,7 @@
 #include <memory>
 #include <stdexcept>
-#include "bur_related/burs.h"
-#include "model_related/rt_model.h"
+#include "burs.h"
+#include "rt_model.h"
 #include "PQP.h"
 
 namespace Burs
@@ -99,7 +99,7 @@ namespace Burs
     }
 
     void
-    BaseEnv::AddForwardRt(Burs::ForwardRt forwardRt)
+    BaseEnv::SetForwardRt(Burs::ForwardRt forwardRt)
     {
         this->forwardRt = forwardRt;
     }

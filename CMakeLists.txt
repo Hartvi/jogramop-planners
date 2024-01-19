@@ -26,30 +26,13 @@ add_subdirectory(../PQP PQP_build)
 # file(GLOB SOURCES "src/*.cc")
 
 
-# file(GLOB_RECURSE SOURCES "src/*.cc")
+file(GLOB_RECURSE SOURCES "src/*.cc")
 
-set(ENV_DIR
-    src/env_related/base_env.cc
-    src/env_related/collision_env.cc
-)
-set(MODEL_DIR
-    src/model_related/pqp_load.cc
-    src/model_related/rt_model.cc
-)
-set(PLANNING_DIR
-    src/planning_related/base_planner.cc
-    src/planning_related/bur_tree.cc
-    src/planning_related/urdf_planner.cc
-)
-set(ROBOT_DIR
-    src/robot_related/robot_base.cc
-    src/robot_related/robot_collision.cc
-)
-set(MAIN_FILE
-    src/main.cc
-)
+# set(CC_DIR
+#     src/main.cc
+# )
 
-set(SOURCES ${ENV_DIR} ${MODEL_DIR} ${PLANNING_DIR} ${ROBOT_DIR} ${MAIN_FILE})
+# set(SOURCES ${CC_DIR})
 
 
 # Create the executable

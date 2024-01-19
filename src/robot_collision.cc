@@ -1,4 +1,4 @@
-#include "robot_related/robot_collision.h"
+#include "robot_collision.h"
 
 namespace Burs
 {

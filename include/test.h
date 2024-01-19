@@ -1,16 +1,17 @@
+#include "ut.h"
 #include <iostream>
 #include <string>
 #include <Eigen/Dense>
-#include "model_related/pqp_load.h"
-#include "model_related/rt_model.h"
+#include "pqp_load.h"
+#include "rt_model.h"
 #include <flann/flann.hpp>
 #include "printing.h"
-#include "bur_related/bur_tree.h"
-#include "bur_related/base_planner.h"
+#include "bur_tree.h"
+#include "base_planner.h"
 #include <functional>
 #include "math.h"
-#include "bur_related/bur_funcs.h"
-#include "test_related/stick_robot.h"
+#include "bur_funcs.h"
+#include "stick_robot.h"
 #include <fstream>
 // #include <yaml-cpp/yaml.h>
 #include <cstdlib>
@@ -18,7 +19,7 @@
 #include <iomanip>
 #include <time.h>
 
-#include "test_related/test_urdf.h"
+#include "test_urdf.h"
 
 namespace test
 {
@@ -138,7 +139,7 @@ namespace test
                 if (test_file.is_open())
                 {
                     // test_file << urdf_planner.StringifyPath(path);
-                    test_file << urdf_planner.GetBurEnv<CollisionEnv>()->ToScenarioString(start, goal);
+                    test_file << urdf_planner.GetEnv<URDFEnv>()->ToScenarioString(start, goal);
                     test_file.close();
                 }
                 std::cout << "Path planning failed" << std::endl;
@@ -241,16 +242,23 @@ namespace test
         // visualize path
 
         // auto test_urdf_planner = GenerateRandomScenario(0);
-        // auto c_env = test_urdf_planner.GetBurEnv<CollisionEnv>();
+        // auto c_env = test_urdf_planner.GetEnv<URDFEnv>();
         // KDL::
         // c_env.myURDFRobot->
 
         // return;
+
         for (unsigned int i = 0; i < 1000; ++i)
         {
             unsigned int num_obstacles = 3;
 
+            struct rusage t1, t2;
+            // in terminal: time ./burs_of_free_space
+            getTime(&t1);
             std::string file_name = GenerateRandomExperiment(num_obstacles);
+            getTime(&t2);
+            std::cout << "Time: " << getTime(t1, t2) << std::endl;
+            return;
 
             // std::string file_name = GenerateFailingCase(num_obstacles);
             // std::cout << "Just planned a path" << std::endl;
@@ -300,7 +308,7 @@ namespace test
         Eigen::VectorXd zero_config = Eigen::VectorXd::Zero(urdf_planner.GetNrOfJoints());
         Eigen::VectorXd min_q = Eigen::VectorXd(urdf_planner.GetNrOfJoints());
         Eigen::VectorXd max_q = Eigen::VectorXd(urdf_planner.GetNrOfJoints());
-        auto minmax = urdf_planner.GetBurEnv<CollisionEnv>()->myURDFRobot->GetMinMaxBounds();
+        auto minmax = urdf_planner.GetEnv<URDFEnv>()->myURDFRobot->GetMinMaxBounds();
 
         for (int i = 0; i < min_q.size(); ++i)
         {
@@ -341,7 +349,7 @@ namespace test
         std::string test_file_name = "test_file.txt";
         std::ofstream test_file(test_file_name);
 
-        std::cout << "Closest distance from robot to obstacles: " << urdf_planner.GetBurEnv<CollisionEnv>()->GetClosestDistance() << std::endl;
+        std::cout << "Closest distance from robot to obstacles: " << urdf_planner.GetEnv<URDFEnv>()->GetClosestDistance() << std::endl;
         // urdf_planner.mCollisionEnv->myURDFRobot->
         if (test_file.is_open())
         {
@@ -476,7 +484,7 @@ namespace test
     //     double delta_q = M_PI;
     //     double epsilon_q = M_PI / 10.0;
     //     int num_spikes = 7;
-    //     std::unique_ptr<Burs::BasePlanner> b = std::make_unique<Burs::BasePlanner>(stick_robot->NUM_SEGMENTS, fk, max_iters, d_crit, delta_q, epsilon_q, bounds, rf, num_spikes);
+    //     std::unique_ptr<Burs::RbtPlanner> b = std::make_unique<Burs::RbtPlanner>(stick_robot->NUM_SEGMENTS, fk, max_iters, d_crit, delta_q, epsilon_q, bounds, rf, num_spikes);
 
     //     int point = 1;
     //     VectorXd config(2);
@@ -502,7 +510,7 @@ namespace test
     //     std::shared_ptr<RtModels::RtModel> obstacle_model = std::make_shared<RtModels::RtModel>(argv[2]);
 
     //     b_env->AddRobotModel(robot_model);
-    //     b_env->AddForwardRt(srt);
+    //     b_env->SetForwardRt(srt);
     //     b_env->AddObstacle(argv[2]);
 
     //     MatrixXd m(6, 3);

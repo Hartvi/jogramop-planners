@@ -1,5 +1,5 @@
-#include "bur_related/bur_funcs.h"
-#include "bur_related/urdf_planner.h"
+#include "bur_funcs.h"
+#include "urdf_planner.h"
 #include <string>
 #include <sstream>
 
@@ -16,7 +16,7 @@
 
 namespace Burs
 {
-    URDFPlanner::URDFPlanner(std::string urdf_file, int max_iters, double d_crit, double delta_q, double epsilon_q, int num_spikes) : BasePlanner()
+    URDFPlanner::URDFPlanner(std::string urdf_file, int max_iters, double d_crit, double delta_q, double epsilon_q, int num_spikes) : RbtPlanner()
     // : urdf_file(urdf_file), max_iters(max_iters), d_crit(d_crit), delta_q(delta_q), epsilon_q(epsilon_q), num_spikes(num_spikes)
     {
         // 5/9
@@ -26,14 +26,14 @@ namespace Burs
         this->epsilon_q = epsilon_q;
         this->num_spikes = num_spikes;
 
-        auto collision_env = std::make_shared<CollisionEnv>(urdf_file);
-        this->SetBurEnv(collision_env);
+        auto collision_env = std::make_shared<URDFEnv>(urdf_file);
+        this->SetEnv(collision_env);
 
         int q_dim = this->GetNrOfJoints();
         // std::cout << "Starting URDFPlanner..\n File: " << urdf_file << "\nq_dim: " << q_dim << std::endl;
 
         // ForwardKinematics fk = this->mCollisionEnv->myURDFRobot->GetForwardPointFunc();
-        auto my_collision_env = this->GetBurEnv<CollisionEnv>();
+        auto my_collision_env = this->GetEnv<URDFEnv>();
         auto my_urdf_robot = my_collision_env->myURDFRobot;
 
         ForwardKinematicsParallel fkp = my_urdf_robot->GetForwardPointParallelFunc();
@@ -62,8 +62,8 @@ namespace Burs
         this->bounds = minMaxBounds;
         this->radius_func = rf;
 
-        // BasePlanner(int q_dim, ForwardKinematics f, int max_iters, double d_crit, double delta_q, double epsilon_q, MatrixXd bounds, RadiusFunc radius_func, int num_spikes);
-        // this->mBasePlanner = std::make_shared<BasePlanner>(
+        // RbtPlanner(int q_dim, ForwardKinematics f, int max_iters, double d_crit, double delta_q, double epsilon_q, MatrixXd bounds, RadiusFunc radius_func, int num_spikes);
+        // this->mBasePlanner = std::make_shared<RbtPlanner>(
         // q_dim, fkp, max_iters, d_crit, delta_q, epsilon_q, minMaxBounds, rf, num_spikes);
 
         // this->mBasePlanner->SetBurEnv(this->mCollisionEnv);
@@ -72,7 +72,7 @@ namespace Burs
     unsigned int
     URDFPlanner::GetNrOfJoints()
     {
-        return this->GetBurEnv<CollisionEnv>()->myURDFRobot->kdl_chain.getNrOfJoints();
+        return this->GetEnv<URDFEnv>()->myURDFRobot->kdl_chain.getNrOfJoints();
     }
 
     template <typename T>
@@ -139,7 +139,7 @@ namespace Burs
     std::optional<std::vector<Eigen::VectorXd>>
     URDFPlanner::JPlusRbt(const VectorXd &q_start, std::vector<KDL::Frame> &target_poses, const double &probability_to_steer_to_target, const double &p_close_enough)
     {
-        auto my_env = this->GetBurEnv<CollisionEnv>();
+        auto my_env = this->GetEnv<URDFEnv>();
         auto chain = my_env->myURDFRobot->kdl_chain;
         // unsigned int num_of_targets = target_rotations.size();
 
@@ -349,13 +349,13 @@ namespace Burs
     URDFPlanner::AddObstacle(std::string obstacle_file, Eigen::Matrix3d R, Eigen::Vector3d t)
     {
         // std::cout << "URDFPlanner: adding obstacle " << obstacle_file << std::endl;
-        return this->GetBurEnv<CollisionEnv>()->AddObstacle(obstacle_file, R, t);
+        return this->GetEnv<URDFEnv>()->AddObstacle(obstacle_file, R, t);
     }
 
     void
     URDFPlanner::SetObstacleRotation(int id, Eigen::Matrix3d R, Eigen::Vector3d t)
     {
-        std::shared_ptr<RtModels::RtModel> model = this->GetBurEnv<CollisionEnv>()->obstacle_models[id];
+        std::shared_ptr<RtModels::RtModel> model = this->GetEnv<URDFEnv>()->obstacle_models[id];
         model->SetRotation(R);
         model->SetTranslation(t);
     }
@@ -364,7 +364,7 @@ namespace Burs
     URDFPlanner::ToString(const Eigen::VectorXd &q_in, bool obstacles)
     {
         std::ostringstream output;
-        auto env = this->GetBurEnv<CollisionEnv>();
+        auto env = this->GetEnv<URDFEnv>();
         env->SetPoses(q_in);
 
         if (obstacles)

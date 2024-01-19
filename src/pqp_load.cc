@@ -1,5 +1,5 @@
 #include <iostream>
-#include "model_related/tiny_obj_loader.h"
+#include "tiny_obj_loader.h"
 #include "PQP.h"
 #include <filesystem>
 

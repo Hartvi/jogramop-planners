@@ -1,4 +1,4 @@
-#include "bur_related/bur_tree.h"
+#include "bur_tree.h"
 #include <Eigen/Dense>
 
 namespace Burs

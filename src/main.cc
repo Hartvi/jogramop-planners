@@ -1,17 +1,17 @@
 // tinyobjloader must be first
 #define TINYOBJLOADER_IMPLEMENTATION
-#include "model_related/tiny_obj_loader.h"
+#include "tiny_obj_loader.h"
 
 #include <iostream>
 // #include <stdio.h>
 #include <Eigen/Dense>
-#include "model_related/pqp_load.h"
-#include "model_related/rt_model.h"
+#include "pqp_load.h"
+#include "rt_model.h"
 #include <flann/flann.hpp>
 #include "printing.h"
-#include "bur_related/bur_tree.h"
-#include "bur_related/base_planner.h"
-#include "test_related/test.h"
+#include "bur_tree.h"
+#include "base_planner.h"
+#include "test.h"
 
 using namespace std;
 

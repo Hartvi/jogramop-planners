@@ -14,7 +14,7 @@
 
 #include <Eigen/Dense>
 
-#include "bur_related/bur_funcs.h"
+#include "bur_funcs.h"
 
 #ifndef ROBOT_BASE_H
 #define ROBOT_BASE_H
