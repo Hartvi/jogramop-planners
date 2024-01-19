@@ -69,9 +69,8 @@ namespace Burs
     protected:
         RadiusFuncParallel radius_func;
         ForwardKinematicsParallel forwardKinematicsParallel;
+
         int num_spikes;
-        // int q_dim;
-        // MatrixXd bounds;
         int max_iters;
         double d_crit;
         double delta_q;

@@ -18,6 +18,7 @@
 #include <chrono>
 #include <iomanip>
 #include <time.h>
+#include "grasps.h"
 
 #include "test_urdf.h"
 
@@ -246,7 +247,21 @@ namespace test
         // KDL::
         // c_env.myURDFRobot->
 
-        // return;
+        std::string grasp_path = "/home/hartvi/Documents/CVUT/diploma_thesis/burs_of_free_space/grasps/sugarbox_free_grasps.csv";
+        std::vector<Grasp> grasps = Grasp::LoadGrasps(grasp_path);
+        std::cout << "grasps: " << std::endl;
+        for (unsigned int i = 0; i < grasps.size(); ++i)
+        {
+            std::cout << "Grasp:\n"
+                      << grasps[i].ToFrame() << std::endl;
+        }
+
+        std::string test_urdf = "/home/hartvi/Documents/CVUT/diploma_thesis/burs_of_free_space/jogramop/robots/franka_panda/mobile_panda.urdf";
+        URDFEnv new_env(test_urdf);
+        std::string test_obstacle = "/home/hartvi/Documents/CVUT/diploma_thesis/Models/cubes.obj";
+        new_env.AddObstacle(test_obstacle);
+        std::cout << "robot urdf: " << test_urdf << ": closest dist: " << new_env.GetClosestDistance() << std::endl;
+        return;
 
         for (unsigned int i = 0; i < 1000; ++i)
         {

@@ -1,0 +1,5 @@
+
+namespace Burs
+{
+    // struct
+}
