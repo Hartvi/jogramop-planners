@@ -12,11 +12,38 @@
 #include "bur_tree.h"
 #include "base_planner.h"
 #include "test.h"
+#include "CParseArgs.h"
+
 
 using namespace std;
 
 int main(int argc, char **argv)
 {
+
+    // PARAMETERS of the command line. For each parameter (e.g. -file), make one variable and one o.addOption<type>(), see bellow example:
+
+    char *graspFile;
+    char *urdfFile;
+    char *obstacleFile;
+    {
+        CmdOptions o;
+
+        o.addOption(Option<char *>("grasp",&graspFile, "filename with grasps (.csv)"));
+        o.addOption(Option<char *>("urdf",&urdfFile, "filename with URDF of the robot (.urdf)"));
+        o.addOption(Option<char *>("obstacle",&obstacleFile, "filename with obstacles (.obj)"));
+		if (!o.parse(argc,argv)) {
+			cerr << o.makeCmdLine() << "\n";
+			cerr << o.printHelp() << "\n";
+			exit(0);
+		}
+    }
+
+    // the cmd-line parameters are now loaded into the variables
+    std::cout << "Planner will load: \n";
+    std::cout << "Grasps from " << graspFile << "\n";
+    std::cout << "URDF from " << urdfFile << "\n";
+    std::cout << "Obstacles from " << obstacleFile << "\n";
+
     // run: make clean && make && valgrind --leak-check=full ./load_obj_test ../Models/cube.obj ../Models/cube.obj out.txt
 
     std::cout << "Arg 1: " << argv[1] << std::endl;
@@ -26,7 +53,7 @@ int main(int argc, char **argv)
         std::cout << "ARGUMENT 1 WAS TEST" << std::endl;
         // TODO: test: load test yaml or sth
         // test::test_forward(argc, argv);
-        test::main_test();
+        test::main_test(graspFile, urdfFile, obstacleFile);
         std::cout << "END TEST" << std::endl;
     }
     std::cout << "argc: ";

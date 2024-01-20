@@ -236,7 +236,7 @@ namespace test
         }
     }
 
-    void main_test()
+    void main_test(const char *graspFile, const char *urdfFile, const char *obstacleFile)
     {
         // TODO
         // test correctness of algorithm
@@ -245,9 +245,10 @@ namespace test
         // auto test_urdf_planner = GenerateRandomScenario(0);
         // auto c_env = test_urdf_planner.GetEnv<URDFEnv>();
         // KDL::
-        // c_env.myURDFRobot->
+        // c_env.myURDFRobot->  
+//        std::string grasp_path = "/home/hartvi/Documents/CVUT/diploma_thesis/burs_of_free_space/grasps/sugarbox_free_grasps.csv";
+        std::string grasp_path(graspFile);
 
-        std::string grasp_path = "/home/hartvi/Documents/CVUT/diploma_thesis/burs_of_free_space/grasps/sugarbox_free_grasps.csv";
         std::vector<Grasp> grasps = Grasp::LoadGrasps(grasp_path);
         std::cout << "grasps: " << std::endl;
         for (unsigned int i = 0; i < grasps.size(); ++i)
@@ -256,12 +257,17 @@ namespace test
                       << grasps[i].ToFrame() << std::endl;
         }
 
-        std::string test_urdf = "/home/hartvi/Documents/CVUT/diploma_thesis/burs_of_free_space/jogramop/robots/franka_panda/mobile_panda.urdf";
+//        std::string test_urdf = "/home/hartvi/Documents/CVUT/diploma_thesis/burs_of_free_space/jogramop/robots/franka_panda/mobile_panda.urdf";
+//        std::string test_urdf = "/home/vojta/work/burs/jogramop/robots/franka_panda/mobile_panda.urdf";
+        std::string test_urdf(urdfFile);
+
         URDFEnv new_env(test_urdf);
-        std::string test_obstacle = "/home/hartvi/Documents/CVUT/diploma_thesis/Models/cubes.obj";
+//        std::string test_obstacle = "/home/hartvi/Documents/CVUT/diploma_thesis/Models/cubes.obj";
+//        std::string test_obstacle = "/home/vojta/work/burs/Burs/obj_objects/cubes.obj";
+        std::string test_obstacle(obstacleFile);
+
         new_env.AddObstacle(test_obstacle);
         std::cout << "robot urdf: " << test_urdf << ": closest dist: " << new_env.GetClosestDistance() << std::endl;
-        return;
 
         for (unsigned int i = 0; i < 1000; ++i)
         {
