@@ -39,12 +39,14 @@ make
 
 ## TODO:
 - Verify correctness of algorithm
+- Test `JPlusRbtPlanner` that it runs and finishes
+- Add measurements from `include/planning_result.h`
 - `bur_related/bur_tree.h`: 
   - Update only changed parts of tree
   - Prevent double deletion
   - Maybe use smart pointers instead of basic `new` and `delete`
 - Add pseudo-inverse Jacobian-directed bur creation
-- For `TransX`, `TransY`, `TransZ` joints, the radius should just be the projection of the vector from joint `i` to joints `i+k`, `k=1..n-i` on the joint axis, not on the plane of an axis orthogonal to the joint axis
+- The `radius` mentioned in the bur paper is probably just the max of the jacobian for a given joint
 - Test it with jogramop environment
 
 ### Done:

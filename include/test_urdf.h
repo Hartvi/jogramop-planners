@@ -11,7 +11,7 @@
 
 #include "robot_base.h"
 #include "robot_collision.h"
-#include "urdf_planner.h"
+#include "j_plus_rbt_planner.h"
 
 int test_urdf(std::string urdf_filename)
 {
@@ -75,25 +75,26 @@ int test_urdf(std::string urdf_filename)
     int num_spikes = 7;
     Eigen::VectorXd target_pose = Eigen::VectorXd::Ones(num_joints);
 
-    Burs::URDFPlanner urdf_planner(urdf_filename, max_iters, d_crit, delta_q, epsilon_q, num_spikes);
+    // Burs::JPlusRbtPlanner urdf_planner(urdf_filename, max_iters, d_crit, delta_q, epsilon_q, num_spikes);
 
-    auto path_opt = urdf_planner.PlanPath(zerojoints, target_pose);
-    if (path_opt)
-    {
-        std::cout << "Path:" << std::endl;
-        for (int i = 0; i < path_opt.value().size(); ++i)
-        {
-            std::cout << path_opt.value()[i].transpose() << std::endl;
-        }
-    }
-    else
-    {
-        std::cout << "Couldn't find path for start: " << zerojoints.transpose() << " and goal " << target_pose.transpose() << std::endl;
-    }
-    // URDFPlanner(urdf_filename);
-    // URDFPlanner(int q_dim, ForwardKinematics f, int max_iters, double d_crit, double delta_q, double epsilon_q, MatrixXd bounds, RadiusFunc radius_func, int num_spikes);
+    // auto path_opt = urdf_planner.PlanPath(zerojoints, target_pose);
+    // if (path_opt)
+    // {
+    //     std::cout << "Path:" << std::endl;
+    //     for (int i = 0; i < path_opt.value().size(); ++i)
+    //     {
+    //         std::cout << path_opt.value()[i].transpose() << std::endl;
+    //     }
+    // }
+    // else
+    // {
+    //     std::cout << "Couldn't find path for start: " << zerojoints.transpose() << " and goal " << target_pose.transpose() << std::endl;
+    // }
 
-    // Burs::URDFPlanner();
+    // JPlusRbtPlanner(urdf_filename);
+    // JPlusRbtPlanner(int q_dim, ForwardKinematics f, int max_iters, double d_crit, double delta_q, double epsilon_q, MatrixXd bounds, RadiusFunc radius_func, int num_spikes);
+
+    // Burs::JPlusRbtPlanner();
     // auto opt_robot = GetRobotURDF(urdf_filename);
 
     // if (!opt_robot)

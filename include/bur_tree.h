@@ -44,17 +44,35 @@ namespace Burs
               q(q)
         {
         }
+        RRTNode() : parent_idx(-1), q(VectorXd(0))
+        {
+        }
     };
 
     class BurTree
     {
     public:
+        BurTree();
         BurTree(VectorXd q_location, int q_dim);
-        void AddNode(int p, VectorXd q_location);
-        int Nearest(double *new_point);
-        VectorXd GetQ(int index);
-        int GetParentIdx(int index);
-        int GetNumberOfNodes();
+
+        void
+        AddNode(int p, VectorXd q_location);
+
+        std::pair<int, double>
+        NearestIdxAndDist(double *new_point);
+
+        int
+        Nearest(double *new_point);
+
+        VectorXd
+        GetQ(int index);
+
+        int
+        GetParentIdx(int index);
+
+        int
+        GetNumberOfNodes();
+
         ~BurTree();
 
         // friend std::ostream &operator<<(std::ostream &os, const BurTree &tree);
@@ -72,9 +90,10 @@ namespace Burs
             return os;
         }
 
-    private:
         std::vector<RRTNode> mNodes;
         int mQDim;
+
+    private:
         flann::Matrix<double> mData;
         std::unique_ptr<flann::Index<flann::L2<double>>> mIndex;
 

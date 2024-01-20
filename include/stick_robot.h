@@ -12,13 +12,15 @@ public:
     /// @brief Calculate rotations and translations of each robot component in euclidean space
     /// @param configuration configuration in C space
     /// @return tuple of vectors of rotations and translations
-    std::tuple<std::vector<Eigen::Matrix3d>, std::vector<Eigen::Vector3d>> StickRt(const Eigen::VectorXd &configuration)
+    std::tuple<std::vector<Eigen::Matrix3d>, std::vector<Eigen::Vector3d>>
+    StickRt(const Eigen::VectorXd &configuration)
     {
         return {{RotationForward(configuration)}, {TranslationForward(configuration)}};
     }
 
     /// @brief get forward kinematics of i-th joint or end effector if argument == q_dimensionality
-    Eigen::Vector3d ForwardJoint(const int &ith_distal_point, const Eigen::VectorXd &configuration)
+    Eigen::Vector3d
+    ForwardJoint(const int &ith_distal_point, const Eigen::VectorXd &configuration)
     {
         if (configuration.rows() == 0)
         {
@@ -36,7 +38,8 @@ public:
     }
 
     /// @brief Calculates the radius in the axis of the joint that encompasses the end effector
-    double RadiusFunc(const int &ith_distal_point, const Eigen::VectorXd &q_k)
+    double
+    RadiusFunc(const int &ith_distal_point, const Eigen::VectorXd &q_k)
     {
         // radius of cylinder in joint axis that encompasses end effector
         // z is up; x, y is is in the plane; this means that r is always the length of the stick-robot
@@ -45,7 +48,8 @@ public:
 
 private:
     /// @brief Rotate the stick robot about the origin, length is 2, therefore 1 is the position where the stick position = stick center
-    Eigen::Vector3d TranslationForward(const Eigen::VectorXd &configuration)
+    Eigen::Vector3d
+    TranslationForward(const Eigen::VectorXd &configuration)
     {
         Eigen::Vector3d v;
         v << 0, 0, 0;
@@ -58,7 +62,8 @@ private:
     }
 
     /// @brief Rotation matrix of the stick robot
-    Eigen::Matrix3d RotationForward(const Eigen::VectorXd &configuration)
+    Eigen::Matrix3d
+    RotationForward(const Eigen::VectorXd &configuration)
     {
         Eigen::Matrix3d Rx;
         Eigen::Matrix3d Rz;

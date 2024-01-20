@@ -1,4 +1,3 @@
-#include "burs.h"
 #include "min_planner.h"
 #include <flann/flann.hpp>
 #include <Eigen/Dense>

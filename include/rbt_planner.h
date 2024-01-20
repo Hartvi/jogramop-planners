@@ -14,11 +14,18 @@ namespace Burs
 {
     using namespace Eigen;
 
+    struct RbtParameters
+    {
+        int max_iters;
+        double d_crit;
+        double delta_q;
+        double epsilon_q;
+        int num_spikes;
+    };
+
     class RbtPlanner : public BasePlanner
     {
     public:
-        // RbtPlanner() = default;
-
         RbtPlanner(std::string path_to_urdf_file);
         // int q_dim,
         //        ForwardKinematicsParallel f,
@@ -55,13 +62,13 @@ namespace Burs
         /// @brief Plan path using two opposing trees
         /// @return Matrix (q_dim, n), where n is the number of steps. OTHERWISE `VectorXd()` if planning fails
         std::optional<std::vector<Eigen::VectorXd>>
-        RbtConnect(const VectorXd &q_start, const VectorXd &q_goal);
+        RbtConnect(const VectorXd &q_start, const VectorXd &q_goal, const RbtParameters &plan_parameters);
 
         std::vector<Eigen::VectorXd>
         Path(std::shared_ptr<BurTree> t_a, int a_closest, std::shared_ptr<BurTree> t_b, int b_closest);
 
         AlgorithmState
-        BurConnect(std::shared_ptr<BurTree> t, VectorXd &q);
+        BurConnect(std::shared_ptr<BurTree> t, VectorXd &q, const RbtParameters &plan_parameters);
 
         Bur
         GetBur(const VectorXd &q_near, const MatrixXd &Q_e, double d_closest);
@@ -70,11 +77,11 @@ namespace Burs
         RadiusFuncParallel radius_func;
         ForwardKinematicsParallel forwardKinematicsParallel;
 
-        int num_spikes;
-        int max_iters;
-        double d_crit;
-        double delta_q;
-        double epsilon_q;
+        // int num_spikes;
+        // int max_iters;
+        // double d_crit;
+        // double delta_q;
+        // double epsilon_q;
     };
 
 }

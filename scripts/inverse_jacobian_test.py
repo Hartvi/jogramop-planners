@@ -16,8 +16,8 @@ def forward(q):
         [math.sin(theta1), math.sin(theta1)]
     ])
     R2 = np.array([
-        [math.cos(theta2), -math.sin(theta2)],
-        [math.sin(theta2), math.sin(theta2)]
+        [math.cos(theta2), math.sin(theta2)],
+        [-math.sin(theta2), math.sin(theta2)]
     ])
 
     p1_local = l1 * np.array([1, 0], dtype=float).T
@@ -91,7 +91,7 @@ def main():
 
     print("current pos:", current_pos, " target pos:", target_pos)
     # color = np.array([1, 0, 0])
-    num_loops = 10
+    num_loops = 50
     for i in range(num_loops):
         current_pos = forward(tmp_q)[-1]
 
@@ -106,9 +106,9 @@ def main():
 
         print("delta_q:", delta_q[0], delta_q[1])
         new_joint_pos = tmp_q + delta_q
-        color = get_color((i+1)/num_loops)
+        color = get_color((i+2)/num_loops)
         print("color:", color)
-        plot_robot(new_joint_pos, color=color)
+        plot_robot(new_joint_pos, color=(0.5, 0.5, 0))
         
         tmp_q = new_joint_pos
         # if np.linalg.norm(delta_q) < 0.1:

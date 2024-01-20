@@ -1,4 +1,5 @@
-// #include "burs.h"
+#include <optional>
+#include "collision_env.h"
 #include "base_planner.h"
 #include "bur_funcs.h"
 #include "rbt_planner.h"
@@ -21,6 +22,11 @@ namespace Burs
     RbtPlanner::RbtPlanner(std::string path_to_urdf_file)
         : BasePlanner(path_to_urdf_file)
     {
+        auto my_env = this->GetEnv<URDFEnv>();
+        auto my_robot = my_env->myURDFRobot;
+
+        this->forwardKinematicsParallel = my_robot->GetForwardPointParallelFunc();
+        this->radius_func = my_robot->GetRadiusFunc();
     }
 
     RbtPlanner::RbtPlanner() : BasePlanner()
@@ -66,7 +72,8 @@ namespace Burs
     }
 
     std::optional<std::vector<Eigen::VectorXd>>
-    RbtPlanner::RbtConnect(const VectorXd &q_start, const VectorXd &q_goal)
+    // RbtPlanner::RbtConnect(const VectorXd &q_start, const VectorXd &q_goal)
+    RbtPlanner::RbtConnect(const VectorXd &q_start, const VectorXd &q_goal, const RbtParameters &plan_parameters)
     {
         // start of actual algorithm
         std::shared_ptr<BurTree> t_start = std::make_shared<BurTree>(q_start, q_start.rows());
@@ -74,14 +81,14 @@ namespace Burs
         auto t_a = t_start;
         auto t_b = t_goal;
 
-        for (int k = 0; k < this->max_iters; k++)
+        for (int k = 0; k < plan_parameters.max_iters; k++)
         {
             VectorXd q_new(this->q_dim);
             /*
             for i in 1:N:
                 Qe |= random_config()
             */
-            Eigen::MatrixXd Qe = this->GetRandomQ(num_spikes);
+            Eigen::MatrixXd Qe = this->GetRandomQ(plan_parameters.num_spikes);
 
             // random growth direction; can be any other among the random vectors from Qe
             VectorXd q_e_0 = Qe.col(0);
@@ -90,10 +97,10 @@ namespace Burs
 
             const VectorXd q_near = t_a->GetQ(nearest_index);
 
-            for (int i = 0; i < num_spikes; i++)
+            for (int i = 0; i < plan_parameters.num_spikes; i++)
             {
                 VectorXd q_e_i = Qe.col(i);
-                q_e_i = this->GetEndpoint(q_e_i, q_near, this->delta_q);
+                q_e_i = this->GetEndpoint(q_e_i, q_near, plan_parameters.delta_q);
                 Qe.col(i).array() = q_e_i;
             }
 
@@ -107,12 +114,12 @@ namespace Burs
                 return {};
             }
 
-            if (d_closest < this->d_crit)
+            if (d_closest < plan_parameters.d_crit)
             {
                 std::cout << "d < d_crit" << std::endl;
                 // q_new from above, will be used as the new endpoint for BurConnect
                 // small step RRT
-                q_new = this->GetEndpoint(q_e_0, q_near, this->epsilon_q);
+                q_new = this->GetEndpoint(q_e_0, q_near, plan_parameters.epsilon_q);
                 std::cout << "q_new: " << q_new.transpose() << std::endl;
 
                 if (!this->IsColliding(q_new))
@@ -138,7 +145,7 @@ namespace Burs
             }
 
             // if reached, then index is the closest node in `t_b` to `q_new` in `t_a`
-            AlgorithmState status = this->BurConnect(t_b, q_new);
+            AlgorithmState status = this->BurConnect(t_b, q_new, plan_parameters);
             if (status == AlgorithmState::Reached)
             {
                 int a_closest = t_start->Nearest(q_new.data());
@@ -153,7 +160,7 @@ namespace Burs
     }
 
     AlgorithmState
-    RbtPlanner::BurConnect(std::shared_ptr<BurTree> t, VectorXd &q)
+    RbtPlanner::BurConnect(std::shared_ptr<BurTree> t, VectorXd &q, const RbtParameters &plan_parameters)
     {
         int nearest_index = t->Nearest(q.data());
 
@@ -163,11 +170,11 @@ namespace Burs
         double delta_s = 1e14;
         double threshold = 1e-2;
 
-        while (delta_s >= this->d_crit)
+        while (delta_s >= plan_parameters.d_crit)
         {
             double d_closest = this->GetClosestDistance(q_n);
 
-            if (d_closest > this->d_crit)
+            if (d_closest > plan_parameters.d_crit)
             {
                 // if q_n is within the collision free bur of q, then we finish, game over
                 Bur b = this->GetBur(q_n, q, d_closest);
@@ -185,7 +192,7 @@ namespace Burs
             }
             else
             {
-                VectorXd q_t = this->GetEndpoint(q, q_n, this->epsilon_q);
+                VectorXd q_t = this->GetEndpoint(q, q_n, plan_parameters.epsilon_q);
 
                 // if not colliding then proceed
                 if (!this->IsColliding(q_t))

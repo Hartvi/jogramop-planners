@@ -1,4 +1,4 @@
-#include "burs.h"
+#include "collision_env.h"
 #include "base_planner.h"
 #include <flann/flann.hpp>
 #include <Eigen/Dense>
