@@ -1,5 +1,0 @@
-max_iters,50,
-d_crit,0.2,
-delta_q,3.1415,
-epsilon_q,0.1,
-num_spikes,7,

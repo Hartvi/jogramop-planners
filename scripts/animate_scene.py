@@ -253,7 +253,7 @@ def render_env(path_to_file):
             k += 1
 
     camera = bpy.data.objects["Camera"]
-    camera.location = (0, 0, 6)
+    camera.location = (camX, camY, camZ)
 
     center_point = create_point((0, 0, 0.5), (1, 0, 0, 0.5), 0.001)
     look_at_object(center_point)
@@ -295,4 +295,7 @@ if __name__ == "__main__":
     test_path = "/home/hartvi/Documents/CVUT/diploma_thesis/burs_of_free_space/build/test_file.txt"
     if len(sys.argv) > 1:
         test_path = sys.argv[1]
+        camX = float(sys.argv[2])
+        camY = float(sys.argv[3])
+        camZ = float(sys.argv[4])
     render_env(test_path)

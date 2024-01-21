@@ -217,7 +217,7 @@ namespace test
         */
     }
 
-    void main_test(const char *graspFile, const char *urdfFile, const char *obstacleFile, const int plannerType, const char *paramsFile)
+    void main_test(const char *graspFile, const char *urdfFile, const char *obstacleFile, const char *startQFile, const int plannerType, const char *paramsFile)
     {
         std::string grasp_path(graspFile);
 
@@ -230,7 +230,7 @@ namespace test
         }
         auto params = RbtParameters(paramsFile);
         std::cout << "Planning params: " << params.toString() << "\n";
-        auto paramsjplusrbt = JPlusRbtParameters(paramsFile);
+        auto paramsjplusrbt = JPlusRbtParameters(paramsFile, std::string(graspFile));
         std::cout << "Planning params: " << params.toString() << "\n";
 
         // JPlusRbtPlanner(std::string urdf_file);
@@ -240,7 +240,16 @@ namespace test
         // 3. Plan
 
         Eigen::VectorXd random_start_q = jprbt->GetRandomQ(1);
-        jprbt->JPlusRbt(random_start_q, paramsjplusrbt);
+        PlanningResult planning_result;
+        struct rusage t1, t2;
+        //     // in terminal: time ./burs_of_free_space
+        //     std::string file_name = GenerateRandomExperiment(num_obstacles);
+        getTime(&t1);
+        auto path = jprbt->JPlusRbt(random_start_q, paramsjplusrbt, planning_result);
+        getTime(&t2);
+
+        planning_result.time_taken = getTime(t1, t2);
+        std::cout << "planning result " << planning_result.toCSVString() << "\n";
 
         // std::optional<std::vector<Eigen::VectorXd>>
         // JPlusRbt(const VectorXd &q_start, const JPlusRbtParameters &planner_parameters);

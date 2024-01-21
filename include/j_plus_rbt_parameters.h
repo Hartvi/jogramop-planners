@@ -81,7 +81,7 @@ namespace Burs
             }
         }
 
-        JPlusRbtParameters(const std::string &filename)
+        JPlusRbtParameters(const std::string &filename, const std::string &targetPosesPath)
         {
             std::ifstream file(filename);
             std::string line;
@@ -106,9 +106,9 @@ namespace Burs
             p_close_enough = std::stod(params["p_close_enough"]);
             probability_to_steer_to_target = std::stod(params["probability_to_steer_to_target"]);
 
-            // Load target poses
-            std::string targetPosesPath = params["target_poses"];
-            // std::cout << "target poses file: " << targetPosesPath << "\n";
+            // // Load target poses
+            // std::string targetPosesPath = params["target_poses"];
+            // // std::cout << "target poses file: " << targetPosesPath << "\n";
             std::vector<Grasp> grasps = Grasp::LoadGrasps(targetPosesPath);
             std::vector<KDL::Frame> kdlFrames = Grasp::GraspsToFrames(grasps);
 
@@ -120,6 +120,7 @@ namespace Burs
             ConstructTreeFromTargets(kdlFrames);
             GetMeanTranslation(kdlFrames);
         }
+
         std::string toString() const override
         {
             std::ostringstream oss;

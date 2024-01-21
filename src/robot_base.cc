@@ -683,4 +683,39 @@ namespace Burs
     {
         return this->urdf_file.string();
     }
+
+    Eigen::VectorXd
+    RobotBase::parseCSVToVectorXd(const std::string &path)
+    {
+        std::ifstream file(path);
+        if (!file.is_open())
+        {
+            throw std::runtime_error("Unable to open file: " + path);
+        }
+
+        std::string line;
+        std::vector<double> values;
+
+        while (std::getline(file, line))
+        {
+            std::stringstream ss(line);
+            double value;
+            if (ss >> value)
+            {
+                values.push_back(value);
+            }
+            else
+            {
+                throw std::runtime_error("Failed to parse line: " + line);
+            }
+        }
+
+        Eigen::VectorXd vec(values.size());
+        for (size_t i = 0; i < values.size(); ++i)
+        {
+            vec[i] = values[i];
+        }
+
+        return vec;
+    }
 }

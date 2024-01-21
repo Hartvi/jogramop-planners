@@ -97,6 +97,9 @@ namespace Burs
 
         std::string
         ToString();
+
+        static Eigen::VectorXd
+        parseCSVToVectorXd(const std::string &path);
     };
 }
 #endif

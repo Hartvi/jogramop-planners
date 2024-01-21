@@ -19,7 +19,7 @@ namespace Burs
         PlanningResult();
         PlanningResult(bool _success, double _distance_to_goal, double _time_taken, int _num_iterations, int _tree_size);
 
-        std::string toCSVString(const PlanningResult &result);
+        std::string toCSVString();
         static PlanningResult fromCSVString(const std::string &csvString);
         static std::vector<PlanningResult> loadFromCSVFile(const std::string &filePath);
     };

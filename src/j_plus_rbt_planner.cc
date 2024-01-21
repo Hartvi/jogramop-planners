@@ -28,7 +28,7 @@ namespace Burs
     }
 
     AlgorithmState
-    JPlusRbtPlanner::CheckGoalStatus(const std::vector<KDL::Frame> &current_poses, const JPlusRbtParameters &planner_parameters, unsigned int &closest_index)
+    JPlusRbtPlanner::CheckGoalStatus(const std::vector<KDL::Frame> &current_poses, const JPlusRbtParameters &planner_parameters, int &closest_index, double &distance_to_goal)
     {
         std::shared_ptr<BurTree> t = planner_parameters.target_poses;
         // t.Nearest();
@@ -100,9 +100,8 @@ namespace Burs
     }
 
     std::optional<std::vector<Eigen::VectorXd>>
-    JPlusRbtPlanner::JPlusRbt(const VectorXd &q_start, const JPlusRbtParameters &planner_parameters)
+    JPlusRbtPlanner::JPlusRbt(const VectorXd &q_start, const JPlusRbtParameters &planner_parameters, PlanningResult &planning_result)
     {
-
         int num_nodes = planner_parameters.target_poses->GetNumberOfNodes();
         assert(planner_parameters.num_spikes < num_nodes);
 
@@ -110,7 +109,6 @@ namespace Burs
 
         auto my_env = this->GetEnv<URDFEnv>();
         auto chain = my_env->myURDFRobot->kdl_chain;
-        // unsigned int num_of_targets = target_rotations.size();
 
         KDL::JntArray q_kdl(this->q_dim);
         KDL::JntArray q_kdl_dot(this->q_dim);
@@ -123,23 +121,48 @@ namespace Burs
         std::shared_ptr<BurTree> q_tree = std::make_shared<BurTree>(q_start, this->q_dim);
         // Eigen::VectorXd q_new;
 
+        AlgorithmState algorithm_state = AlgorithmState::Trapped;
+        int last_idx = -1;
+        Eigen::VectorXd last_q;
+        planning_result.distance_to_goal = 1e10;
+
         for (int k = 0; k < planner_parameters.max_iters; k++)
         {
-            std::cout << "iter: " << k << "\n";
+            algorithm_state = AlgorithmState::Trapped;
+
+            // std::cout << "iter: " << k << "\r\r";
             // IF selecting directed expansion:
-            if (this->rng->getRandomReal() < planner_parameters.probability_to_steer_to_target)
+            Eigen::VectorXd q_rand = this->GetRandomQ(1);
+
+            // q_near <- NEAREST(q_{e1}, T_a)
+            int nearest_index = this->NearestIndex(q_tree, q_rand);
+
+            const VectorXd q_near = q_tree->GetQ(nearest_index);
+
+            // dc(q_near)
+            double d_closest = this->GetClosestDistance(q_near);
+            std::cout << "d closest " << d_closest << "\n";
+
+            // if obstacles close, use RRT steps
+            if (d_closest < planner_parameters.d_crit)
             {
+                Eigen::VectorXd q_dir = this->GetRandomQ(1);
+                Eigen::VectorXd q_new = this->GetEndpoint(q_dir, q_near, planner_parameters.epsilon_q);
+
+                if (!this->IsColliding(q_new))
+                {
+                    q_tree->AddNode(nearest_index, q_new);
+                }
+                else
+                {
+                    std::cout << "colliding\n";
+                }
+            }
+            else if (this->rng->getRandomReal() < planner_parameters.probability_to_steer_to_target)
+            {
+                // std::cout << "DDD\n";
                 // Biased bur in target directions
                 // Random point, since we don't know where we're going in configuration space
-                Eigen::VectorXd q_rand = this->GetRandomQ(1);
-
-                // q_near <- NEAREST(q_{e1}, T_a)
-                int nearest_index = this->NearestIndex(q_tree, q_rand);
-
-                const VectorXd q_near = q_tree->GetQ(nearest_index);
-
-                // dc(q_near)
-                double d_closest = this->GetClosestDistance(q_near);
 
                 Bur b = this->ExtendTowardsCartesian(q_near, planner_parameters, d_closest);
 
@@ -161,34 +184,32 @@ namespace Burs
                     }
                     newest_poses[i] = p_out;
                 }
-                unsigned int closest_index = -1;
+                int closest_index = -1;
+                double distance_to_goal;
                 // check only once in a while perhaps
-                AlgorithmState status = this->CheckGoalStatus(newest_poses, planner_parameters, closest_index);
+                algorithm_state = this->CheckGoalStatus(newest_poses, planner_parameters, closest_index, distance_to_goal);
 
-                if (status == AlgorithmState::Reached)
+                if (distance_to_goal < planning_result.distance_to_goal)
                 {
-                    std::cout << "finished in directed section\n";
-                    int a_closest = q_tree->Nearest(b.endpoints.col(closest_index).data());
+                    planning_result.distance_to_goal = distance_to_goal;
+                    last_q = b.endpoints.col(closest_index);
+                    std::cout << "nearest\n";
+                }
 
-                    return this->ConstructPathFromTree(q_tree, a_closest);
+                if (algorithm_state == AlgorithmState::Reached)
+                {
+                    // std::cout << "finished in random section\n";
+
+                    last_idx = q_tree->Nearest(b.endpoints.col(closest_index).data());
                 }
             }
             else // Random expansion
             {
+                // std::cout << "R\n";
                 // TODO fill in the random expansion
 
                 // Random point, since we don't know where we're going in configuration space
                 Eigen::MatrixXd Qe = this->GetRandomQ(planner_parameters.num_spikes);
-                // Random anyway
-                Eigen::VectorXd q_rand = Qe.col(0);
-
-                // q_near <- NEAREST(q_{e1}, T_a)
-                int nearest_index = this->NearestIndex(q_tree, q_rand);
-
-                const VectorXd q_near = q_tree->GetQ(nearest_index);
-
-                // dc(q_near)
-                double d_closest = this->GetClosestDistance(q_near);
 
                 // Instead of biased direction calculate random bur and check if have hit the goal
                 // Bur b = this->ExtendTowardsCartesian(q_near, planner_parameters, d_closest);
@@ -212,21 +233,44 @@ namespace Burs
                     }
                     newest_poses[i] = p_out;
                 }
-                unsigned int closest_index = -1;
+
+                double distance_to_goal;
+                int closest_index = -1;
                 // check only once in a while perhaps
-                AlgorithmState status = this->CheckGoalStatus(newest_poses, planner_parameters, closest_index);
+                algorithm_state = this->CheckGoalStatus(newest_poses, planner_parameters, closest_index, distance_to_goal);
 
-                if (status == AlgorithmState::Reached)
+                if (distance_to_goal < planning_result.distance_to_goal)
                 {
-                    std::cout << "finished in random section\n";
+                    planning_result.distance_to_goal = distance_to_goal;
+                    last_q = b.endpoints.col(closest_index);
+                    std::cout << "nearest\n";
+                }
 
-                    int a_closest = q_tree->Nearest(b.endpoints.col(closest_index).data());
+                if (algorithm_state == AlgorithmState::Reached)
+                {
+                    // std::cout << "finished in random section\n";
 
-                    return this->ConstructPathFromTree(q_tree, a_closest);
+                    last_idx = q_tree->Nearest(b.endpoints.col(closest_index).data());
                 }
             }
+
+            if (algorithm_state == AlgorithmState::Reached)
+            {
+                // std::cout << "finished in directed section\n";
+                planning_result.num_iterations = k;
+                planning_result.tree_size = q_tree->GetNumberOfNodes();
+                planning_result.success = true;
+                // TODO: add time measurement
+
+                return this->ConstructPathFromTree(q_tree, last_idx);
+            }
         }
-        return {};
+        planning_result.num_iterations = planner_parameters.max_iters;
+        planning_result.tree_size = q_tree->GetNumberOfNodes();
+        planning_result.success = false;
+        last_idx = q_tree->Nearest(last_q.data());
+
+        return this->ConstructPathFromTree(q_tree, last_idx);
     }
 
     Bur
@@ -262,16 +306,16 @@ namespace Burs
 
         // Get random target poses from the workspace targets to extend to
         std::shared_ptr<BurTree> target_poses = planner_parameters.target_poses;
-        std::cout << "target pose tree " << target_poses->GetNumberOfNodes() << "\n";
+        // std::cout << "target pose tree " << target_poses->GetNumberOfNodes() << "\n";
         std::vector<RRTNode> target_nodes = target_poses->mNodes;
 
         // Get random target poses; don't care about non-repeating I guess
         std::vector<RRTNode> random_nodes(planner_parameters.num_spikes);
-        std::cout << "ExtendTOwardCartesian target nodes: " << target_nodes.size() << "\n";
+        // std::cout << "ExtendTOwardCartesian target nodes: " << target_nodes.size() << "\n";
         for (int i = 0; i < planner_parameters.num_spikes; ++i)
         {
             auto randint = this->rng->getRandomInt();
-            std::cout << "random element idx: " << randint << "\n";
+            // std::cout << "random element idx: " << randint << "\n";
             random_nodes[i] = target_nodes[randint];
         }
 
