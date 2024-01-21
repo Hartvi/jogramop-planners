@@ -1,3 +1,6 @@
+#ifndef BUR_FUNCS_H
+#define BUR_FUNCS_H
+
 #include <cmath>
 #include <iostream>
 #include <functional>
@@ -7,9 +10,6 @@
 #include <cstdlib>
 #include <cxxabi.h>
 #include <Eigen/Dense>
-
-#ifndef BUR_FUNCS_H
-#define BUR_FUNCS_H
 
 #define rad_to_deg (180.0 / M_PI)
 

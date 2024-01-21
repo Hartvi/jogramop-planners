@@ -12,6 +12,19 @@ namespace Burs
         this->data = Grasp::ConvertCSVToMatrix4d(grasp_data_csv);
     }
 
+    std::vector<KDL::Frame>
+    Grasp::GraspsToFrames(const std::vector<Grasp> &grasps)
+    {
+        std::vector<KDL::Frame> frames;
+        frames.reserve(grasps.size());
+
+        for (const auto &item : grasps)
+        {
+            frames.push_back(item.ToFrame());
+        }
+        return frames;
+    }
+
     std::vector<Grasp>
     Grasp::LoadGrasps(const std::string &path_to_grasps_csv_file)
     {
@@ -35,7 +48,7 @@ namespace Burs
     }
 
     KDL::Frame
-    Grasp::ToFrame()
+    Grasp::ToFrame() const
     {
         KDL::Rotation rotation(
             data(0, 0), data(0, 1), data(0, 2),

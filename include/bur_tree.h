@@ -1,10 +1,11 @@
+
+#ifndef BUR_TREE_H
+#define BUR_TREE_H
+
 #include <flann/flann.hpp>
 #include <Eigen/Dense>
 #include <memory>
 #include "bur_funcs.h"
-
-#ifndef BUR_TREE_H
-#define BUR_TREE_H
 
 namespace Burs
 {

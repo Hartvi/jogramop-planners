@@ -1,11 +1,11 @@
+
+#ifndef COLLISION_ENV_H
+#define COLLISION_ENV_H
 #include <memory>
 #include <Eigen/Dense>
 #include <string>
 #include "robot_collision.h"
 #include "base_env.h"
-
-#ifndef COLLISION_ENV_H
-#define COLLISION_ENV_H
 
 namespace Burs
 {

@@ -1,3 +1,6 @@
+
+#ifndef RBT_PLANNER_H
+#define RBT_PLANNER_H
 #include <flann/flann.hpp>
 #include <Eigen/Dense>
 #include <memory>
@@ -6,22 +9,11 @@
 #include "base_env.h"
 #include "bur_funcs.h"
 #include "bur_tree.h"
-
-#ifndef RBT_PLANNER_H
-#define RBT_PLANNER_H
+#include "rbt_parameters.h"
 
 namespace Burs
 {
     using namespace Eigen;
-
-    struct RbtParameters
-    {
-        int max_iters;
-        double d_crit;
-        double delta_q;
-        double epsilon_q;
-        int num_spikes;
-    };
 
     class RbtPlanner : public BasePlanner
     {

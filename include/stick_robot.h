@@ -1,8 +1,9 @@
-#include <Eigen/Dense>
-#include <stdexcept>
 
 #ifndef STICK_ROBOT_H
 #define STICK_ROBOT_H
+
+#include <Eigen/Dense>
+#include <stdexcept>
 
 class StickRobot
 {

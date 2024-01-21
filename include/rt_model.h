@@ -1,10 +1,11 @@
+
+#ifndef RT_MODEL_H
+#define RT_MODEL_H
+
 #include <string>
 #include <Eigen/Dense>
 #include <memory>
 #include "PQP.h"
-
-#ifndef RT_MODEL_H
-#define RT_MODEL_H
 
 namespace RtModels
 {

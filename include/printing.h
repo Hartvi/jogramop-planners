@@ -1,11 +1,12 @@
+
+#ifndef PRINTING_H
+#define PRINTING_H
+
 #include <iostream> // cout
 #include <sstream>  // ostringstream
 #include <iomanip>
 // #include <fstream>  // idk
 #include "rt_model.h"
-
-#ifndef PRINTING_H
-#define PRINTING_H
 
 namespace printing
 {

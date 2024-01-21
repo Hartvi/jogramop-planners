@@ -1,0 +1,1 @@
+./build/burs_of_free_space test -grasp grasps/sugarbox_free_grasps.csv -urdf jogramop/robots/franka_panda/mobile_panda.urdf -obstacle obj_objects/cubes.obj -planner 0 -params planning_parameters/rbt.csv

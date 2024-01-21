@@ -1,3 +1,7 @@
+
+#ifndef ROBOT_BASE_H
+#define ROBOT_BASE_H
+
 #include <kdl_parser/kdl_parser.hpp>
 #include <kdl/chainfksolverpos_recursive.hpp>
 #include <kdl/frames_io.hpp>
@@ -15,9 +19,6 @@
 #include <Eigen/Dense>
 
 #include "bur_funcs.h"
-
-#ifndef ROBOT_BASE_H
-#define ROBOT_BASE_H
 
 namespace Burs
 {

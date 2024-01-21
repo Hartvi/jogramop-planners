@@ -80,6 +80,7 @@ namespace Burs
         std::shared_ptr<BurTree> t_goal = std::make_shared<BurTree>(q_goal, q_goal.rows());
         auto t_a = t_start;
         auto t_b = t_goal;
+        // TODO: check collision at the beginning
 
         for (int k = 0; k < plan_parameters.max_iters; k++)
         {
@@ -107,12 +108,13 @@ namespace Burs
             // dc(q_near)
             double d_closest = this->GetClosestDistance(q_near);
             // std::cout << "d_closest: " << d_closest << std::endl;
-            if (d_closest < 1e-3)
-            {
-                std::cout << "CLOSEST DISTANCE TOO SMALL" << std::endl;
 
-                return {};
-            }
+            // if (d_closest < 1e-3)
+            // {
+            //     std::cout << "CLOSEST DISTANCE TOO SMALL" << std::endl;
+
+            //     return {};
+            // }
 
             if (d_closest < plan_parameters.d_crit)
             {

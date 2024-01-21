@@ -1,12 +1,13 @@
+
+#ifndef ROBOT_COLLISION_H
+#define ROBOT_COLLISION_H
+
 #include <filesystem>
 
 #include "bur_funcs.h"
 #include "base_env.h"
 #include "robot_base.h"
 #include "rt_model.h"
-
-#ifndef ROBOT_COLLISION_H
-#define ROBOT_COLLISION_H
 
 namespace Burs
 {

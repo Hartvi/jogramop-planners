@@ -27,38 +27,6 @@ namespace Burs
         this->rng = std::make_shared<RandomNumberGenerator>(1);
     }
 
-    std::shared_ptr<BurTree>
-    JPlusRbtPlanner::ConstructTreeFromTargets(std::vector<KDL::Frame> &target_poses)
-    {
-        // TODO: add rotation
-        // Eigen::VectorXd root_node(/*load translation rotation vector*/);
-        Eigen::Vector3d root_node(target_poses[0].p.x(), target_poses[0].p.y(), target_poses[0].p.z());
-
-        std::shared_ptr<BurTree> t = std::make_shared<BurTree>(root_node, root_node.size());
-
-        for (int i = 1; i < target_poses.size(); ++i)
-        {
-            Eigen::Vector3d new_node(target_poses[i].p.x(), target_poses[i].p.y(), target_poses[i].p.z());
-
-            t->AddNode(i - 1, new_node);
-        }
-
-        return t;
-    }
-
-    Eigen::Vector3d
-    JPlusRbtPlanner::GetMeanTranslation(std::vector<KDL::Frame> &target_poses)
-    {
-        Eigen::Vector3d mean_vector(0, 0, 0);
-        for (int i = 0; i < target_poses.size(); ++i)
-        {
-            Eigen::Vector3d v(target_poses[i].p.x(), target_poses[i].p.y(), target_poses[i].p.z());
-            mean_vector += v;
-        }
-        mean_vector /= target_poses.size();
-        return mean_vector;
-    }
-
     AlgorithmState
     JPlusRbtPlanner::CheckGoalStatus(const std::vector<KDL::Frame> &current_poses, const JPlusRbtParameters &planner_parameters, unsigned int &closest_index)
     {
@@ -138,7 +106,7 @@ namespace Burs
         int num_nodes = planner_parameters.target_poses->GetNumberOfNodes();
         assert(planner_parameters.num_spikes < num_nodes);
 
-        this->rng = std::make_shared<RandomNumberGenerator>(num_nodes);
+        this->rng = std::make_shared<RandomNumberGenerator>(num_nodes - 1);
 
         auto my_env = this->GetEnv<URDFEnv>();
         auto chain = my_env->myURDFRobot->kdl_chain;
@@ -157,6 +125,7 @@ namespace Burs
 
         for (int k = 0; k < planner_parameters.max_iters; k++)
         {
+            std::cout << "iter: " << k << "\n";
             // IF selecting directed expansion:
             if (this->rng->getRandomReal() < planner_parameters.probability_to_steer_to_target)
             {
@@ -198,7 +167,7 @@ namespace Burs
 
                 if (status == AlgorithmState::Reached)
                 {
-
+                    std::cout << "finished in directed section\n";
                     int a_closest = q_tree->Nearest(b.endpoints.col(closest_index).data());
 
                     return this->ConstructPathFromTree(q_tree, a_closest);
@@ -249,6 +218,7 @@ namespace Burs
 
                 if (status == AlgorithmState::Reached)
                 {
+                    std::cout << "finished in random section\n";
 
                     int a_closest = q_tree->Nearest(b.endpoints.col(closest_index).data());
 
@@ -292,13 +262,17 @@ namespace Burs
 
         // Get random target poses from the workspace targets to extend to
         std::shared_ptr<BurTree> target_poses = planner_parameters.target_poses;
+        std::cout << "target pose tree " << target_poses->GetNumberOfNodes() << "\n";
         std::vector<RRTNode> target_nodes = target_poses->mNodes;
 
         // Get random target poses; don't care about non-repeating I guess
         std::vector<RRTNode> random_nodes(planner_parameters.num_spikes);
+        std::cout << "ExtendTOwardCartesian target nodes: " << target_nodes.size() << "\n";
         for (int i = 0; i < planner_parameters.num_spikes; ++i)
         {
-            random_nodes[i] = target_nodes[this->rng->getRandomInt()];
+            auto randint = this->rng->getRandomInt();
+            std::cout << "random element idx: " << randint << "\n";
+            random_nodes[i] = target_nodes[randint];
         }
 
         // set the direction for each endpoint in the bur

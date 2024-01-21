@@ -1,7 +1,8 @@
-#include <random>
 
 #ifndef RAND_NUMS_H
 #define RAND_NUMS_H
+
+#include <random>
 
 class RandomNumberGenerator
 {

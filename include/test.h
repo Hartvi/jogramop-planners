@@ -21,6 +21,8 @@
 #include "grasps.h"
 #include "j_plus_rbt_planner.h"
 
+#include "rbt_parameters.h"
+#include "j_plus_rbt_parameters.h"
 #include "test_urdf.h"
 
 namespace test
@@ -215,56 +217,72 @@ namespace test
         */
     }
 
-    void main_test(const char *graspFile, const char *urdfFile, const char *obstacleFile)
+    void main_test(const char *graspFile, const char *urdfFile, const char *obstacleFile, const int plannerType, const char *paramsFile)
     {
         std::string grasp_path(graspFile);
 
         std::vector<Grasp> grasps = Grasp::LoadGrasps(grasp_path);
-        std::cout << "grasps: " << std::endl;
+        std::cout << "grasps: " << grasps.size() << std::endl;
         for (unsigned int i = 0; i < grasps.size(); ++i)
         {
             std::cout << "Grasp:\n"
                       << grasps[i].ToFrame() << std::endl;
         }
+        auto params = RbtParameters(paramsFile);
+        std::cout << "Planning params: " << params.toString() << "\n";
+        auto paramsjplusrbt = JPlusRbtParameters(paramsFile);
+        std::cout << "Planning params: " << params.toString() << "\n";
 
-        for (unsigned int i = 0; i < 1000; ++i)
-        {
-            unsigned int num_obstacles = 3;
+        // JPlusRbtPlanner(std::string urdf_file);
+        std::shared_ptr<JPlusRbtPlanner> jprbt = std::make_shared<JPlusRbtPlanner>(std::string(urdfFile));
+        // 1. Set obstacles in urdfenv
+        // 2. Setup parameters
+        // 3. Plan
 
-            struct rusage t1, t2;
-            // in terminal: time ./burs_of_free_space
-            getTime(&t1);
-            std::string file_name = GenerateRandomExperiment(num_obstacles);
-            getTime(&t2);
-            std::cout << "Time: " << getTime(t1, t2) << std::endl;
-            return;
+        Eigen::VectorXd random_start_q = jprbt->GetRandomQ(1);
+        jprbt->JPlusRbt(random_start_q, paramsjplusrbt);
 
-            // std::string file_name = GenerateFailingCase(num_obstacles);
-            // std::cout << "Just planned a path" << std::endl;
+        // std::optional<std::vector<Eigen::VectorXd>>
+        // JPlusRbt(const VectorXd &q_start, const JPlusRbtParameters &planner_parameters);
 
-            // if (file_name != "")
-            // {
-            //     std::cout << "Created fail case" << std::endl;
-            // }
-            // continue;
-            if (file_name != "")
-            {
-                std::string path_name = joinWithCurrentDirectory(file_name);
-                std::string str_command = "python3.10 ../scripts/animate_scene.py " + path_name;
-                // std::string str_command = "python3.10 ../scripts/render_path_positions.py " + path_name;
-                const char *command = str_command.c_str();
-                int result = system(command);
+        // for (unsigned int i = 0; i < 1000; ++i)
+        // {
+        //     unsigned int num_obstacles = 3;
 
-                if (result != 0)
-                {
-                    std::cout << "Calling `" << command << "` failed" << std::endl;
-                }
-            }
-            else
-            {
-                std::cout << "Path returned by path planner was invalid" << std::endl;
-            }
-        }
+        //     struct rusage t1, t2;
+        //     // in terminal: time ./burs_of_free_space
+        //     getTime(&t1);
+        //     std::string file_name = GenerateRandomExperiment(num_obstacles);
+        //     getTime(&t2);
+        //     std::cout << "Time: " << getTime(t1, t2) << std::endl;
+        //     return;
+
+        //     // std::string file_name = GenerateFailingCase(num_obstacles);
+        //     // std::cout << "Just planned a path" << std::endl;
+
+        //     // if (file_name != "")
+        //     // {
+        //     //     std::cout << "Created fail case" << std::endl;
+        //     // }
+        //     // continue;
+        //     if (file_name != "")
+        //     {
+        //         std::string path_name = joinWithCurrentDirectory(file_name);
+        //         std::string str_command = "python3.10 ../scripts/animate_scene.py " + path_name;
+        //         // std::string str_command = "python3.10 ../scripts/render_path_positions.py " + path_name;
+        //         const char *command = str_command.c_str();
+        //         int result = system(command);
+
+        //         if (result != 0)
+        //         {
+        //             std::cout << "Calling `" << command << "` failed" << std::endl;
+        //         }
+        //     }
+        //     else
+        //     {
+        //         std::cout << "Path returned by path planner was invalid" << std::endl;
+        //     }
+        // }
 
         return;
     }

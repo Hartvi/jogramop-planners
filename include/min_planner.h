@@ -1,3 +1,6 @@
+
+#ifndef MIN_PLANNER_H
+#define MIN_PLANNER_H
 #include <flann/flann.hpp>
 #include <Eigen/Dense>
 #include <memory>
@@ -5,9 +8,6 @@
 #include "base_env.h"
 #include "bur_funcs.h"
 #include "bur_tree.h"
-
-#ifndef MIN_PLANNER_H
-#define MIN_PLANNER_H
 
 namespace Burs
 {

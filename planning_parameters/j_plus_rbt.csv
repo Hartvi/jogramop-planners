@@ -1,0 +1,8 @@
+max_iters,1000,
+d_crit,0.1,
+delta_q,3.1415,
+epsilon_q,0.1,
+num_spikes,5,
+p_close_enough,0.01,
+probability_to_steer_to_target,0.1,
+target_poses,/home/hartvi/Documents/CVUT/diploma_thesis/burs_of_free_space/grasps/sugarbox_free_grasps.csv
