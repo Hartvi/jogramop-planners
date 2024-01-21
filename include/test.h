@@ -217,6 +217,7 @@ namespace test
         */
     }
 
+
     void main_test(const char *graspFile, const char *urdfFile, const char *obstacleFile, const int plannerType, const char *paramsFile)
     {
         std::string grasp_path(graspFile);
@@ -226,7 +227,7 @@ namespace test
         for (unsigned int i = 0; i < grasps.size(); ++i)
         {
             std::cout << "Grasp:\n"
-                      << grasps[i].ToFrame() << std::endl;
+                    << grasps[i].ToFrame() << std::endl;
         }
         auto params = RbtParameters(paramsFile);
         std::cout << "Planning params: " << params.toString() << "\n";

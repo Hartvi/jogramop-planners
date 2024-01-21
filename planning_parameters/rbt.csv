@@ -3,3 +3,6 @@ d_crit,0.2,
 delta_q,3.1415,
 epsilon_q,0.1,
 num_spikes,7,
+p_close_enough,0.01,
+probability_to_steer_to_target,0.1,
+target_poses,grasps/sugarbox_free_grasps.csv
