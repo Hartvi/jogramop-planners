@@ -214,6 +214,8 @@ namespace Burs
                 // Instead of biased direction calculate random bur and check if have hit the goal
                 // Bur b = this->ExtendTowardsCartesian(q_near, planner_parameters, d_closest);
 
+                // limit to max pi rotation
+                this->GetEndpoints(Qe, q_near, planner_parameters.delta_q);
                 Bur b = this->GetBur(q_near, Qe, d_closest);
 
                 for (int i = 0; i < planner_parameters.num_spikes; ++i)
