@@ -143,11 +143,42 @@ class ObjectMode:
     robot=0
     obstacle=1
 
-def render_env(path_to_file):
+def render_env(path_to_file, extra_points_file=None):
 
     start_scene()
     
     # bbb = create_point((3,0,0), (1, 0, 1, 1), size=0.1)
+
+    if extra_points_file:
+        with open(extra_points_file, "r") as f:
+            lines = f.read().split("\n")
+            for k in range(len(lines)):
+                T = np.zeros((4,4))
+                numbers = lines[k].split(",")
+                
+                try:
+                    # print("NUMBERS:", numbers)
+                    values = list(map(float, numbers))
+                    for i in range(4):
+                        for j in range(4):
+                            T[i, j] = values[i*4 + j]
+                        
+                        k += 1
+                    
+                    # rotation: Rotation = Rotation.from_matrix(T)
+                    # euler = rotation.as_euler('xyz', False)
+
+                    # for i in range(3):
+                        # current_object.rotation_euler[i] = euler[i]
+
+                    current_object = create_point(T[3,:3], (1, 0, 0, 1), 0.05)
+                    
+                    newest_object = bpy.context.object
+                    newest_object.keyframe_insert(data_path="location", frame=0)
+                except:
+                    print("invalid data:", numbers)
+                    pass
+
     with open(path_to_file, "r") as f:
         lines = f.read().split("\n")
         k = 0
@@ -204,18 +235,18 @@ def render_env(path_to_file):
                 for _ in range(2):
                     if "R" in lines[k]:
                         k += 1
-                        R = np.zeros((3,3))
+                        T = np.zeros((3,3))
                         for i in range(3):
                             numbers = lines[k].split(",")
                             while "" in numbers:
                                 numbers.remove("")
                             values = list(map(float, numbers))
                             for j in range(3):
-                                R[i,j] = values[j]
+                                T[i,j] = values[j]
                             
                             k += 1
                         
-                        rotation: Rotation = Rotation.from_matrix(R)
+                        rotation: Rotation = Rotation.from_matrix(T)
                         euler = rotation.as_euler('xyz', False)
 
                         for i in range(3):
@@ -298,4 +329,7 @@ if __name__ == "__main__":
         camX = float(sys.argv[2])
         camY = float(sys.argv[3])
         camZ = float(sys.argv[4])
-    render_env(test_path)
+        if len(sys.argv) > 5:
+            # grasps
+            grasps_file = sys.argv[5]
+    render_env(test_path, grasps_file)

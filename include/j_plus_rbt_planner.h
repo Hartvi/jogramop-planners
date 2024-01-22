@@ -47,6 +47,9 @@ namespace Burs
         std::string
         StringifyPath(std::vector<Eigen::VectorXd> path);
 
+        std::string
+        ConfigsToString(const std::vector<Eigen::VectorXd> &path);
+
         static std::vector<Eigen::VectorXd>
         InterpolatePath(std::vector<Eigen::VectorXd> path, Qunit threshold = 1.0);
     };

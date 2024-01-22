@@ -15,6 +15,8 @@ namespace Burs
     {
         VectorXd center;
         MatrixXd endpoints;
+        Bur() = default;
+
         Bur(VectorXd center, MatrixXd endpoints)
             : center(center),
               endpoints(endpoints)

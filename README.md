@@ -38,6 +38,18 @@ make
 
 
 ## TODO:
+- send to martin many files with configurations for each scenario
+- Extend algorithm to use two trees when provided with target configuration
+  - Add Connect usage when the target config is known
+- visualize grasp in blender using a point
+- Done: RRT switch 
+  - with J+
+  - without J+
+- Done: always save best config
+- Done: result measurement prefix
+  - e.g. ahoj => ahoj.txt measurement, ahoj.try configuration list, ahoj.vis R and t for visualization
+
+
 - Verify correctness of algorithm
 - Test `JPlusRbtPlanner` that it runs and finishes
 - Add measurements from `include/planning_result.h`
