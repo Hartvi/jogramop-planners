@@ -19,9 +19,25 @@ namespace Burs
     BurTree::AddNode(int p, VectorXd q_location)
     {
         this->mNodes.emplace_back(p, q_location);
-
         // have to build index to register the new node
-        this->BuildIndex();
+//        this->BuildIndex();
+
+
+
+        // HACK
+        if (mNodes.size() == 1) {
+            BuildIndex();
+        } else {
+            const int dimension = q_location.size();
+            flann::Matrix<double> add_point_matrix(new double[1 * dimension ], 1, dimension );
+            for(int i=0;i<(int)q_location.size();i++) {
+                add_point_matrix[0][i] = (float)q_location[i];
+            }
+            mIndex->addPoints(add_point_matrix, 2.0 );
+        }
+
+
+        
     }
 
     std::pair<int, double>
