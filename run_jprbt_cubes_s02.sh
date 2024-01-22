@@ -11,7 +11,7 @@
 -num_spikes 2 \
 -p_close_enough 0.015 \
 -prob_steer 0.1 \
--target_prefix /home/hartvi/Documents/CVUT/diploma_thesis/burs_of_free_space/out \
+-target_prefix /home/hartvi/Documents/CVUT/diploma_thesis/burs_of_free_space/out.res \
 -render 1 \
 -vis_script /home/hartvi/Documents/CVUT/diploma_thesis/burs_of_free_space/scripts/animate_scene.py \
 -cx 1 \
