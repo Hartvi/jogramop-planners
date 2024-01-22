@@ -89,6 +89,7 @@ namespace Burs
         }
 
         closest_index = best_cost_index;
+        distance_to_goal = best_total_cost;
         if (best_total_cost < planner_parameters.p_close_enough)
         {
             return AlgorithmState::Reached;
@@ -126,8 +127,29 @@ namespace Burs
         Eigen::VectorXd last_q;
         planning_result.distance_to_goal = 1e10;
 
+        std::vector<KDL::Frame> newest_poses(planner_parameters.num_spikes);
+        for (unsigned int i = 0; i < planner_parameters.num_spikes; ++i)
+        {
+            KDL::Frame p_out;
+            q_kdl.data = q_start;
+            if (fk_solver.JntToCart(q_kdl, p_out) < 0)
+            {
+                throw std::runtime_error("Failed forward kinematics in goal status checking");
+            }
+            newest_poses[i] = p_out;
+        }
+        int closest_index = -1;
+        double distance_to_goal;
+        // check only once in a while perhaps
+        algorithm_state = this->CheckGoalStatus(newest_poses, planner_parameters, closest_index, distance_to_goal);
+        std::cout << "distance to goal:" << distance_to_goal << " \n";
+
         for (int k = 0; k < planner_parameters.max_iters; k++)
         {
+            if (k % 10)
+            {
+                std::cout << "iter: " << k << "\r\r";
+            }
             algorithm_state = AlgorithmState::Trapped;
 
             // std::cout << "iter: " << k << "\r\r";
@@ -141,7 +163,7 @@ namespace Burs
 
             // dc(q_near)
             double d_closest = this->GetClosestDistance(q_near);
-            std::cout << "d closest " << d_closest << "\n";
+            // std::cout << "d closest " << d_closest << "\n";
 
             // if obstacles close, use RRT steps
             if (d_closest < planner_parameters.d_crit)
@@ -152,6 +174,35 @@ namespace Burs
                 if (!this->IsColliding(q_new))
                 {
                     q_tree->AddNode(nearest_index, q_new);
+
+                    std::vector<KDL::Frame> newest_poses(planner_parameters.num_spikes);
+                    for (unsigned int i = 0; i < planner_parameters.num_spikes; ++i)
+                    {
+                        KDL::Frame p_out;
+                        q_kdl.data = q_new;
+                        if (fk_solver.JntToCart(q_kdl, p_out) < 0)
+                        {
+                            throw std::runtime_error("Failed forward kinematics in goal status checking");
+                        }
+                        newest_poses[i] = p_out;
+                    }
+                    int closest_index = -1;
+                    double distance_to_goal;
+                    // check only once in a while perhaps
+                    algorithm_state = this->CheckGoalStatus(newest_poses, planner_parameters, closest_index, distance_to_goal);
+
+                    if (distance_to_goal < planning_result.distance_to_goal)
+                    {
+                        planning_result.distance_to_goal = distance_to_goal;
+                        last_q = q_new;
+                        std::cout << "nearest\n";
+                    }
+
+                    if (algorithm_state == AlgorithmState::Reached)
+                    {
+                        std::cout << "finished in random section\n";
+                        last_idx = q_tree->Nearest(q_new.data());
+                    }
                 }
                 else
                 {
@@ -250,7 +301,7 @@ namespace Burs
 
                 if (algorithm_state == AlgorithmState::Reached)
                 {
-                    // std::cout << "finished in random section\n";
+                    std::cout << "finished in RRT section\n";
 
                     last_idx = q_tree->Nearest(b.endpoints.col(closest_index).data());
                 }
@@ -465,4 +516,5 @@ namespace Burs
 
         return dense_path;
     }
+
 }

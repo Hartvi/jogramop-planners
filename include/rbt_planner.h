@@ -68,6 +68,7 @@ namespace Burs
     protected:
         RadiusFuncParallel radius_func;
         ForwardKinematicsParallel forwardKinematicsParallel;
+        bool checkGround;
 
         // int num_spikes;
         // int max_iters;

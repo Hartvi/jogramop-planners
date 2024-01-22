@@ -79,6 +79,17 @@ namespace Burs
         for (int i = 0; i < this->robot_models.size(); i++)
         {
             std::shared_ptr<RtModels::RtModel> current_robot_part = this->robot_models[i];
+
+            if (i >= this->minimumColSegmentIdx)
+            {
+                double current_part_z = current_robot_part->getT()[2];
+                double tmpDist = current_part_z - this->groundLevel;
+                if (tmpDist < min_dist)
+                {
+                    min_dist = tmpDist;
+                }
+            }
+
             for (int k = 0; k < this->obstacle_models.size(); k++)
             {
                 auto obs = this->obstacle_models[k];
@@ -126,4 +137,12 @@ namespace Burs
         model->SetRotation(R);
         model->SetTranslation(t);
     }
+
+    void
+    BaseEnv::SetGroundLevel(double groundLevel, int minimumColSegmentIdx)
+    {
+        this->groundLevel = groundLevel;
+        this->minimumColSegmentIdx = minimumColSegmentIdx;
+    }
+
 }

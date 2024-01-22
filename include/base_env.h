@@ -48,6 +48,12 @@ namespace Burs
         void
         SetObstacleRotation(int id, Eigen::Matrix3d R, Eigen::Vector3d t);
 
+        void
+        SetGroundLevel(double groundLevel, int minimumColSegmentIdx);
+
+        double groundLevel = -1e10;
+        int minimumColSegmentIdx = 999;
+
         std::vector<std::shared_ptr<RtModels::RtModel>> obstacle_models;
         std::vector<std::shared_ptr<RtModels::RtModel>> robot_models;
         std::vector<std::string> obstacle_map;
