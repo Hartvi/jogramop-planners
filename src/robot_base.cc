@@ -415,8 +415,14 @@ namespace Burs
         if (fk_solver.JntToCart(joint_positions, segment_poses) >= 0)
         {
 
+            // typedef enum { RotAxis,RotX,RotY,RotZ,TransAxis,TransX,TransY,TransZ,None} JointType;
             for (unsigned int i = 0; i < this->kdl_chain.getNrOfSegments(); ++i)
             {
+                if (this->kdl_chain.getSegment(i).getJoint().getType() == KDL::Joint::JointType::None)
+                {
+                    // std::cout << "segment: " << i << "none joint\n";
+                    continue;
+                }
                 auto segment_pose = segment_poses[i];
                 // Convert KDL position to Eigen vector
                 Eigen::Vector3d position(segment_pose.p.x(), segment_pose.p.y(), segment_pose.p.z());
@@ -481,13 +487,18 @@ namespace Burs
         // TOOD: from position i to position i+1:end
         if (fk_solver.JntToCart(joint_positions, segment_poses) >= 0)
         {
-            for (unsigned int i = 0; i < segment_poses.size(); ++i)
+            for (unsigned int i = 0; i < segment_poses.size() - 1; ++i)
             {
                 auto segment_pose = segment_poses[i];
                 Eigen::Vector3d position(segment_pose.p.x(), segment_pose.p.y(), segment_pose.p.z());
 
                 // Local axis: https://docs.ros.org/en/indigo/api/orocos_kdl/html/classKDL_1_1Joint.html#a57c97b32765b0caeb84b303d66a96a1b
                 KDL::Vector joint_axis_local = this->kdl_chain.getSegment(ith_distal_point).getJoint().JointAxis();
+                if (this->kdl_chain.getSegment(ith_distal_point).getJoint().getType() == KDL::Joint::JointType::None)
+                {
+                    // std::cout << "Skip segment " << i << "\n";
+                    continue;
+                }
                 for (unsigned int k = 0; k < segment_poses.size(); ++k)
                 {
                     KDL::Frame end_effector_pose = segment_poses[k];

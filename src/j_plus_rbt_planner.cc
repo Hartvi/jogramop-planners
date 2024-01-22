@@ -127,17 +127,29 @@ namespace Burs
         Eigen::VectorXd last_q;
         planning_result.distance_to_goal = 1e10;
 
-        std::vector<KDL::Frame> newest_poses(planner_parameters.num_spikes);
-        for (unsigned int i = 0; i < planner_parameters.num_spikes; ++i)
+        std::vector<KDL::Frame> newest_poses(1);
+        // KDL::Frame p_out;
+        std::vector<KDL::Frame> p_out(chain.getNrOfSegments());
+        std::cout << "number of segments: " << p_out.size() << "\n";
+        q_kdl.data = q_start;
+        if (fk_solver.JntToCart(q_kdl, p_out) < 0)
         {
-            KDL::Frame p_out;
-            q_kdl.data = q_start;
-            if (fk_solver.JntToCart(q_kdl, p_out) < 0)
-            {
-                throw std::runtime_error("Failed forward kinematics in goal status checking");
-            }
-            newest_poses[i] = p_out;
+            throw std::runtime_error("Failed forward kinematics in goal status checking");
         }
+        newest_poses[0] = p_out[chain.getNrOfSegments() - 1];
+        for (int i = 0; i < chain.getNrOfSegments(); ++i)
+        {
+            std::cout << "segment " << i << ": " << chain.getSegment(i).getName() << " " << p_out[i].p << "\n";
+        }
+
+        if (fk_solver.JntToCart(q_kdl, p_out[0]) < 0)
+        {
+            throw std::runtime_error("Failed forward kinematics in goal status checking");
+        }
+        // std::cout << "last segment position: " << p_out[0].p << "\n";
+        // std::cout << "EXIT\n";
+        // exit(0);
+
         int closest_index = -1;
         double distance_to_goal;
         // check only once in a while perhaps
