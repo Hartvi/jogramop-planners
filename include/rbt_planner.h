@@ -77,6 +77,9 @@ namespace Burs
         AlgorithmState
         GreedyExtendRandomConfig(std::shared_ptr<BurTree> t_a, Eigen::VectorXd closest_q, const RbtParameters &planner_parameters);
 
+        std::vector<Eigen::VectorXd>
+        Densify(const VectorXd &src, const VectorXd &tgt, const RbtParameters &plan_params);
+
     protected:
         RadiusFuncParallel radius_func;
         ForwardKinematicsParallel forwardKinematicsParallel;

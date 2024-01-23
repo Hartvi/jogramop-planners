@@ -19,12 +19,15 @@ namespace Burs
         double delta_q;
         double epsilon_q;
         int num_spikes;
+        double q_resolution;
 
-        RbtParameters(int max_iters, double d_crit, double delta_q, double epsilon_q, int num_spikes)
-            : max_iters(max_iters), d_crit(d_crit), delta_q(delta_q), epsilon_q(epsilon_q), num_spikes(num_spikes) {}
+        RbtParameters(int max_iters, double d_crit, double delta_q, double epsilon_q, int num_spikes, double q_resolution)
+            : max_iters(max_iters), d_crit(d_crit), delta_q(delta_q), epsilon_q(epsilon_q), num_spikes(num_spikes), q_resolution(q_resolution)
+        {
+        }
 
         RbtParameters()
-            : max_iters(0), d_crit(0), delta_q(0), epsilon_q(0), num_spikes(0) {}
+            : max_iters(0), d_crit(0), delta_q(0), epsilon_q(0), num_spikes(0), q_resolution(0) {}
 
         RbtParameters(const std::string &filename)
         {
@@ -57,7 +60,8 @@ namespace Burs
                 << ", d_crit: " << d_crit
                 << ", delta_q: " << delta_q
                 << ", epsilon_q: " << epsilon_q
-                << ", num_spikes: " << num_spikes;
+                << ", num_spikes: " << num_spikes
+                << ", q_resolution: " << q_resolution;
             return oss.str();
         }
     };

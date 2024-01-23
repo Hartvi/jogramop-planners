@@ -36,10 +36,10 @@ namespace Burs
         // GreedyExtendRandomConfig(std::shared_ptr<BurTree> t_a, Eigen::VectorXd closest_q, const JPlusRbtParameters &planner_parameters);
 
         std::optional<std::vector<Eigen::VectorXd>>
-        RRTMultiGoal(const VectorXd &q_start, std::vector<VectorXd> &q_goals, const JPlusRbtParameters &planner_parameters, PlanningResult &planning_result);
+        RRTMultiGoal(const VectorXd &q_start, std::vector<VectorXd> &q_goals, const JPlusRbtParameters &planner_parameters, PlanningResult &planning_result, const int &all_ik_max_iters);
 
         std::optional<std::vector<Eigen::VectorXd>>
-        RbtMultiGoal(const VectorXd &q_start, std::vector<VectorXd> &q_goals, const JPlusRbtParameters &planner_parameters, PlanningResult &planning_result);
+        RbtMultiGoal(const VectorXd &q_start, std::vector<VectorXd> &q_goals, const JPlusRbtParameters &planner_parameters, PlanningResult &planning_result, const int &all_ik_max_iters);
 
         std::optional<std::vector<Eigen::VectorXd>>
         BiJPlusRbtMultiGoal(const VectorXd &q_start, std::vector<VectorXd> &q_goals, const JPlusRbtParameters &planner_parameters, PlanningResult &planning_result);

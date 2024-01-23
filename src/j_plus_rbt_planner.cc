@@ -194,396 +194,407 @@ namespace Burs
     //     }
     // }
 
-    std::optional<std::vector<Eigen::VectorXd>>
-    JPlusRbtPlanner::RRTMultiGoal(const VectorXd &q_start, std::vector<VectorXd> &q_goals, const JPlusRbtParameters &planner_parameters, PlanningResult &planning_result)
-    {
-        double best_dist = 1e10;
-        // Time is measured outside this function
-        PlanningResult best_planning_result;
-        std::optional<std::vector<Eigen::VectorXd>> best_path;
-        for (int i = 0; i < q_goals.size(); ++i)
-        {
-            std::optional<std::vector<Eigen::VectorXd>> result =
-                this->RRTConnect(q_start, q_goals[i], planner_parameters, planning_result);
-            // std::optional<std::vector<Eigen::VectorXd>> result =
-            //     this->RbtConnect(q_start, q_goals[i], planner_parameters, planning_result);
+    // std::optional<std::vector<Eigen::VectorXd>>
+    // JPlusRbtPlanner::RRTMultiGoal(const VectorXd &q_start, std::vector<VectorXd> &q_goals, const JPlusRbtParameters &planner_parameters, PlanningResult &planning_result, const int &all_ik_max_iters)
+    // {
+    //     double best_dist = 1e10;
+    //     // Time is measured outside this function
+    //     PlanningResult best_planning_result;
+    //     std::optional<std::vector<Eigen::VectorXd>> best_path;
+    //     for (int i = 0; i < q_goals.size(); ++i)
+    //     {
+    //         std::optional<std::vector<Eigen::VectorXd>> result =
+    //             this->RRTConnect(q_start, q_goals[i], planner_parameters, planning_result);
+    //         // std::optional<std::vector<Eigen::VectorXd>> result =
+    //         //     this->RbtConnect(q_start, q_goals[i], planner_parameters, planning_result);
 
-            // for each attempt we add iterations and tree size
-            best_planning_result.num_iterations += planning_result.num_iterations;
-            best_planning_result.tree_size += planning_result.tree_size;
+    //         // for each attempt we add iterations and tree size
+    //         best_planning_result.num_iterations += planning_result.num_iterations;
+    //         best_planning_result.tree_size += planning_result.tree_size;
 
-            if (planning_result.success)
-            {
-                planning_result.num_iterations = best_planning_result.num_iterations;
-                planning_result.tree_size = best_planning_result.tree_size;
-                return result;
-            }
-            else if (planning_result.distance_to_goal < best_dist)
-            {
-                best_dist = planning_result.distance_to_goal;
+    //         if (planning_result.success)
+    //         {
+    //             planning_result.num_iterations = best_planning_result.num_iterations;
+    //             planning_result.tree_size = best_planning_result.tree_size;
+    //             return result;
+    //         }
+    //         else if (planning_result.distance_to_goal < best_dist)
+    //         {
+    //             best_dist = planning_result.distance_to_goal;
 
-                best_planning_result.distance_to_goal = planning_result.distance_to_goal;
+    //             best_planning_result.distance_to_goal = planning_result.distance_to_goal;
 
-                best_path = result;
-            }
-        }
+    //             best_path = result;
+    //         }
 
-        // Because it's a reference:
-        planning_result.distance_to_goal = best_planning_result.distance_to_goal;
-        planning_result.num_iterations = best_planning_result.num_iterations;
-        planning_result.success = best_planning_result.success;
-        planning_result.tree_size = best_planning_result.tree_size;
-        return best_path;
-    }
+    //         if (all_ik_max_iters < best_planning_result.num_iterations)
+    //         {
+    //             break;
+    //         }
+    //     }
 
-    std::optional<std::vector<Eigen::VectorXd>>
-    JPlusRbtPlanner::RbtMultiGoal(const VectorXd &q_start, std::vector<VectorXd> &q_goals, const JPlusRbtParameters &planner_parameters, PlanningResult &planning_result)
-    {
-        double best_dist = 1e10;
-        // Time is measured outside this function
-        PlanningResult best_planning_result;
-        std::optional<std::vector<Eigen::VectorXd>> best_path;
-        for (int i = 0; i < q_goals.size(); ++i)
-        {
-            std::optional<std::vector<Eigen::VectorXd>> result =
-                this->RbtConnect(q_start, q_goals[i], planner_parameters, planning_result);
-            // std::optional<std::vector<Eigen::VectorXd>> result =
-            //     this->RbtConnect(q_start, q_goals[i], planner_parameters, planning_result);
+    //     // Because it's a reference:
+    //     planning_result.distance_to_goal = best_planning_result.distance_to_goal;
+    //     planning_result.num_iterations = best_planning_result.num_iterations;
+    //     planning_result.success = best_planning_result.success;
+    //     planning_result.tree_size = best_planning_result.tree_size;
+    //     return best_path;
+    // }
 
-            // for each attempt we add iterations and tree size
-            best_planning_result.num_iterations += planning_result.num_iterations;
-            best_planning_result.tree_size += planning_result.tree_size;
+    // std::optional<std::vector<Eigen::VectorXd>>
+    // JPlusRbtPlanner::RbtMultiGoal(const VectorXd &q_start, std::vector<VectorXd> &q_goals, const JPlusRbtParameters &planner_parameters, PlanningResult &planning_result, const int &all_ik_max_iters)
+    // {
+    //     double best_dist = 1e10;
+    //     // Time is measured outside this function
+    //     PlanningResult best_planning_result;
+    //     std::optional<std::vector<Eigen::VectorXd>> best_path;
 
-            if (planning_result.success)
-            {
-                planning_result.num_iterations = best_planning_result.num_iterations;
-                planning_result.tree_size = best_planning_result.tree_size;
-                return result;
-            }
-            else if (planning_result.distance_to_goal < best_dist)
-            {
-                best_dist = planning_result.distance_to_goal;
+    //     for (int i = 0; i < q_goals.size(); ++i)
+    //     {
+    //         std::optional<std::vector<Eigen::VectorXd>> result =
+    //             this->RbtConnect(q_start, q_goals[i], planner_parameters, planning_result);
+    //         // std::optional<std::vector<Eigen::VectorXd>> result =
+    //         //     this->RbtConnect(q_start, q_goals[i], planner_parameters, planning_result);
 
-                best_planning_result.distance_to_goal = planning_result.distance_to_goal;
+    //         // for each attempt we add iterations and tree size
+    //         best_planning_result.num_iterations += planning_result.num_iterations;
+    //         best_planning_result.tree_size += planning_result.tree_size;
 
-                best_path = result;
-            }
-        }
+    //         if (planning_result.success)
+    //         {
+    //             planning_result.num_iterations = best_planning_result.num_iterations;
+    //             planning_result.tree_size = best_planning_result.tree_size;
+    //             return result;
+    //         }
+    //         else if (planning_result.distance_to_goal < best_dist)
+    //         {
+    //             best_dist = planning_result.distance_to_goal;
 
-        // Because it's a reference:
-        planning_result.distance_to_goal = best_planning_result.distance_to_goal;
-        planning_result.num_iterations = best_planning_result.num_iterations;
-        planning_result.success = best_planning_result.success;
-        planning_result.tree_size = best_planning_result.tree_size;
-        return best_path;
-    }
+    //             best_planning_result.distance_to_goal = planning_result.distance_to_goal;
 
-    std::optional<std::vector<Eigen::VectorXd>>
-    JPlusRbtPlanner::BiJPlusRbtMultiGoal(const VectorXd &q_start, std::vector<VectorXd> &q_goals, const JPlusRbtParameters &planner_parameters, PlanningResult &planning_result)
-    {
-        double best_dist = 1e10;
-        // Time is measured outside this function
-        PlanningResult best_planning_result;
-        std::optional<std::vector<Eigen::VectorXd>> best_path;
-        for (int i = 0; i < q_goals.size(); ++i)
-        {
-            std::optional<std::vector<Eigen::VectorXd>> result =
-                this->BiJPlusRbt(q_start, q_goals[i], planner_parameters, planning_result);
-            // std::optional<std::vector<Eigen::VectorXd>> result =
-            //     this->RbtConnect(q_start, q_goals[i], planner_parameters, planning_result);
+    //             best_path = result;
+    //         }
 
-            // for each attempt we add iterations and tree size
-            best_planning_result.num_iterations += planning_result.num_iterations;
-            best_planning_result.tree_size += planning_result.tree_size;
+    //         if (all_ik_max_iters < best_planning_result.num_iterations)
+    //         {
+    //             break;
+    //         }
+    //     }
 
-            if (planning_result.success)
-            {
-                planning_result.num_iterations = best_planning_result.num_iterations;
-                planning_result.tree_size = best_planning_result.tree_size;
-                return result;
-            }
-            else if (planning_result.distance_to_goal < best_dist)
-            {
-                best_dist = planning_result.distance_to_goal;
+    //     // Because it's a reference:
+    //     planning_result.distance_to_goal = best_planning_result.distance_to_goal;
+    //     planning_result.num_iterations = best_planning_result.num_iterations;
+    //     planning_result.success = best_planning_result.success;
+    //     planning_result.tree_size = best_planning_result.tree_size;
+    //     return best_path;
+    // }
 
-                best_planning_result.distance_to_goal = planning_result.distance_to_goal;
+    // std::optional<std::vector<Eigen::VectorXd>>
+    // JPlusRbtPlanner::BiJPlusRbtMultiGoal(const VectorXd &q_start, std::vector<VectorXd> &q_goals, const JPlusRbtParameters &planner_parameters, PlanningResult &planning_result)
+    // {
+    //     double best_dist = 1e10;
+    //     // Time is measured outside this function
+    //     PlanningResult best_planning_result;
+    //     std::optional<std::vector<Eigen::VectorXd>> best_path;
+    //     for (int i = 0; i < q_goals.size(); ++i)
+    //     {
+    //         std::optional<std::vector<Eigen::VectorXd>> result =
+    //             this->BiJPlusRbt(q_start, q_goals[i], planner_parameters, planning_result);
+    //         // std::optional<std::vector<Eigen::VectorXd>> result =
+    //         //     this->RbtConnect(q_start, q_goals[i], planner_parameters, planning_result);
 
-                best_path = result;
-            }
-        }
+    //         // for each attempt we add iterations and tree size
+    //         best_planning_result.num_iterations += planning_result.num_iterations;
+    //         best_planning_result.tree_size += planning_result.tree_size;
 
-        // Because it's a reference:
-        planning_result.distance_to_goal = best_planning_result.distance_to_goal;
-        planning_result.num_iterations = best_planning_result.num_iterations;
-        planning_result.success = best_planning_result.success;
-        planning_result.tree_size = best_planning_result.tree_size;
-        return best_path;
-    }
+    //         if (planning_result.success)
+    //         {
+    //             planning_result.num_iterations = best_planning_result.num_iterations;
+    //             planning_result.tree_size = best_planning_result.tree_size;
+    //             return result;
+    //         }
+    //         else if (planning_result.distance_to_goal < best_dist)
+    //         {
+    //             best_dist = planning_result.distance_to_goal;
 
-    std::optional<std::vector<Eigen::VectorXd>>
-    JPlusRbtPlanner::BiJPlusRbt(const VectorXd &q_start, VectorXd &q_goal, const JPlusRbtParameters &planner_parameters, PlanningResult &planning_result)
-    {
-        int num_nodes = planner_parameters.target_poses->GetNumberOfNodes();
-        assert(planner_parameters.num_spikes < num_nodes);
+    //             best_planning_result.distance_to_goal = planning_result.distance_to_goal;
 
-        this->rng = std::make_shared<RandomNumberGenerator>(num_nodes - 1);
+    //             best_path = result;
+    //         }
+    //     }
 
-        auto my_env = this->GetEnv<URDFEnv>();
-        auto chain = my_env->myURDFRobot->kdl_chain;
+    //     // Because it's a reference:
+    //     planning_result.distance_to_goal = best_planning_result.distance_to_goal;
+    //     planning_result.num_iterations = best_planning_result.num_iterations;
+    //     planning_result.success = best_planning_result.success;
+    //     planning_result.tree_size = best_planning_result.tree_size;
+    //     return best_path;
+    // }
 
-        KDL::JntArray q_kdl(this->q_dim);
-        KDL::JntArray q_kdl_dot(this->q_dim);
+    // std::optional<std::vector<Eigen::VectorXd>>
+    // JPlusRbtPlanner::BiJPlusRbt(const VectorXd &q_start, VectorXd &q_goal, const JPlusRbtParameters &planner_parameters, PlanningResult &planning_result)
+    // {
+    //     int num_nodes = planner_parameters.target_poses->GetNumberOfNodes();
+    //     assert(planner_parameters.num_spikes < num_nodes);
 
-        q_kdl.data = q_start;
+    //     this->rng = std::make_shared<RandomNumberGenerator>(num_nodes - 1);
 
-        KDL::ChainFkSolverPos_recursive fk_solver(chain);
-        KDL::ChainIkSolverVel_pinv pinv_solver(chain);
+    //     auto my_env = this->GetEnv<URDFEnv>();
+    //     auto chain = my_env->myURDFRobot->kdl_chain;
 
-        std::shared_ptr<BurTree> start_tree = std::make_shared<BurTree>(q_start, this->q_dim);
-        std::shared_ptr<BurTree> goal_tree = std::make_shared<BurTree>(q_goal, this->q_dim);
+    //     KDL::JntArray q_kdl(this->q_dim);
+    //     KDL::JntArray q_kdl_dot(this->q_dim);
 
-        // std::cout << "Initial number of goals: " << goal_tree->GetNumberOfNodes() << "\n";
+    //     q_kdl.data = q_start;
 
-        auto t_a = start_tree;
-        auto t_b = goal_tree;
+    //     KDL::ChainFkSolverPos_recursive fk_solver(chain);
+    //     KDL::ChainIkSolverVel_pinv pinv_solver(chain);
 
-        AlgorithmState algorithm_state = AlgorithmState::Trapped;
-        int last_idx = -1;
-        Eigen::VectorXd last_q(q_goal);
-        planning_result.distance_to_goal = 1e10;
+    //     std::shared_ptr<BurTree> start_tree = std::make_shared<BurTree>(q_start, this->q_dim);
+    //     std::shared_ptr<BurTree> goal_tree = std::make_shared<BurTree>(q_goal, this->q_dim);
 
-        for (int k = 0; k < planner_parameters.max_iters; k++)
-        {
-            std::cout << "iter " << k << "\n";
-            // if (k % 50 == 0)
-            // {
-            //     std::cout << "          iter: " << k << " / " << planner_parameters.max_iters << "\n";
-            // }
-            algorithm_state = AlgorithmState::Trapped;
+    //     // std::cout << "Initial number of goals: " << goal_tree->GetNumberOfNodes() << "\n";
 
-            // std::cout << "iter: " << k << "\r\r";
-            // IF selecting directed expansion:
-            Eigen::VectorXd q_rand = this->GetRandomQ(1);
+    //     auto t_a = start_tree;
+    //     auto t_b = goal_tree;
 
-            // q_near <- NEAREST(q_{e1}, T_a)
-            int nearest_index = this->NearestIndex(t_a, q_rand);
+    //     AlgorithmState algorithm_state = AlgorithmState::Trapped;
+    //     int last_idx = -1;
+    //     Eigen::VectorXd last_q(q_goal);
+    //     planning_result.distance_to_goal = 1e10;
 
-            const VectorXd q_near = t_a->GetQ(nearest_index);
+    //     for (int k = 0; k < planner_parameters.max_iters; k++)
+    //     {
+    //         std::cout << "iter " << k << "\n";
+    //         // if (k % 50 == 0)
+    //         // {
+    //         //     std::cout << "          iter: " << k << " / " << planner_parameters.max_iters << "\n";
+    //         // }
+    //         algorithm_state = AlgorithmState::Trapped;
 
-            // dc(q_near)
-            double d_closest = this->GetClosestDistance(q_near);
+    //         // std::cout << "iter: " << k << "\r\r";
+    //         // IF selecting directed expansion:
+    //         Eigen::VectorXd q_rand = this->GetRandomQ(1);
 
-            // If obstacles close, use RRT steps => d_crit
-            if (d_closest < planner_parameters.d_crit)
-            {
-                std::cout << "RRT\n";
-                Eigen::VectorXd q_new;
-                // Biased towards goal
-                if (this->rng->getRandomReal() < planner_parameters.probability_to_steer_to_target && t_a == start_tree)
-                {
-                    // while
-                    // KDL::ChainIkSolverVel_pinv pinv_solver(chain);
+    //         // q_near <- NEAREST(q_{e1}, T_a)
+    //         int nearest_index = this->NearestIndex(t_a, q_rand);
 
-                    KDL::Frame p_out;
+    //         const VectorXd q_near = t_a->GetQ(nearest_index);
 
-                    // update current configuration to a random one
-                    q_kdl.data = q_near;
+    //         // dc(q_near)
+    //         double d_closest = this->GetClosestDistance(q_near);
 
-                    // Get Cartesian end-effector position & rotation
-                    if (fk_solver.JntToCart(q_kdl, p_out) < 0)
-                    {
-                        throw std::runtime_error("JPlusRbt: couldn't perform forward kinematics inside steer-to-target");
-                    }
+    //         // If obstacles close, use RRT steps => d_crit
+    //         if (d_closest < planner_parameters.d_crit)
+    //         {
+    //             std::cout << "RRT\n";
+    //             Eigen::VectorXd q_new;
+    //             // Biased towards goal
+    //             if (this->rng->getRandomReal() < planner_parameters.probability_to_steer_to_target && t_a == start_tree)
+    //             {
+    //                 // while
+    //                 // KDL::ChainIkSolverVel_pinv pinv_solver(chain);
 
-                    // Prepare bur target endpoints container
-                    Eigen::MatrixXd Qe(this->q_dim, planner_parameters.num_spikes);
+    //                 KDL::Frame p_out;
 
-                    // Get random target poses from the workspace targets to extend to
-                    std::shared_ptr<BurTree> target_poses = planner_parameters.target_poses;
+    //                 // update current configuration to a random one
+    //                 q_kdl.data = q_near;
 
-                    std::vector<RRTNode> target_nodes = target_poses->mNodes;
+    //                 // Get Cartesian end-effector position & rotation
+    //                 if (fk_solver.JntToCart(q_kdl, p_out) < 0)
+    //                 {
+    //                     throw std::runtime_error("JPlusRbt: couldn't perform forward kinematics inside steer-to-target");
+    //                 }
 
-                    int randint = this->rng->getRandomInt();
+    //                 // Prepare bur target endpoints container
+    //                 Eigen::MatrixXd Qe(this->q_dim, planner_parameters.num_spikes);
 
-                    RRTNode random_node = target_nodes[randint];
+    //                 // Get random target poses from the workspace targets to extend to
+    //                 std::shared_ptr<BurTree> target_poses = planner_parameters.target_poses;
 
-                    auto new_twist_target = KDL::Twist();
+    //                 std::vector<RRTNode> target_nodes = target_poses->mNodes;
 
-                    Eigen::VectorXd pose_target = random_node.q;
-                    KDL::Vector tgt_pos(pose_target(0), pose_target(1), pose_target(2));
-                    new_twist_target.vel = tgt_pos - p_out.p;
-                    // TODO: include rotation
-                    // For now no rotation
-                    new_twist_target.rot = KDL::Vector::Zero();
+    //                 int randint = this->rng->getRandomInt();
 
-                    // TODO: optimize this to reuse the jacobian
-                    // Possibly fork the library:
-                    // https://github.com/orocos/orocos_kinematics_dynamics/blob/master/orocos_kdl/src/chainiksolvervel_pinv.cpp
-                    if (pinv_solver.CartToJnt(q_kdl, new_twist_target, q_kdl_dot) >= 0)
-                    {
-                        Eigen::VectorXd delta_q = q_kdl_dot.data;
-                        // q_new = this->GetEndpoint(q_dir, q_near, planner_parameters.epsilon_q);
-                        q_new = (q_near + delta_q).normalized() * planner_parameters.epsilon_q;
-                    }
-                    else
-                    {
-                        std::runtime_error("RRT section: couldn't do p_inv forward kinematics");
-                    }
-                }
-                else
-                {
-                    // Random direction
-                    Eigen::VectorXd q_dir = this->GetRandomQ(1);
-                    q_new = this->GetEndpoint(q_dir, q_near, planner_parameters.epsilon_q);
-                }
+    //                 RRTNode random_node = target_nodes[randint];
 
-                if (!this->IsColliding(q_new))
-                {
-                    t_a->AddNode(nearest_index, q_new);
+    //                 auto new_twist_target = KDL::Twist();
 
-                    if (planner_parameters.pureRbt == 0)
-                    {
-                        Eigen::VectorXd rand_q = this->GetRandomQ(1);
-                        AlgorithmState result_a = this->GreedyExtendRandomConfig(t_a, rand_q, (RbtParameters)planner_parameters);
-                        AlgorithmState result_b = this->GreedyExtendRandomConfig(t_b, rand_q, (RbtParameters)planner_parameters);
+    //                 Eigen::VectorXd pose_target = random_node.q;
+    //                 KDL::Vector tgt_pos(pose_target(0), pose_target(1), pose_target(2));
+    //                 new_twist_target.vel = tgt_pos - p_out.p;
+    //                 // TODO: include rotation
+    //                 // For now no rotation
+    //                 new_twist_target.rot = KDL::Vector::Zero();
 
-                        // As defined in the IK-planner paper
-                        if (result_a == AlgorithmState::Reached && result_b == AlgorithmState::Reached)
-                        // if (this->GreedyExtend(t_a, t_b, q_new, planner_parameters) == AlgorithmState::Reached)
-                        {
-                            int nearest_in_b = t_b->Nearest(q_new.data());
-                            Eigen::VectorXd q_b = t_b->GetQ(nearest_in_b);
+    //                 // TODO: optimize this to reuse the jacobian
+    //                 // Possibly fork the library:
+    //                 // https://github.com/orocos/orocos_kinematics_dynamics/blob/master/orocos_kdl/src/chainiksolvervel_pinv.cpp
+    //                 if (pinv_solver.CartToJnt(q_kdl, new_twist_target, q_kdl_dot) >= 0)
+    //                 {
+    //                     Eigen::VectorXd delta_q = q_kdl_dot.data;
+    //                     // q_new = this->GetEndpoint(q_dir, q_near, planner_parameters.epsilon_q);
+    //                     q_new = (q_near + delta_q).normalized() * planner_parameters.epsilon_q;
+    //                 }
+    //                 else
+    //                 {
+    //                     std::runtime_error("RRT section: couldn't do p_inv forward kinematics");
+    //                 }
+    //             }
+    //             else
+    //             {
+    //                 // Random direction
+    //                 Eigen::VectorXd q_dir = this->GetRandomQ(1);
+    //                 q_new = this->GetEndpoint(q_dir, q_near, planner_parameters.epsilon_q);
+    //             }
 
-                            int nearest_in_a = t_a->Nearest(q_b.data());
-                            Eigen::VectorXd q_a = t_a->GetQ(nearest_in_a);
+    //             if (!this->IsColliding(q_new))
+    //             {
+    //                 t_a->AddNode(nearest_index, q_new);
 
-                            planning_result.num_iterations = k;
-                            planning_result.tree_size = start_tree->GetNumberOfNodes() + goal_tree->GetNumberOfNodes();
-                            planning_result.success = true;
+    //                 if (planner_parameters.pureRbt == 0)
+    //                 {
+    //                     Eigen::VectorXd rand_q = this->GetRandomQ(1);
+    //                     AlgorithmState result_a = this->GreedyExtendRandomConfig(t_a, rand_q, (RbtParameters)planner_parameters);
+    //                     AlgorithmState result_b = this->GreedyExtendRandomConfig(t_b, rand_q, (RbtParameters)planner_parameters);
 
-                            if (t_a == start_tree)
-                            {
-                                // Connected to target
-                                return this->Path(t_a, nearest_in_a, t_b, nearest_in_b);
-                            }
-                            else
-                            {
-                                // Connected to target
-                                return this->Path(t_b, nearest_in_b, t_a, nearest_in_a);
-                            }
-                        }
-                    }
-                    else
-                    {
-                        std::cout << "using pure rbt\n";
-                    }
+    //                     // As defined in the IK-planner paper
+    //                     if (result_a == AlgorithmState::Reached && result_b == AlgorithmState::Reached)
+    //                     // if (this->GreedyExtend(t_a, t_b, q_new, planner_parameters) == AlgorithmState::Reached)
+    //                     {
+    //                         int nearest_in_b = t_b->Nearest(q_new.data());
+    //                         Eigen::VectorXd q_b = t_b->GetQ(nearest_in_b);
 
-                    if (t_a == start_tree)
-                    {
-                        std::vector<KDL::Frame> newest_poses(1);
-                        KDL::Frame p_out;
-                        q_kdl.data = q_new;
-                        if (fk_solver.JntToCart(q_kdl, p_out) < 0)
-                        {
-                            throw std::runtime_error("Failed forward kinematics in goal status checking");
-                        }
-                        newest_poses[0] = p_out;
-                        int closest_index = -1;
-                        double distance_to_goal;
-                        // check only once in a while perhaps
-                        algorithm_state = this->CheckGoalStatus(newest_poses, planner_parameters, closest_index, distance_to_goal);
+    //                         int nearest_in_a = t_a->Nearest(q_b.data());
+    //                         Eigen::VectorXd q_a = t_a->GetQ(nearest_in_a);
 
-                        if (distance_to_goal < planning_result.distance_to_goal)
-                        {
-                            planning_result.distance_to_goal = distance_to_goal;
-                            last_q = q_new;
-                            std::cout << "RRT nearest\n";
-                        }
-                    }
-                }
-                else
-                {
-                    std::cout << "colliding\n";
-                }
-            }
-            else
-            { // Grow biased/random bur
-                std::cout << "BUR\n";
-                Bur new_bur;
-                if (this->rng->getRandomReal() < planner_parameters.probability_to_steer_to_target && t_a == start_tree)
-                {
-                    // Biased bur in target directions
+    //                         planning_result.num_iterations = k;
+    //                         planning_result.tree_size = start_tree->GetNumberOfNodes() + goal_tree->GetNumberOfNodes();
+    //                         planning_result.success = true;
 
-                    new_bur = this->ExtendTowardsCartesian(q_near, planner_parameters, d_closest);
-                }
-                else
-                {
-                    // Random point, since we don't know where we're going in configuration space
-                    Eigen::MatrixXd Qe = this->GetRandomQ(planner_parameters.num_spikes);
+    //                         if (t_a == start_tree)
+    //                         {
+    //                             // Connected to target
+    //                             return this->Path(t_a, nearest_in_a, t_b, nearest_in_b);
+    //                         }
+    //                         else
+    //                         {
+    //                             // Connected to target
+    //                             return this->Path(t_b, nearest_in_b, t_a, nearest_in_a);
+    //                         }
+    //                     }
+    //                 }
+    //                 else
+    //                 {
+    //                     std::cout << "using pure rbt\n";
+    //                 }
 
-                    // Instead of biased direction calculate random bur and check if have hit the goal
-                    // Bur b = this->ExtendTowardsCartesian(q_near, planner_parameters, d_closest);
+    //                 if (t_a == start_tree)
+    //                 {
+    //                     std::vector<KDL::Frame> newest_poses(1);
+    //                     KDL::Frame p_out;
+    //                     q_kdl.data = q_new;
+    //                     if (fk_solver.JntToCart(q_kdl, p_out) < 0)
+    //                     {
+    //                         throw std::runtime_error("Failed forward kinematics in goal status checking");
+    //                     }
+    //                     newest_poses[0] = p_out;
+    //                     int closest_index = -1;
+    //                     double distance_to_goal;
+    //                     // check only once in a while perhaps
+    //                     algorithm_state = this->CheckGoalStatus(newest_poses, planner_parameters, closest_index, distance_to_goal);
 
-                    // limit to max pi rotation
-                    this->GetEndpoints(Qe, q_near, planner_parameters.delta_q);
-                    new_bur = this->GetBur(q_near, Qe, d_closest);
-                }
+    //                     if (distance_to_goal < planning_result.distance_to_goal)
+    //                     {
+    //                         planning_result.distance_to_goal = distance_to_goal;
+    //                         last_q = q_new;
+    //                         std::cout << "RRT nearest\n";
+    //                     }
+    //                 }
+    //             }
+    //             else
+    //             {
+    //                 std::cout << "colliding\n";
+    //             }
+    //         }
+    //         else
+    //         { // Grow biased/random bur
+    //             std::cout << "BUR\n";
+    //             Bur new_bur;
+    //             if (this->rng->getRandomReal() < planner_parameters.probability_to_steer_to_target && t_a == start_tree)
+    //             {
+    //                 // Biased bur in target directions
 
-                for (int i = 0; i < planner_parameters.num_spikes; ++i)
-                {
-                    t_a->AddNode(nearest_index, new_bur.endpoints.col(i));
-                }
+    //                 new_bur = this->ExtendTowardsCartesian(q_near, planner_parameters, d_closest);
+    //             }
+    //             else
+    //             {
+    //                 // Random point, since we don't know where we're going in configuration space
+    //                 Eigen::MatrixXd Qe = this->GetRandomQ(planner_parameters.num_spikes);
 
-                Eigen::VectorXd new_q_a = new_bur.endpoints.col(0);
+    //                 // Instead of biased direction calculate random bur and check if have hit the goal
+    //                 // Bur b = this->ExtendTowardsCartesian(q_near, planner_parameters, d_closest);
 
-                // Bur connect populates tree B with points leading to new_q_a (from tree A)
-                AlgorithmState status = this->BurConnect(t_b, new_q_a, planner_parameters);
-                if (status == AlgorithmState::Reached)
-                {
-                    int start_closest = start_tree->Nearest(new_q_a.data());
-                    int goal_closest = goal_tree->Nearest(new_q_a.data());
+    //                 // limit to max pi rotation
+    //                 this->GetEndpoints(Qe, q_near, planner_parameters.delta_q);
+    //                 new_bur = this->GetBur(q_near, Qe, d_closest);
+    //             }
 
-                    return this->Path(start_tree, start_closest, goal_tree, goal_closest);
-                }
+    //             for (int i = 0; i < planner_parameters.num_spikes; ++i)
+    //             {
+    //                 t_a->AddNode(nearest_index, new_bur.endpoints.col(i));
+    //             }
 
-                if (t_a == start_tree)
-                {
-                    // This should be the same for directed and randomm expansion
-                    // Get newest workspace poses
-                    std::vector<KDL::Frame> newest_poses(planner_parameters.num_spikes);
-                    for (unsigned int i = 0; i < planner_parameters.num_spikes; ++i)
-                    {
-                        KDL::Frame p_out;
-                        q_kdl.data = new_bur.endpoints.col(i);
-                        if (fk_solver.JntToCart(q_kdl, p_out) < 0)
-                        {
-                            throw std::runtime_error("Failed forward kinematics in goal status checking");
-                        }
-                        newest_poses[i] = p_out;
-                    }
-                    int closest_index = -1;
-                    double distance_to_goal;
-                    // check only once in a while perhaps
-                    algorithm_state = this->CheckGoalStatus(newest_poses, planner_parameters, closest_index, distance_to_goal);
+    //             Eigen::VectorXd new_q_a = new_bur.endpoints.col(0);
 
-                    if (distance_to_goal < planning_result.distance_to_goal)
-                    {
-                        planning_result.distance_to_goal = distance_to_goal;
-                        last_q = new_bur.endpoints.col(closest_index);
-                        std::cout << "nearest\n";
-                    }
-                }
-            }
+    //             // Bur connect populates tree B with points leading to new_q_a (from tree A)
+    //             AlgorithmState status = this->BurConnect(t_b, new_q_a, planner_parameters);
+    //             if (status == AlgorithmState::Reached)
+    //             {
+    //                 int start_closest = start_tree->Nearest(new_q_a.data());
+    //                 int goal_closest = goal_tree->Nearest(new_q_a.data());
 
-            std::swap(t_a, t_b);
-        }
-        planning_result.num_iterations = planner_parameters.max_iters;
-        planning_result.tree_size = start_tree->GetNumberOfNodes() + goal_tree->GetNumberOfNodes();
-        planning_result.success = false;
-        last_idx = start_tree->Nearest(last_q.data());
+    //                 return this->Path(start_tree, start_closest, goal_tree, goal_closest);
+    //             }
 
-        return this->ConstructPathFromTree(start_tree, last_idx);
-    }
+    //             if (t_a == start_tree)
+    //             {
+    //                 // This should be the same for directed and randomm expansion
+    //                 // Get newest workspace poses
+    //                 std::vector<KDL::Frame> newest_poses(planner_parameters.num_spikes);
+    //                 for (unsigned int i = 0; i < planner_parameters.num_spikes; ++i)
+    //                 {
+    //                     KDL::Frame p_out;
+    //                     q_kdl.data = new_bur.endpoints.col(i);
+    //                     if (fk_solver.JntToCart(q_kdl, p_out) < 0)
+    //                     {
+    //                         throw std::runtime_error("Failed forward kinematics in goal status checking");
+    //                     }
+    //                     newest_poses[i] = p_out;
+    //                 }
+    //                 int closest_index = -1;
+    //                 double distance_to_goal;
+    //                 // check only once in a while perhaps
+    //                 algorithm_state = this->CheckGoalStatus(newest_poses, planner_parameters, closest_index, distance_to_goal);
+
+    //                 if (distance_to_goal < planning_result.distance_to_goal)
+    //                 {
+    //                     planning_result.distance_to_goal = distance_to_goal;
+    //                     last_q = new_bur.endpoints.col(closest_index);
+    //                     std::cout << "nearest\n";
+    //                 }
+    //             }
+    //         }
+
+    //         std::swap(t_a, t_b);
+    //     }
+    //     planning_result.num_iterations = planner_parameters.max_iters;
+    //     planning_result.tree_size = start_tree->GetNumberOfNodes() + goal_tree->GetNumberOfNodes();
+    //     planning_result.success = false;
+    //     last_idx = start_tree->Nearest(last_q.data());
+
+    //     return this->ConstructPathFromTree(start_tree, last_idx);
+    // }
 
     std::optional<std::vector<Eigen::VectorXd>>
     JPlusRbtPlanner::JPlusRbt(const VectorXd &q_start, const JPlusRbtParameters &planner_parameters, PlanningResult &planning_result)
@@ -612,45 +623,43 @@ namespace Burs
         Eigen::VectorXd last_q;
         planning_result.distance_to_goal = 1e10;
 
-        std::vector<KDL::Frame> newest_poses(1);
-        // KDL::Frame p_out;
-        std::vector<KDL::Frame> p_out(chain.getNrOfSegments());
-        std::cout << "number of segments: " << p_out.size() << "\n";
-        q_kdl.data = q_start;
-        if (fk_solver.JntToCart(q_kdl, p_out) < 0)
-        {
-            throw std::runtime_error("Failed forward kinematics in goal status checking");
-        }
-        newest_poses[0] = p_out[chain.getNrOfSegments() - 1];
-        for (int i = 0; i < chain.getNrOfSegments(); ++i)
-        {
-            std::cout << "segment " << i << ": " << chain.getSegment(i).getName() << " " << p_out[i].p << "\n";
-        }
+        std::vector<KDL::Frame> newest_pose(1);
 
-        if (fk_solver.JntToCart(q_kdl, p_out[0]) < 0)
-        {
-            throw std::runtime_error("Failed forward kinematics in goal status checking");
-        }
-        // std::cout << "last segment position: " << p_out[0].p << "\n";
-        // std::cout << "EXIT\n";
-        // exit(0);
+        int exploit = 0;
 
-        int closest_index = -1;
-        double distance_to_goal;
+        // // KDL::Frame p_out;
+        // std::vector<KDL::Frame> p_out(chain.getNrOfSegments());
+        // std::cout << "number of segments: " << p_out.size() << "\n";
+        // q_kdl.data = q_start;
+        // if (fk_solver.JntToCart(q_kdl, p_out) < 0)
+        // {
+        //     throw std::runtime_error("Failed forward kinematics in goal status checking");
+        // }
+        // newest_poses[0] = p_out[chain.getNrOfSegments() - 1];
+        // for (int i = 0; i < chain.getNrOfSegments(); ++i)
+        // {
+        //     std::cout << "segment " << i << ": " << chain.getSegment(i).getName() << " " << p_out[i].p << "\n";
+        // }
+
+        // if (fk_solver.JntToCart(q_kdl, p_out[0]) < 0)
+        // {
+        //     throw std::runtime_error("Failed forward kinematics in goal status checking");
+        // }
+
+        // int closest_index = -1;
+        // double distance_to_goal;
         // check only once in a while perhaps
-        algorithm_state = this->CheckGoalStatus(newest_poses, planner_parameters, closest_index, distance_to_goal);
-        std::cout << "initial distance to goal:" << distance_to_goal << " \n";
+        // algorithm_state = this->CheckGoalStatus(newest_poses, planner_parameters, closest_index, distance_to_goal);
+        // std::cout << "initial distance to goal:" << distance_to_goal << " \n";
 
         for (int k = 0; k < planner_parameters.max_iters; k++)
         {
-            if (k % 50 == 0)
+            if (k % 512 == 0)
             {
-                std::cout << "          iter: " << k << "\r\r";
+                std::cout << "          iter: " << k << "\n";
             }
             algorithm_state = AlgorithmState::Trapped;
 
-            // std::cout << "iter: " << k << "\r\r";
-            // IF selecting directed expansion:
             Eigen::VectorXd q_rand = this->GetRandomQ(1);
 
             // q_near <- NEAREST(q_{e1}, T_a)
@@ -667,13 +676,15 @@ namespace Burs
             {
                 Eigen::VectorXd q_new;
                 // Biased towards goal
-                if (this->rng->getRandomReal() < planner_parameters.probability_to_steer_to_target)
+                double rand_num = this->rng->getRandomReal();
+                if (rand_num < planner_parameters.probability_to_steer_to_target || exploit * planner_parameters.goal_bias_probability)
+                // if (this->rng->getRandomReal() < planner_parameters.probability_to_steer_to_target)
                 {
                     KDL::ChainIkSolverVel_pinv pinv_solver(chain);
 
                     KDL::Frame p_out;
 
-                    // update current configuration to a random one
+                    // directed approach to goal
                     q_kdl.data = q_near;
 
                     // Get Cartesian end-effector position & rotation
@@ -681,10 +692,6 @@ namespace Burs
                     {
                         throw std::runtime_error("JPlusRbt: couldn't perform forward kinematics inside steer-to-target");
                     }
-                    // Later we will use this for setting the target rotation velocity
-                    // REASON: target_rotation * current_rotation^(-1) = the difference in rotations.
-                    //         Analogical to: target_vector - current_vector
-                    // p_out.M.SetInverse(); // transpose in-place
 
                     // Prepare bur target endpoints container
                     Eigen::MatrixXd Qe(this->q_dim, planner_parameters.num_spikes);
@@ -706,21 +713,6 @@ namespace Burs
                     // TODO: include rotation
                     // For now no rotation
                     new_twist_target.rot = KDL::Vector::Zero();
-
-                    /*
-                    KDL::Frame pose_target = target_poses[i];
-                    KDL::Vector tgt_pos = pose_target.p;
-
-                    // target translation matrix * inv(my translation matrix) = target_position - my_position
-                    new_twist_target.vel = tgt_pos - p_out.p;
-
-                    // NOTE: rotation is immediate rotation about x, y, z axes
-                    // RPY = roll - x, pitch - y, yaw (heading) - z
-                    double x, y, z;
-                    (pose_target.M * p_out.M).GetRPY(x, y, z);
-
-                    new_twist_target.rot = KDL::Vector(x, y, z);
-                    */
 
                     // TODO: optimize this to reuse the jacobian
                     // Possibly fork the library:
@@ -747,21 +739,17 @@ namespace Burs
                 {
                     q_tree->AddNode(nearest_index, q_new);
 
-                    std::vector<KDL::Frame> newest_poses(planner_parameters.num_spikes);
-                    for (unsigned int i = 0; i < planner_parameters.num_spikes; ++i)
+                    KDL::Frame p_out;
+                    q_kdl.data = q_new;
+                    if (fk_solver.JntToCart(q_kdl, p_out) < 0)
                     {
-                        KDL::Frame p_out;
-                        q_kdl.data = q_new;
-                        if (fk_solver.JntToCart(q_kdl, p_out) < 0)
-                        {
-                            throw std::runtime_error("Failed forward kinematics in goal status checking");
-                        }
-                        newest_poses[i] = p_out;
+                        throw std::runtime_error("Failed forward kinematics in goal status checking");
                     }
+                    newest_pose[0] = p_out;
                     int closest_index = -1;
                     double distance_to_goal;
                     // check only once in a while perhaps
-                    algorithm_state = this->CheckGoalStatus(newest_poses, planner_parameters, closest_index, distance_to_goal);
+                    algorithm_state = this->CheckGoalStatus(newest_pose, planner_parameters, closest_index, distance_to_goal);
 
                     if (distance_to_goal < planning_result.distance_to_goal)
                     {
@@ -784,7 +772,8 @@ namespace Burs
             else
             { // Grow biased/random bur
                 Bur new_bur;
-                if (this->rng->getRandomReal() < planner_parameters.probability_to_steer_to_target)
+                double rand_num = this->rng->getRandomReal();
+                if (rand_num < planner_parameters.probability_to_steer_to_target || exploit * planner_parameters.goal_bias_probability)
                 {
                     // Biased bur in target directions
 
@@ -806,13 +795,27 @@ namespace Burs
 
                 for (int i = 0; i < planner_parameters.num_spikes; ++i)
                 {
-                    q_tree->AddNode(nearest_index, new_bur.endpoints.col(i));
+
+                    auto tgt = new_bur.endpoints.col(i);
+                    auto dense_tgts = this->Densify(q_near, tgt, planner_parameters);
+
+                    // The first node is obviously the child of the nearest q in the tree
+                    q_tree->AddNode(nearest_index, dense_tgts[1]);
+
+                    for (int l = 2; l < dense_tgts.size(); ++l)
+                    {
+                        auto t = dense_tgts[l];
+                        // TODO: Is there a way I can check indices if I know the last added one is gonna be the parent?
+                        int nd = q_tree->Nearest(t.data());
+                        q_tree->AddNode(nd, t);
+                    }
                 }
 
                 // This should be the same for directed and randomm expansion
                 // Get newest workspace poses
                 std::vector<KDL::Frame> newest_poses(planner_parameters.num_spikes);
-                for (unsigned int i = 0; i < planner_parameters.num_spikes; ++i)
+                // for (unsigned int i = 0; i < planner_parameters.num_spikes; ++i)
+                for (int i = 0; i < 1; ++i)
                 {
                     KDL::Frame p_out;
                     q_kdl.data = new_bur.endpoints.col(i);
@@ -820,12 +823,21 @@ namespace Burs
                     {
                         throw std::runtime_error("Failed forward kinematics in goal status checking");
                     }
-                    newest_poses[i] = p_out;
+                    newest_pose[i] = p_out;
+                    // newest_poses[i] = p_out;
                 }
                 int closest_index = -1;
                 double distance_to_goal;
                 // check only once in a while perhaps
-                algorithm_state = this->CheckGoalStatus(newest_poses, planner_parameters, closest_index, distance_to_goal);
+                algorithm_state = this->CheckGoalStatus(newest_pose, planner_parameters, closest_index, distance_to_goal);
+                // algorithm_state = this->CheckGoalStatus(newest_poses, planner_parameters, closest_index, distance_to_goal);
+                // IF CLOSE TO TARGET GO FOR IT
+                if (distance_to_goal < planner_parameters.goal_bias_radius && exploit == 0)
+                {
+                    exploit = 1;
+                    std::cout << "SWITCH TO EXPLOIT\n";
+                    // new_bur = this->ExtendTowardsCartesian(q_near, planner_parameters, d_closest);
+                }
 
                 if (distance_to_goal < planning_result.distance_to_goal)
                 {
@@ -850,6 +862,7 @@ namespace Burs
                 planning_result.success = true;
                 // TODO: add time measurement
 
+                std::cout << "FINISHED\n";
                 return this->ConstructPathFromTree(q_tree, last_idx);
             }
         }
@@ -861,7 +874,8 @@ namespace Burs
         return this->ConstructPathFromTree(q_tree, last_idx);
     }
 
-    Bur JPlusRbtPlanner::ExtendTowardsCartesian(const VectorXd &q_near, const JPlusRbtParameters &planner_parameters, const double &closest_distance)
+    Bur
+    JPlusRbtPlanner::ExtendTowardsCartesian(const VectorXd &q_near, const JPlusRbtParameters &planner_parameters, const double &closest_distance)
     {
         auto my_env = this->GetEnv<URDFEnv>();
         auto chain = my_env->myURDFRobot->kdl_chain;
@@ -993,6 +1007,7 @@ namespace Burs
     std::string
     JPlusRbtPlanner::StringifyPath(std::vector<Eigen::VectorXd> path)
     {
+        std::cout << "Path length: " << path.size() << "\n";
         std::ostringstream output;
 
         // first set the obstacles. Planning is time independent, so the obstacles are set once before planning.
@@ -1048,4 +1063,5 @@ namespace Burs
 
         return dense_path;
     }
+
 }

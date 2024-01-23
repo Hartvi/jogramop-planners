@@ -230,26 +230,28 @@ namespace test
         }
         auto params = RbtParameters(paramsFile);
         std::cout << "Planning params: " << params.toString() << "\n";
-        auto paramsjplusrbt = JPlusRbtParameters(paramsFile, std::string(graspFile));
-        std::cout << "Planning params: " << params.toString() << "\n";
+        std::cout << "NOT USING MAIN_TEST\n";
+        exit(1);
+        // auto paramsjplusrbt = JPlusRbtParameters(paramsFile, std::string(graspFile));
+        // // std::cout << "Planning params: " << params.toString() << "\n";
 
-        // JPlusRbtPlanner(std::string urdf_file);
-        std::shared_ptr<JPlusRbtPlanner> jprbt = std::make_shared<JPlusRbtPlanner>(std::string(urdfFile));
-        // 1. Set obstacles in urdfenv
-        // 2. Setup parameters
-        // 3. Plan
+        // // JPlusRbtPlanner(std::string urdf_file);
+        // std::shared_ptr<JPlusRbtPlanner> jprbt = std::make_shared<JPlusRbtPlanner>(std::string(urdfFile));
+        // // 1. Set obstacles in urdfenv
+        // // 2. Setup parameters
+        // // 3. Plan
 
-        Eigen::VectorXd random_start_q = jprbt->GetRandomQ(1);
-        PlanningResult planning_result;
-        struct rusage t1, t2;
-        //     // in terminal: time ./burs_of_free_space
-        //     std::string file_name = GenerateRandomExperiment(num_obstacles);
-        getTime(&t1);
-        auto path = jprbt->JPlusRbt(random_start_q, paramsjplusrbt, planning_result);
-        getTime(&t2);
+        // Eigen::VectorXd random_start_q = jprbt->GetRandomQ(1);
+        // PlanningResult planning_result;
+        // struct rusage t1, t2;
+        // //     // in terminal: time ./burs_of_free_space
+        // //     std::string file_name = GenerateRandomExperiment(num_obstacles);
+        // getTime(&t1);
+        // auto path = jprbt->JPlusRbt(random_start_q, paramsjplusrbt, planning_result);
+        // getTime(&t2);
 
-        planning_result.time_taken = getTime(t1, t2);
-        std::cout << "planning result " << planning_result.toCSVString() << "\n";
+        // planning_result.time_taken = getTime(t1, t2);
+        // std::cout << "planning result " << planning_result.toCSVString() << "\n";
 
         // std::optional<std::vector<Eigen::VectorXd>>
         // JPlusRbt(const VectorXd &q_start, const JPlusRbtParameters &planner_parameters);

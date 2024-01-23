@@ -35,6 +35,10 @@ namespace Burs
         }
 
         this->kdl_tree = kdl_tree_res.value();
+        for (auto &l : this->kdl_tree.getSegments())
+        {
+            std::cout << "segment: " << l.first << "\n";
+        }
 
         auto end_links_res = this->GetEndLinks(robot_model);
 
@@ -45,12 +49,14 @@ namespace Burs
 
         this->end_links = end_links_res.value();
 
-        // std::cout << "end links:" << std::endl;
-        // for (int i = 0; i < end_links.size(); ++i)
-        // {
-        //     std::cout << "end link: " << end_links[i] << std::endl;
-        // }
+        std::cout << "end links:" << std::endl;
+        for (int i = 0; i < end_links.size(); ++i)
+        {
+            std::cout << "end link: " << end_links[i] << std::endl;
+        }
+        // exit(1);
 
+        // auto kdl_chain_res = this->GetKDLChain(robot_model, kdl_tree, "panda_hand");
         auto kdl_chain_res = this->GetKDLChain(robot_model, kdl_tree, end_links[0]);
 
         if (!kdl_chain_res)

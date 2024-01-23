@@ -485,7 +485,8 @@ namespace Burs
         return AlgorithmState::Trapped;
     }
 
-    Bur RbtPlanner::GetBur(const VectorXd &q_near, const MatrixXd &Q_e, double d_closest)
+    Bur
+    RbtPlanner::GetBur(const VectorXd &q_near, const MatrixXd &Q_e, double d_closest)
     {
         double d_small = 0.1 * d_closest;
         MatrixXd endpoints = MatrixXd::Zero(this->q_dim, Q_e.cols());
@@ -522,6 +523,54 @@ namespace Burs
         }
         Bur myBur(q_near, endpoints);
         return myBur;
+    }
+
+    // std::vector<Eigen::VectorXd>
+    // RbtPlanner::Densify(const VectorXd &src, const VectorXd &tgt, const RbtParameters &plan_params)
+    // {
+    //     std::vector<Eigen::VectorXd> dense_path;
+    //     dense_path.push_back(src);
+
+    //     Eigen::VectorXd delta_path = tgt - src;
+    //     double threshold = plan_params.q_resolution;
+    //     double delta_path_size = delta_path.norm();
+
+    //     while (delta_path_size > threshold)
+    //     {
+    //         Eigen::VectorXd new_point = src + threshold * delta_path / delta_path_size;
+    //         dense_path.push_back(new_point);
+
+    //         delta_path = tgt - new_point;
+    //         delta_path_size = delta_path.norm();
+    //     }
+    //     dense_path.push_back(tgt);
+
+    //     return dense_path;
+    // }
+    std::vector<Eigen::VectorXd>
+    RbtPlanner::Densify(const Eigen::VectorXd &src, const Eigen::VectorXd &tgt, const RbtParameters &plan_params)
+    {
+        std::vector<Eigen::VectorXd> dense_path;
+        dense_path.push_back(src);
+
+        Eigen::VectorXd delta_path = tgt - src;
+        double threshold = plan_params.q_resolution;
+        double delta_path_norm = delta_path.norm();
+
+        // Calculate the number of steps needed
+        int steps = static_cast<int>(std::ceil(delta_path_norm / threshold));
+        // 2>1 => 2 steps
+        // Adjust threshold to evenly distribute points
+        threshold = delta_path_norm / steps; // => split in half
+
+        for (int i = 1; i < steps; ++i)
+        {
+            Eigen::VectorXd new_point = src + i * threshold * delta_path.normalized();
+            dense_path.push_back(new_point);
+        }
+        dense_path.push_back(tgt);
+
+        return dense_path;
     }
 
     std::vector<Eigen::VectorXd>
