@@ -19,6 +19,8 @@ include_directories(${PYTHON_INCLUDE_DIRS})
 # Include directories
 include_directories(include /usr/local/include /usr/include /usr/local/include/eigen3)
 
+add_compile_options(-O2)     
+
 # Add subdirectory for PQP
 add_subdirectory(../PQP PQP_build)
 
