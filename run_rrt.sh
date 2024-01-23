@@ -23,4 +23,5 @@
 -ik_index 0 \
 -goal_bias_radius 0.15 \
 -goal_bias_prob 0.0 \
--q_resolution 0.5
+-q_resolution 0.5 \
+-seed -1
