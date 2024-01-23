@@ -47,7 +47,6 @@ int main(int argc, char **argv)
 {
     // IMPORTANT
     // set time-dependent seed for Eigen random matrix generation so it doesn't run the same every time
-    std::srand(static_cast<unsigned int>(std::time(nullptr)));
 
     // PARAMETERS of the command line. For each parameter (e.g. -file), make one variable and one o.addOption<type>(), see bellow example:
 
@@ -56,6 +55,7 @@ int main(int argc, char **argv)
     char *obstacleFile;
     char *startConfigFile;
     int plannerType;
+    int seed;
 
     int max_iters;
     double d_crit;
@@ -98,8 +98,8 @@ int main(int argc, char **argv)
         o.addOption(Option<int>("num_spikes", &num_spikes, "number of bur spikes"));
         o.addOption(Option<double>("p_close_enough", &p_close_enough, "end-effector is close enough to target"));
         o.addOption(Option<double>("prob_steer", &probability_to_steer_to_target, "end-effector is close enough to target"));
-
-        o.addOption(Option<char *>("target_configs", &targetConfigsFile, "target IK solutions for the grasps"));
+  
+        o.addOption(Option<char *>("target_configs", &targetConfigsFile, "defaultValue", "target IK solutions for the grasps"));
         o.addOption(Option<double>("groundLevel", &groundLevel, "ground z coodinate"));
         o.addOption(Option<int>("minColSegIdx", &minColSegmentIdx, "segment id from which it can collide with ground"));
 
@@ -116,6 +116,8 @@ int main(int argc, char **argv)
         o.addOption(Option<int>("cy", &camY, "camera y coordinate"));
         o.addOption(Option<int>("cz", &camZ, "camera z coordinate"));
 
+        o.addOption(Option<int>("seed", &seed, -1, "random seed or time (if seed = -1)"));
+
         if (!o.parse(argc, argv))
         {
             cerr << o.makeCmdLine() << "\n";
@@ -123,6 +125,13 @@ int main(int argc, char **argv)
             exit(0);
         }
     }
+    if (seed == -1) {
+        std::srand(static_cast<unsigned int>(std::time(nullptr)));
+    } else {
+        std::srand( seed );
+    }
+    std::cout << "setting seed " << seed << "\n";
+
 
     // the cmd-line parameters are now loaded into the variables
     std::cout << "Planner will load: \n";
