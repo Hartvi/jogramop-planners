@@ -7,8 +7,8 @@
 -max_iters 10000 \
 -d_crit 0.1 \
 -delta_q 3.1415 \
--epsilon_q 0.05 \
--num_spikes 2 \
+-epsilon_q 0.1 \
+-num_spikes 7 \
 -p_close_enough 0.015 \
 -prob_steer 0.1 \
 -target_prefix /home/hartvi/Documents/CVUT/diploma_thesis/burs_of_free_space/out \
@@ -18,4 +18,5 @@
 -cy 0 \
 -cz 7 \
 -groundLevel 0.00 \
--minColSegIdx 6
+-minColSegIdx 6 \
+-target_configs /home/hartvi/Documents/CVUT/diploma_thesis/burs_of_free_space/jogramop/scenarios/003/export/grasp_IK_solutions.csv

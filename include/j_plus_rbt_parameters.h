@@ -31,6 +31,7 @@ namespace Burs
         // double epsilon_q;
         // int num_spikes;
 
+        int pureRbt;
         double p_close_enough;
         double probability_to_steer_to_target;
         std::shared_ptr<BurTree> target_poses;

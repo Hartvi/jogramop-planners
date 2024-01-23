@@ -4,18 +4,19 @@
 -obstacle /home/hartvi/Documents/CVUT/diploma_thesis/burs_of_free_space/jogramop/scenarios/001/export/obstacles.obj \
 -start_config /home/hartvi/Documents/CVUT/diploma_thesis/burs_of_free_space/jogramop/scenarios/001/export/robot_start_conf.csv \
 -planner 1 \
--max_iters 5000 \
+-max_iters 30000 \
 -d_crit 0.1 \
 -delta_q 3.1415 \
--epsilon_q 0.05 \
--num_spikes 2 \
+-epsilon_q 0.1 \
+-num_spikes 7 \
 -p_close_enough 0.015 \
 -prob_steer 0.1 \
 -target_prefix /home/hartvi/Documents/CVUT/diploma_thesis/burs_of_free_space/out.res \
--render 1 \
+-render 0 \
 -vis_script /home/hartvi/Documents/CVUT/diploma_thesis/burs_of_free_space/scripts/animate_scene.py \
 -cx 1 \
 -cy 0 \
 -cz 7 \
 -groundLevel 0.00 \
--minColSegIdx 6
+-minColSegIdx 6 \
+-target_configs /home/hartvi/Documents/CVUT/diploma_thesis/burs_of_free_space/jogramop/scenarios/001/export/grasp_IK_solutions.csv

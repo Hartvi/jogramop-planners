@@ -7,6 +7,7 @@
 #include <string>
 #include <unordered_map>
 #include <iostream>
+#include "planning_result.h"
 
 namespace Burs
 {

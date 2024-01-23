@@ -51,6 +51,12 @@ namespace Burs
         void
         GetEndpoints(MatrixXd &Qe, const VectorXd &q_near, double factor) const;
 
+        std::optional<std::vector<Eigen::VectorXd>>
+        RRTConnect(const VectorXd &q_start, const VectorXd &q_goal, const RbtParameters &plan_parameters, PlanningResult &planning_result);
+
+        std::optional<std::vector<Eigen::VectorXd>>
+        RbtConnect(const VectorXd &q_start, const VectorXd &q_goal, const RbtParameters &plan_parameters, PlanningResult &planning_result);
+
         /// @brief Plan path using two opposing trees
         /// @return Matrix (q_dim, n), where n is the number of steps. OTHERWISE `VectorXd()` if planning fails
         std::optional<std::vector<Eigen::VectorXd>>
@@ -64,6 +70,12 @@ namespace Burs
 
         Bur
         GetBur(const VectorXd &q_near, const MatrixXd &Q_e, double d_closest);
+
+        AlgorithmState
+        GreedyExtend(std::shared_ptr<BurTree> t_a, std::shared_ptr<BurTree> t_b, Eigen::VectorXd q_a, const RbtParameters &planner_parameters);
+
+        AlgorithmState
+        GreedyExtendRandomConfig(std::shared_ptr<BurTree> t_a, Eigen::VectorXd closest_q, const RbtParameters &planner_parameters);
 
     protected:
         RadiusFuncParallel radius_func;

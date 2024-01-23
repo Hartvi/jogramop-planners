@@ -76,6 +76,8 @@ int main(int argc, char **argv)
     double groundLevel;
     int minColSegmentIdx; // minimum segment idx able to collide with ground
 
+    char *targetConfigsFile;
+
     {
         CmdOptions o;
 
@@ -92,6 +94,7 @@ int main(int argc, char **argv)
         o.addOption(Option<double>("p_close_enough", &p_close_enough, "end-effector is close enough to target"));
         o.addOption(Option<double>("prob_steer", &probability_to_steer_to_target, "end-effector is close enough to target"));
 
+        o.addOption(Option<char *>("target_configs", &targetConfigsFile, "target IK solutions for the grasps"));
         o.addOption(Option<double>("groundLevel", &groundLevel, "ground z coodinate"));
         o.addOption(Option<int>("minColSegIdx", &minColSegmentIdx, "segment id from which it can collide with ground"));
 
@@ -185,7 +188,6 @@ int main(int argc, char **argv)
                 ofs << jprbt->StringifyPath(path.value());
                 ofs.close();
             }
-
 
             // Save measurement
             /*
@@ -291,7 +293,6 @@ int main(int argc, char **argv)
                 ofs.close();
             }
 
-
             if (renderVideo)
             {
                 std::string vis_file_name = std::string(targetPrefixFile) + ".vis";
@@ -356,49 +357,51 @@ int main(int argc, char **argv)
 
             planning_result.time_taken = getTime(t1, t2);
 
-            std::ofstream out_file(targetPrefixFile);
-
-            // Save measurement
-            if (out_file.is_open())
+            char fname[2000];
             {
-                out_file << "res\n"
-                         << planning_result.toCSVString() << "\n";
-                out_file << "configs\n"
-                         << jprbt->ConfigsToString(path.value()) << "\n";
-                out_file << "vis\n"
-                         << jprbt->StringifyPath(path.value());
-
-                if (renderVideo)
-                {
-                    std::string vis_file_name = std::string(targetPrefixFile) + ".vis";
-
-                    std::ofstream vis_file(vis_file_name);
-
-                    if (vis_file.is_open())
-                    {
-                        auto final_path = path.value();
-                        vis_file << jprbt->StringifyPath(final_path);
-                        vis_file.close();
-                    }
-
-                    std::string path_name = joinWithCurrentDirectory(vis_file_name);
-                    // needs `pip install bpy` for python 3.10, numpy
-                    std::string vis_args = path_name + " " + std::to_string(camX) + " " + std::to_string(camY) + " " + std::to_string(camZ) + " " + grasp_path;
-                    std::string str_command = "python3.10 " + std::string(visualizationScriptFile) + " " + vis_args;
-
-                    const char *command = str_command.c_str();
-                    int result = system(command);
-
-                    if (result != 0)
-                    {
-                        std::cout << "Calling `" << command << "` failed" << std::endl;
-                    }
-                }
-                out_file.close();
+                snprintf(fname, sizeof(fname), "%s.txt", targetPrefixFile);
+                ofstream ofs(fname);
+                ofs << planning_result.toCSVString();
+                ofs.close();
             }
-            else
             {
-                std::cout << "error, couldnt open target file: " << targetPrefixFile << "\n";
+                snprintf(fname, sizeof(fname), "%s.try", targetPrefixFile);
+                ofstream ofs(fname);
+                ofs << jprbt->ConfigsToString(path.value()) << "\n";
+                ofs.close();
+            }
+            {
+                snprintf(fname, sizeof(fname), "%s.vis", targetPrefixFile);
+                ofstream ofs(fname);
+                ofs << jprbt->StringifyPath(path.value());
+                ofs.close();
+            }
+
+            if (renderVideo)
+            {
+                std::string vis_file_name = std::string(targetPrefixFile) + ".vis";
+
+                std::ofstream vis_file(vis_file_name);
+
+                if (vis_file.is_open())
+                {
+                    auto final_path = path.value();
+                    vis_file << jprbt->StringifyPath(final_path);
+                    vis_file.close();
+                }
+
+                std::string path_name = joinWithCurrentDirectory(vis_file_name);
+                // needs `pip install bpy` for python 3.10, numpy
+                std::string vis_args = path_name + " " + std::to_string(camX) + " " + std::to_string(camY) + " " + std::to_string(camZ) + " " + grasp_path;
+                std::string str_command = "python3.10 " + std::string(visualizationScriptFile) + " " + vis_args;
+
+                const char *command = str_command.c_str();
+                int result = system(command);
+
+                if (result != 0)
+                {
+                    std::cout << "Calling `" << command << "` failed" << std::endl;
+                }
             }
 
             std::cout << "planning result " << planning_result.toCSVString() << "\n";
@@ -406,7 +409,7 @@ int main(int argc, char **argv)
         }
         case 3: // J+RRT
         {
-            std::cout << "PLANNING BASIC RRT\n";
+            std::cout << "PLANNING J+ BIASED RRT\n";
             // extended with steer towards
 
             // JPlusRbtPlanner(std::string urdf_file);
@@ -441,49 +444,382 @@ int main(int argc, char **argv)
             std::ofstream out_file(targetPrefixFile);
 
             // Save measurement
-            if (out_file.is_open())
+            char fname[2000];
             {
-                out_file << "res\n"
-                         << planning_result.toCSVString() << "\n";
-                out_file << "configs\n"
-                         << jprbt->ConfigsToString(path.value()) << "\n";
-                out_file << "vis\n"
-                         << jprbt->StringifyPath(path.value());
-
-                if (renderVideo)
-                {
-                    std::string vis_file_name = std::string(targetPrefixFile) + ".vis";
-
-                    std::ofstream vis_file(vis_file_name);
-
-                    if (vis_file.is_open())
-                    {
-                        auto final_path = path.value();
-                        vis_file << jprbt->StringifyPath(final_path);
-                        vis_file.close();
-                    }
-
-                    std::string path_name = joinWithCurrentDirectory(vis_file_name);
-                    // needs `pip install bpy` for python 3.10, numpy
-                    std::string vis_args = path_name + " " + std::to_string(camX) + " " + std::to_string(camY) + " " + std::to_string(camZ) + " " + grasp_path;
-                    std::string str_command = "python3.10 " + std::string(visualizationScriptFile) + " " + vis_args;
-
-                    const char *command = str_command.c_str();
-                    int result = system(command);
-
-                    if (result != 0)
-                    {
-                        std::cout << "Calling `" << command << "` failed" << std::endl;
-                    }
-                }
-                out_file.close();
+                snprintf(fname, sizeof(fname), "%s.txt", targetPrefixFile);
+                ofstream ofs(fname);
+                ofs << planning_result.toCSVString();
+                ofs.close();
             }
-            else
             {
-                std::cout << "error, couldnt open target file: " << targetPrefixFile << "\n";
+                snprintf(fname, sizeof(fname), "%s.try", targetPrefixFile);
+                ofstream ofs(fname);
+                ofs << jprbt->ConfigsToString(path.value()) << "\n";
+                ofs.close();
+            }
+            {
+                snprintf(fname, sizeof(fname), "%s.vis", targetPrefixFile);
+                ofstream ofs(fname);
+                ofs << jprbt->StringifyPath(path.value());
+                ofs.close();
+            }
+
+            if (renderVideo)
+            {
+                std::string vis_file_name = std::string(targetPrefixFile) + ".vis";
+
+                std::ofstream vis_file(vis_file_name);
+
+                if (vis_file.is_open())
+                {
+                    auto final_path = path.value();
+                    vis_file << jprbt->StringifyPath(final_path);
+                    vis_file.close();
+                }
+
+                std::string path_name = joinWithCurrentDirectory(vis_file_name);
+                // needs `pip install bpy` for python 3.10, numpy
+                std::string vis_args = path_name + " " + std::to_string(camX) + " " + std::to_string(camY) + " " + std::to_string(camZ) + " " + grasp_path;
+                std::string str_command = "python3.10 " + std::string(visualizationScriptFile) + " " + vis_args;
+
+                const char *command = str_command.c_str();
+                int result = system(command);
+
+                if (result != 0)
+                {
+                    std::cout << "Calling `" << command << "` failed" << std::endl;
+                }
             }
 
             std::cout << "planning result " << planning_result.toCSVString() << "\n";
+            break;
+        }
+        case 4:
+        {
+            std::cout << "PLANNING IK RBT\n";
+            // only difference is that it doesnt use probability_to_steer_to_target
+
+            // JPlusRbtPlanner(std::string urdf_file);
+            std::shared_ptr<JPlusRbtPlanner> jprbt = std::make_shared<JPlusRbtPlanner>(std::string(urdfFile));
+            // 1. Set obstacles in urdfenv
+            // 2. Setup parameters
+            // 3. Plan
+            auto env = jprbt->GetEnv<URDFEnv>();
+            env->AddObstacle(obstacleFile);
+            env->SetGroundLevel(groundLevel, minColSegmentIdx);
+
+            std::string grasp_path(graspFile);
+
+            std::vector<Grasp> grasps = Grasp::LoadGrasps(grasp_path);
+            std::cout << "grasps: " << grasps.size() << std::endl;
+            // for (unsigned int i = 0; i < grasps.size(); ++i)
+            // {
+            //     std::cout << "Grasp:\n"
+            //               << grasps[i].ToFrame() << std::endl;
+            // }
+
+            Eigen::VectorXd start_config = RobotBase::parseCSVToVectorXd(startConfigFile);
+            std::cout << "start config " << start_config.transpose() << "\n";
+
+            auto grasp_frames = Grasp::GraspsToFrames(grasps);
+            JPlusRbtParameters params(max_iters, d_crit, delta_q, epsilon_q, num_spikes, p_close_enough, 0.0, grasp_frames);
+
+            std::vector<Eigen::VectorXd> goals = RobotBase::parseCSVToVectors(targetConfigsFile);
+
+            // shuffle target configs so as
+            unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+
+            std::shuffle(goals.begin(), goals.end(), std::default_random_engine(seed));
+
+            PlanningResult planning_result;
+            struct rusage t1, t2;
+            getTime(&t1);
+            // auto path = jprbt->RbtConnect(start_config, goals[0], params);
+            auto path = jprbt->RbtMultiGoal(start_config, goals, params, planning_result);
+            getTime(&t2);
+            planning_result.time_taken = getTime(t1, t2);
+
+            char fname[2000];
+            {
+                snprintf(fname, sizeof(fname), "%s.txt", targetPrefixFile);
+                ofstream ofs(fname);
+                ofs << planning_result.toCSVString();
+                ofs.close();
+            }
+            {
+                snprintf(fname, sizeof(fname), "%s.try", targetPrefixFile);
+                ofstream ofs(fname);
+                ofs << jprbt->ConfigsToString(path.value()) << "\n";
+                ofs.close();
+            }
+            {
+                snprintf(fname, sizeof(fname), "%s.vis", targetPrefixFile);
+                ofstream ofs(fname);
+                ofs << jprbt->StringifyPath(path.value());
+                ofs.close();
+            }
+
+            // Save measurement
+            /*
+            if (out_file.is_open())
+            {
+                out_file << "res\n"
+                    << planning_result.toCSVString() << "\n";
+                out_file << "configs\n"
+                    << jprbt->ConfigsToString(path.value()) << "\n";
+                out_file << "vis\n"
+                    << jprbt->StringifyPath(path.value());
+            }
+            */
+
+            if (renderVideo)
+            {
+                std::string vis_file_name = std::string(targetPrefixFile) + ".vis";
+
+                std::ofstream vis_file(vis_file_name);
+
+                if (vis_file.is_open())
+                {
+                    auto final_path = path.value();
+                    vis_file << jprbt->StringifyPath(final_path);
+                    vis_file.close();
+                }
+
+                std::string path_name = joinWithCurrentDirectory(vis_file_name);
+                // needs `pip install bpy` for python 3.10, numpy
+                std::string vis_args = path_name + " " + std::to_string(camX) + " " + std::to_string(camY) + " " + std::to_string(camZ) + " " + grasp_path;
+                std::string str_command = "python3.10 " + std::string(visualizationScriptFile) + " " + vis_args;
+
+                const char *command = str_command.c_str();
+                int result = system(command);
+
+                if (result != 0)
+                {
+                    std::cout << "Calling `" << command << "` failed" << std::endl;
+                }
+            }
+
+            std::cout << "planning result " << planning_result.toCSVString() << "\n";
+
+            break;
+        }
+        case 5:
+        {
+            std::cout << "PLANNING IK RRT\n";
+            // only difference is that it doesnt use probability_to_steer_to_target
+
+            // JPlusRbtPlanner(std::string urdf_file);
+            std::shared_ptr<JPlusRbtPlanner> jprbt = std::make_shared<JPlusRbtPlanner>(std::string(urdfFile));
+            // 1. Set obstacles in urdfenv
+            // 2. Setup parameters
+            // 3. Plan
+            auto env = jprbt->GetEnv<URDFEnv>();
+            env->AddObstacle(obstacleFile);
+            env->SetGroundLevel(groundLevel, minColSegmentIdx);
+
+            std::string grasp_path(graspFile);
+
+            std::vector<Grasp> grasps = Grasp::LoadGrasps(grasp_path);
+            std::cout << "grasps: " << grasps.size() << std::endl;
+            // for (unsigned int i = 0; i < grasps.size(); ++i)
+            // {
+            //     std::cout << "Grasp:\n"
+            //               << grasps[i].ToFrame() << std::endl;
+            // }
+
+            Eigen::VectorXd start_config = RobotBase::parseCSVToVectorXd(startConfigFile);
+            std::cout << "start config " << start_config.transpose() << "\n";
+
+            auto grasp_frames = Grasp::GraspsToFrames(grasps);
+            JPlusRbtParameters params(max_iters, d_crit, delta_q, epsilon_q, num_spikes, p_close_enough, 0.0, grasp_frames);
+
+            std::vector<Eigen::VectorXd> goals = RobotBase::parseCSVToVectors(targetConfigsFile);
+
+            // shuffle target configs so as
+            unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+
+            std::shuffle(goals.begin(), goals.end(), std::default_random_engine(seed));
+
+            PlanningResult planning_result;
+            struct rusage t1, t2;
+            getTime(&t1);
+            // auto path = jprbt->RbtConnect(start_config, goals[0], params);
+            auto path = jprbt->RRTMultiGoal(start_config, goals, params, planning_result);
+            getTime(&t2);
+            planning_result.time_taken = getTime(t1, t2);
+
+            char fname[2000];
+            {
+                snprintf(fname, sizeof(fname), "%s.txt", targetPrefixFile);
+                ofstream ofs(fname);
+                ofs << planning_result.toCSVString();
+                ofs.close();
+            }
+            {
+                snprintf(fname, sizeof(fname), "%s.try", targetPrefixFile);
+                ofstream ofs(fname);
+                ofs << jprbt->ConfigsToString(path.value()) << "\n";
+                ofs.close();
+            }
+            {
+                snprintf(fname, sizeof(fname), "%s.vis", targetPrefixFile);
+                ofstream ofs(fname);
+                ofs << jprbt->StringifyPath(path.value());
+                ofs.close();
+            }
+
+            // Save measurement
+            /*
+            if (out_file.is_open())
+            {
+                out_file << "res\n"
+                    << planning_result.toCSVString() << "\n";
+                out_file << "configs\n"
+                    << jprbt->ConfigsToString(path.value()) << "\n";
+                out_file << "vis\n"
+                    << jprbt->StringifyPath(path.value());
+            }
+            */
+
+            if (renderVideo)
+            {
+                std::string vis_file_name = std::string(targetPrefixFile) + ".vis";
+
+                std::ofstream vis_file(vis_file_name);
+
+                if (vis_file.is_open())
+                {
+                    auto final_path = path.value();
+                    vis_file << jprbt->StringifyPath(final_path);
+                    vis_file.close();
+                }
+
+                std::string path_name = joinWithCurrentDirectory(vis_file_name);
+                // needs `pip install bpy` for python 3.10, numpy
+                std::string vis_args = path_name + " " + std::to_string(camX) + " " + std::to_string(camY) + " " + std::to_string(camZ) + " " + grasp_path;
+                std::string str_command = "python3.10 " + std::string(visualizationScriptFile) + " " + vis_args;
+
+                const char *command = str_command.c_str();
+                int result = system(command);
+
+                if (result != 0)
+                {
+                    std::cout << "Calling `" << command << "` failed" << std::endl;
+                }
+            }
+
+            std::cout << "planning result " << planning_result.toCSVString() << "\n";
+
+            break;
+        }
+        case 99:
+        {
+            std::cout << "PLANNING IK RBT WITHOUT MEASUREMENT\n";
+            // only difference is that it doesnt use probability_to_steer_to_target
+
+            // JPlusRbtPlanner(std::string urdf_file);
+            std::shared_ptr<JPlusRbtPlanner> jprbt = std::make_shared<JPlusRbtPlanner>(std::string(urdfFile));
+            // 1. Set obstacles in urdfenv
+            // 2. Setup parameters
+            // 3. Plan
+            auto env = jprbt->GetEnv<URDFEnv>();
+            env->AddObstacle(obstacleFile);
+            env->SetGroundLevel(groundLevel, minColSegmentIdx);
+
+            std::string grasp_path(graspFile);
+
+            std::vector<Grasp> grasps = Grasp::LoadGrasps(grasp_path);
+            std::cout << "grasps: " << grasps.size() << std::endl;
+            // for (unsigned int i = 0; i < grasps.size(); ++i)
+            // {
+            //     std::cout << "Grasp:\n"
+            //               << grasps[i].ToFrame() << std::endl;
+            // }
+
+            Eigen::VectorXd start_config = RobotBase::parseCSVToVectorXd(startConfigFile);
+            std::cout << "start config " << start_config.transpose() << "\n";
+
+            auto grasp_frames = Grasp::GraspsToFrames(grasps);
+            JPlusRbtParameters params(max_iters, d_crit, delta_q, epsilon_q, num_spikes, p_close_enough, 0.0, grasp_frames);
+
+            std::vector<Eigen::VectorXd> goals = RobotBase::parseCSVToVectors(targetConfigsFile);
+
+            // shuffle target configs so as
+            unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+
+            std::shuffle(goals.begin(), goals.end(), std::default_random_engine(seed));
+
+            PlanningResult planning_result;
+            struct rusage t1, t2;
+            getTime(&t1);
+            // auto path = jprbt->RbtConnect(start_config, goals[0], params);
+            auto path = jprbt->RbtMultiGoal(start_config, goals, params, planning_result);
+            // auto path = jprbt->RRTConnect(start_config, goals[0], params, planning_result);
+            getTime(&t2);
+            planning_result.time_taken = getTime(t1, t2);
+
+            char fname[2000];
+            {
+                snprintf(fname, sizeof(fname), "%s.txt", targetPrefixFile);
+                ofstream ofs(fname);
+                ofs << planning_result.toCSVString();
+                ofs.close();
+            }
+            {
+                snprintf(fname, sizeof(fname), "%s.try", targetPrefixFile);
+                ofstream ofs(fname);
+                ofs << jprbt->ConfigsToString(path.value()) << "\n";
+                ofs.close();
+            }
+            {
+                snprintf(fname, sizeof(fname), "%s.vis", targetPrefixFile);
+                ofstream ofs(fname);
+                ofs << jprbt->StringifyPath(path.value());
+                ofs.close();
+            }
+
+            // Save measurement
+            /*
+            if (out_file.is_open())
+            {
+                out_file << "res\n"
+                    << planning_result.toCSVString() << "\n";
+                out_file << "configs\n"
+                    << jprbt->ConfigsToString(path.value()) << "\n";
+                out_file << "vis\n"
+                    << jprbt->StringifyPath(path.value());
+            }
+            */
+
+            if (renderVideo)
+            {
+                std::string vis_file_name = std::string(targetPrefixFile) + ".vis";
+
+                std::ofstream vis_file(vis_file_name);
+
+                if (vis_file.is_open())
+                {
+                    auto final_path = path.value();
+                    vis_file << jprbt->StringifyPath(final_path);
+                    vis_file.close();
+                }
+
+                std::string path_name = joinWithCurrentDirectory(vis_file_name);
+                // needs `pip install bpy` for python 3.10, numpy
+                std::string vis_args = path_name + " " + std::to_string(camX) + " " + std::to_string(camY) + " " + std::to_string(camZ) + " " + grasp_path;
+                std::string str_command = "python3.10 " + std::string(visualizationScriptFile) + " " + vis_args;
+
+                const char *command = str_command.c_str();
+                int result = system(command);
+
+                if (result != 0)
+                {
+                    std::cout << "Calling `" << command << "` failed" << std::endl;
+                }
+            }
+
+            std::cout << "planning result " << planning_result.toCSVString() << "\n";
+
             break;
         }
         default:

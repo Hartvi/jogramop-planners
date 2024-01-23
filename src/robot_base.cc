@@ -729,4 +729,46 @@ namespace Burs
 
         return vec;
     }
+
+    std::vector<Eigen::VectorXd>
+    RobotBase::parseCSVToVectors(const std::string &path)
+    {
+        std::ifstream file(path);
+        if (!file.is_open())
+        {
+            throw std::runtime_error("Unable to open file: " + path);
+        }
+
+        std::string line;
+        std::vector<Eigen::VectorXd> vectors;
+
+        while (std::getline(file, line))
+        {
+            std::stringstream ss(line);
+            std::vector<double> values;
+            std::string value;
+
+            while (std::getline(ss, value, ','))
+            {
+                try
+                {
+                    double num = std::stod(value);
+                    values.push_back(num);
+                }
+                catch (const std::invalid_argument &e)
+                {
+                    throw std::runtime_error("Failed to parse number: " + value);
+                }
+            }
+
+            Eigen::VectorXd vec(values.size());
+            for (size_t i = 0; i < values.size(); ++i)
+            {
+                vec[i] = values[i];
+            }
+            vectors.push_back(vec);
+        }
+
+        return vectors;
+    }
 }

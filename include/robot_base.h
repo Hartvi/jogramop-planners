@@ -100,6 +100,9 @@ namespace Burs
 
         static Eigen::VectorXd
         parseCSVToVectorXd(const std::string &path);
+
+        static std::vector<Eigen::VectorXd>
+        parseCSVToVectors(const std::string &path);
     };
 }
 #endif
