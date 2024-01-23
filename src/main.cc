@@ -93,8 +93,8 @@ int main(int argc, char **argv)
         o.addOption(Option<int>("num_spikes", &num_spikes, "number of bur spikes"));
         o.addOption(Option<double>("p_close_enough", &p_close_enough, "end-effector is close enough to target"));
         o.addOption(Option<double>("prob_steer", &probability_to_steer_to_target, "end-effector is close enough to target"));
-
-        o.addOption(Option<char *>("target_configs", &targetConfigsFile, "target IK solutions for the grasps"));
+  
+        o.addOption(Option<char *>("target_configs", &targetConfigsFile, "defaultValue", "target IK solutions for the grasps"));
         o.addOption(Option<double>("groundLevel", &groundLevel, "ground z coodinate"));
         o.addOption(Option<int>("minColSegIdx", &minColSegmentIdx, "segment id from which it can collide with ground"));
 
