@@ -166,49 +166,65 @@ int main(int argc, char **argv)
             getTime(&t2);
             planning_result.time_taken = getTime(t1, t2);
 
-            std::ofstream out_file(targetPrefixFile);
+            char fname[2000];
+            {
+                snprintf(fname, sizeof(fname), "%s.txt", targetPrefixFile);
+                ofstream ofs(fname);
+                ofs << planning_result.toCSVString();
+                ofs.close();
+            }
+            {
+                snprintf(fname, sizeof(fname), "%s.try", targetPrefixFile);
+                ofstream ofs(fname);
+                ofs << jprbt->ConfigsToString(path.value()) << "\n";
+                ofs.close();
+            }
+            {
+                snprintf(fname, sizeof(fname), "%s.vis", targetPrefixFile);
+                ofstream ofs(fname);
+                ofs << jprbt->StringifyPath(path.value());
+                ofs.close();
+            }
+
 
             // Save measurement
+            /*
             if (out_file.is_open())
             {
                 out_file << "res\n"
-                         << planning_result.toCSVString() << "\n";
+                    << planning_result.toCSVString() << "\n";
                 out_file << "configs\n"
-                         << jprbt->ConfigsToString(path.value()) << "\n";
+                    << jprbt->ConfigsToString(path.value()) << "\n";
                 out_file << "vis\n"
-                         << jprbt->StringifyPath(path.value());
-
-                if (renderVideo)
-                {
-                    std::string vis_file_name = std::string(targetPrefixFile) + ".vis";
-
-                    std::ofstream vis_file(vis_file_name);
-
-                    if (vis_file.is_open())
-                    {
-                        auto final_path = path.value();
-                        vis_file << jprbt->StringifyPath(final_path);
-                        vis_file.close();
-                    }
-
-                    std::string path_name = joinWithCurrentDirectory(vis_file_name);
-                    // needs `pip install bpy` for python 3.10, numpy
-                    std::string vis_args = path_name + " " + std::to_string(camX) + " " + std::to_string(camY) + " " + std::to_string(camZ) + " " + grasp_path;
-                    std::string str_command = "python3.10 " + std::string(visualizationScriptFile) + " " + vis_args;
-
-                    const char *command = str_command.c_str();
-                    int result = system(command);
-
-                    if (result != 0)
-                    {
-                        std::cout << "Calling `" << command << "` failed" << std::endl;
-                    }
-                }
-                out_file.close();
+                    << jprbt->StringifyPath(path.value());
             }
-            else
+            */
+
+            if (renderVideo)
             {
-                std::cout << "error, couldnt open target file: " << targetPrefixFile << "\n";
+                std::string vis_file_name = std::string(targetPrefixFile) + ".vis";
+
+                std::ofstream vis_file(vis_file_name);
+
+                if (vis_file.is_open())
+                {
+                    auto final_path = path.value();
+                    vis_file << jprbt->StringifyPath(final_path);
+                    vis_file.close();
+                }
+
+                std::string path_name = joinWithCurrentDirectory(vis_file_name);
+                // needs `pip install bpy` for python 3.10, numpy
+                std::string vis_args = path_name + " " + std::to_string(camX) + " " + std::to_string(camY) + " " + std::to_string(camZ) + " " + grasp_path;
+                std::string str_command = "python3.10 " + std::string(visualizationScriptFile) + " " + vis_args;
+
+                const char *command = str_command.c_str();
+                int result = system(command);
+
+                if (result != 0)
+                {
+                    std::cout << "Calling `" << command << "` failed" << std::endl;
+                }
             }
 
             std::cout << "planning result " << planning_result.toCSVString() << "\n";
@@ -253,49 +269,54 @@ int main(int argc, char **argv)
             getTime(&t2);
             planning_result.time_taken = getTime(t1, t2);
 
-            std::ofstream out_file(targetPrefixFile);
+            //            std::ofstream out_file(targetPrefixFile);
 
-            // Save measurement
-            if (out_file.is_open())
+            char fname[2000];
             {
-                out_file << "res\n"
-                         << planning_result.toCSVString() << "\n";
-                out_file << "configs\n"
-                         << jprbt->ConfigsToString(path.value()) << "\n";
-                out_file << "vis\n"
-                         << jprbt->StringifyPath(path.value());
-
-                if (renderVideo)
-                {
-                    std::string vis_file_name = std::string(targetPrefixFile) + ".vis";
-
-                    std::ofstream vis_file(vis_file_name);
-
-                    if (vis_file.is_open())
-                    {
-                        auto final_path = path.value();
-                        vis_file << jprbt->StringifyPath(final_path);
-                        vis_file.close();
-                    }
-
-                    std::string path_name = joinWithCurrentDirectory(vis_file_name);
-                    // needs `pip install bpy` for python 3.10, numpy
-                    std::string vis_args = path_name + " " + std::to_string(camX) + " " + std::to_string(camY) + " " + std::to_string(camZ) + " " + grasp_path;
-                    std::string str_command = "python3.10 " + std::string(visualizationScriptFile) + " " + vis_args;
-
-                    const char *command = str_command.c_str();
-                    int result = system(command);
-
-                    if (result != 0)
-                    {
-                        std::cout << "Calling `" << command << "` failed" << std::endl;
-                    }
-                }
-                out_file.close();
+                snprintf(fname, sizeof(fname), "%s.txt", targetPrefixFile);
+                ofstream ofs(fname);
+                ofs << planning_result.toCSVString();
+                ofs.close();
             }
-            else
             {
-                std::cout << "error, couldnt open target file: " << targetPrefixFile << "\n";
+                snprintf(fname, sizeof(fname), "%s.try", targetPrefixFile);
+                ofstream ofs(fname);
+                ofs << jprbt->ConfigsToString(path.value()) << "\n";
+                ofs.close();
+            }
+            {
+                snprintf(fname, sizeof(fname), "%s.vis", targetPrefixFile);
+                ofstream ofs(fname);
+                ofs << jprbt->StringifyPath(path.value());
+                ofs.close();
+            }
+
+
+            if (renderVideo)
+            {
+                std::string vis_file_name = std::string(targetPrefixFile) + ".vis";
+
+                std::ofstream vis_file(vis_file_name);
+
+                if (vis_file.is_open())
+                {
+                    auto final_path = path.value();
+                    vis_file << jprbt->StringifyPath(final_path);
+                    vis_file.close();
+                }
+
+                std::string path_name = joinWithCurrentDirectory(vis_file_name);
+                // needs `pip install bpy` for python 3.10, numpy
+                std::string vis_args = path_name + " " + std::to_string(camX) + " " + std::to_string(camY) + " " + std::to_string(camZ) + " " + grasp_path;
+                std::string str_command = "python3.10 " + std::string(visualizationScriptFile) + " " + vis_args;
+
+                const char *command = str_command.c_str();
+                int result = system(command);
+
+                if (result != 0)
+                {
+                    std::cout << "Calling `" << command << "` failed" << std::endl;
+                }
             }
 
             std::cout << "planning result " << planning_result.toCSVString() << "\n";
