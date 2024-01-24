@@ -1024,20 +1024,19 @@ namespace Burs
                 throw std::runtime_error("JPlusRbt: couldn't perform forward kinematics inside steer-to-target");
             }
             new_twist_target.vel = tgt_pos - p_out.p;
-            if (new_twist_target.vel.Norm() < plan_params.p_close_enough)
-            {
-                // FINISH
+
+            // if (new_twist_target.vel.Norm() < plan_params.p_close_enough)
+            { // FINISH
 
                 int closest_index = -1;
-                double distance_to_goal;
 
                 // check only once in a while perhaps
                 newest_poses[0] = p_out;
-                AlgorithmState algorithm_state = this->CheckGoalStatus(newest_poses, plan_params, closest_index, distance_to_goal);
+                AlgorithmState algorithm_state = this->CheckGoalStatus(newest_poses, plan_params, closest_index, dist_to_goal);
 
-                if (distance_to_goal < planning_result.distance_to_goal)
+                if (dist_to_goal < planning_result.distance_to_goal)
                 {
-                    planning_result.distance_to_goal = distance_to_goal;
+                    planning_result.distance_to_goal = dist_to_goal;
                     final_q = q_new;
                     std::cout << "nearest\n";
                 }
@@ -1075,6 +1074,109 @@ namespace Burs
             {
                 return std::pair<AlgorithmState, Eigen::VectorXd>(AlgorithmState::Trapped, q_near);
             }
+        }
+    }
+
+    std::pair<AlgorithmState, Eigen::VectorXd>
+    JPlusRbtPlanner::ExtendTowardsGoalRBT(std::shared_ptr<BurTree> q_tree, const Eigen::VectorXd q_near, const double &d_closest, const JPlusRbtParameters &plan_params, PlanningResult &planning_result)
+    {
+        // begin use once:
+        auto env = this->GetEnv<URDFEnv>();
+        auto chain = env->myURDFRobot->kdl_chain;
+
+        KDL::ChainFkSolverPos_recursive fk_solver(chain);
+        KDL::ChainIkSolverVel_pinv pinv_solver(chain);
+
+        KDL::Frame p_out;
+        KDL::JntArray q_kdl;
+        KDL::JntArray q_kdl_dot;
+
+        // Get random target poses from the workspace targets to extend to
+        std::shared_ptr<BurTree> target_poses = plan_params.target_poses;
+        std::vector<RRTNode> target_nodes = target_poses->mNodes;
+        int randint = this->rng->getRandomInt();
+        RRTNode random_node = target_nodes[randint];
+        Eigen::VectorXd pose_target = random_node.q;
+
+        auto new_twist_target = KDL::Twist();
+        KDL::Vector tgt_pos(pose_target(0), pose_target(1), pose_target(2));
+
+        std::vector<KDL::Frame> newest_poses(1);
+        // :end use once
+        double dist_to_goal = 1e10;
+
+        Eigen::VectorXd q_old(q_near);
+        Eigen::VectorXd q_new(q_near);
+
+        Eigen::VectorXd final_q(q_near);
+
+        while (dist_to_goal > plan_params.p_close_enough)
+        {
+            // directed approach to goal
+            q_kdl.data = q_old;
+
+            // Get Cartesian end-effector position & rotation
+            if (fk_solver.JntToCart(q_kdl, p_out) < 0)
+            {
+                throw std::runtime_error("JPlusRbt: couldn't perform forward kinematics inside steer-to-target");
+            }
+            new_twist_target.vel = tgt_pos - p_out.p;
+            if (new_twist_target.vel.Norm() < plan_params.d_crit)
+            {
+                return std::pair<AlgorithmState, Eigen::VectorXd>(AlgorithmState::Trapped, q_near);
+            }
+
+            { // FINISH
+                int closest_index = -1;
+
+                // check only once in a while perhaps
+                newest_poses[0] = p_out;
+                AlgorithmState algorithm_state = this->CheckGoalStatus(newest_poses, plan_params, closest_index, dist_to_goal);
+
+                if (dist_to_goal < planning_result.distance_to_goal)
+                {
+                    planning_result.distance_to_goal = dist_to_goal;
+                    final_q = q_new;
+                    std::cout << "nearest\n";
+                }
+
+                if (algorithm_state == AlgorithmState::Reached)
+                {
+                    return std::pair<AlgorithmState, Eigen::VectorXd>(AlgorithmState::Reached, final_q);
+                    // last_idx = q_tree->Nearest(q_new.data());
+                }
+            }
+            // TODO: include rotation
+            // For now no rotation
+            new_twist_target.rot = KDL::Vector::Zero();
+
+            // Calculate bur and go as far as possible:
+            // TODO: optimize this to reuse the jacobian
+            // Possibly fork the library:
+            // https://github.com/orocos/orocos_kinematics_dynamics/blob/master/orocos_kdl/src/chainiksolvervel_pinv.cpp
+            if (pinv_solver.CartToJnt(q_kdl, new_twist_target, q_kdl_dot) >= 0)
+            {
+                Eigen::VectorXd delta_q = q_kdl_dot.data;
+                // RRT step:
+                // q_new = (q_old + delta_q).normalized() * plan_params.epsilon_q;
+                // RBT step:
+                Bur b = this->GetBur(q_old, q_old + delta_q, d_closest);
+                q_new = b.endpoints.col(0);
+            }
+            else
+            {
+                std::runtime_error("RRT section: couldn't do p_inv forward kinematics");
+            }
+            // if (!this->IsColliding(q_new))
+            // {
+            //     int n_i = q_tree->Nearest(q_new.data());
+            //     q_tree->AddNode(n_i, q_new);
+            //     q_old = q_new;
+            // }
+            // else
+            // {
+            //     return std::pair<AlgorithmState, Eigen::VectorXd>(AlgorithmState::Trapped, q_near);
+            // }
         }
     }
 

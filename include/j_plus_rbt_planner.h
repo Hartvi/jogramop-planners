@@ -56,8 +56,10 @@ namespace Burs
         std::pair<AlgorithmState, Eigen::VectorXd>
         ExtendTowardsGoalRRT(std::shared_ptr<BurTree> q_tree, const Eigen::VectorXd q_near, const JPlusRbtParameters &plan_params, PlanningResult &planning_result);
 
-        int
-        AddObstacle(std::string obstacle_file, Eigen::Matrix3d R, Eigen::Vector3d t);
+        std::pair<AlgorithmState, Eigen::VectorXd>
+        ExtendTowardsGoalRBT(std::shared_ptr<BurTree> q_tree, const Eigen::VectorXd q_near, const double &d_closest, const JPlusRbtParameters &plan_params, PlanningResult &planning_result);
+
+        int AddObstacle(std::string obstacle_file, Eigen::Matrix3d R, Eigen::Vector3d t);
 
         void
         SetObstacleRotation(int id, Eigen::Matrix3d R, Eigen::Vector3d t);
