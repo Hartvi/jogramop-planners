@@ -24,7 +24,7 @@ planners["jrrt"] = "-planner 3 -d_crit 100000 "
 
 fout = open("all-cmds.sh", "wt")
     
-rrtSize = 140000
+rrtSize = 50 * 1000
 distanceToGoal = 0.025
 dcrit = 0.1
 goalBiasProbability = 0.6 #goal bias neer the goal, should be larger than goalBiasProbability2
@@ -48,7 +48,7 @@ for scenario in range(1,2):
         resultsDir = "results/{}/{}".format(scenario, planner)
         os.system("mkdir -p {}".format(resultsDir))
 
-        for iteration in range(3):
+        for iteration in range(10):
             outFile = "{}/out-{:03d}".format(resultsDir,iteration)
             cmd = "./burs_of_free_space test "
             cmd += " -grasp {} -urdf {} -obstacle {} -start_config {}".format(graspFile, urdfFile, obstacleFile, startFile)
@@ -58,7 +58,7 @@ for scenario in range(1,2):
             cmd += " -d_crit {} ".format(dcrit)
             cmd += " -max_iters {} ".format(rrtSize)
             cmd += " -p_close_enough {} ".format(distanceToGoal)
-            cmd += " -q_resolution 0.08 "
+            cmd += " -q_resolution 0.1 "
             cmd += " -goal_bias_radius 0.15 "
             cmd += " -goal_bias_prob {} ".format(goalBiasProbability)
             cmd += " -prob_steer {} ".format(goalBiasProbability2)
