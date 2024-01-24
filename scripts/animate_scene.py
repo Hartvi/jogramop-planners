@@ -159,26 +159,32 @@ def render_env(path_to_file, extra_points_file=None):
                 try:
                     # print("NUMBERS:", numbers)
                     values = list(map(float, numbers))
-                    for i in range(4):
-                        for j in range(4):
-                            T[i, j] = values[i*4 + j]
+                    for i in range(16):
+                        # print("i: ", i)
+                        # print("y,x: ", i//4, i%4)
+                        # print("value: ", values[i])
+                        T[i//4, i%4] = values[i]
                         
-                        k += 1
-                    
                     # rotation: Rotation = Rotation.from_matrix(T)
                     # euler = rotation.as_euler('xyz', False)
 
                     # for i in range(3):
                         # current_object.rotation_euler[i] = euler[i]
 
-                    current_object = create_point(T[3,:3], (1, 0, 0, 1), 0.05)
-                    
+                    position = T[:3, 3]
+                    current_object = create_point(position, (1, 0, 0, 1), 0.015)
+                    # print("position: ", position)
                     newest_object = bpy.context.object
                     newest_object.keyframe_insert(data_path="location", frame=0)
                 except:
                     print("invalid data:", numbers)
                     pass
 
+                # print("T:\n", T)
+
+                # exit(1)
+                k += 1
+    # exit(1)
     with open(path_to_file, "r") as f:
         lines = f.read().split("\n")
         k = 0
@@ -332,4 +338,5 @@ if __name__ == "__main__":
         if len(sys.argv) > 5:
             # grasps
             grasps_file = sys.argv[5]
+            print("grasps_file", grasps_file)
     render_env(test_path, grasps_file)

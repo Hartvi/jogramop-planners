@@ -53,6 +53,9 @@ namespace Burs
         Bur
         ExtendTowardsCartesian(const VectorXd &q_near, const JPlusRbtParameters &planner_parameters, const double &closest_distance);
 
+        std::pair<AlgorithmState, Eigen::VectorXd>
+        ExtendTowardsGoalRRT(std::shared_ptr<BurTree> q_tree, const Eigen::VectorXd q_near, const JPlusRbtParameters &plan_params, PlanningResult &planning_result);
+
         int
         AddObstacle(std::string obstacle_file, Eigen::Matrix3d R, Eigen::Vector3d t);
 

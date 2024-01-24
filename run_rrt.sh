@@ -6,7 +6,7 @@
 -planner 2 \
 -max_iters 10000 \
 -d_crit 100000.0 \
--delta_q 1.1415 \
+-delta_q 3.1415 \
 -epsilon_q 0.1 \
 -num_spikes 7 \
 -p_close_enough 0.015 \
