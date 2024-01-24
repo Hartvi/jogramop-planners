@@ -98,7 +98,7 @@ int main(int argc, char **argv)
         o.addOption(Option<int>("num_spikes", &num_spikes, "number of bur spikes"));
         o.addOption(Option<double>("p_close_enough", &p_close_enough, "end-effector is close enough to target"));
         o.addOption(Option<double>("prob_steer", &probability_to_steer_to_target, "end-effector is close enough to target"));
-  
+
         o.addOption(Option<char *>("target_configs", &targetConfigsFile, "defaultValue", "target IK solutions for the grasps"));
         o.addOption(Option<double>("groundLevel", &groundLevel, "ground z coodinate"));
         o.addOption(Option<int>("minColSegIdx", &minColSegmentIdx, "segment id from which it can collide with ground"));
@@ -125,13 +125,15 @@ int main(int argc, char **argv)
             exit(0);
         }
     }
-    if (seed == -1) {
+    if (seed == -1)
+    {
         std::srand(static_cast<unsigned int>(std::time(nullptr)));
-    } else {
-        std::srand( seed );
+    }
+    else
+    {
+        std::srand(seed);
     }
     std::cout << "setting seed " << seed << "\n";
-
 
     // the cmd-line parameters are now loaded into the variables
     std::cout << "Planner will load: \n";
@@ -176,7 +178,11 @@ int main(int argc, char **argv)
         std::optional<std::vector<Eigen::VectorXd>> path;
         std::vector<Eigen::VectorXd> final_path;
 
-        JPlusRbtParameters params(max_iters, d_crit, delta_q, epsilon_q, num_spikes, p_close_enough, probability_to_steer_to_target, grasp_frames, goal_bias_radius, goal_bias_probability, q_resolution);
+        // distance metric is euclidean squared
+        double p_close_sqr = p_close_enough * p_close_enough;
+        double goal_bias_radius_sqr = goal_bias_radius * goal_bias_radius;
+
+        JPlusRbtParameters params(max_iters, d_crit, delta_q, epsilon_q, num_spikes, p_close_sqr, probability_to_steer_to_target, grasp_frames, goal_bias_radius_sqr, goal_bias_probability, q_resolution);
         // END COMMON SETTINGS ------------------------------------------------------------------------------------------------------------
 
         switch (plannerType)

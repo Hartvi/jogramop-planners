@@ -71,6 +71,7 @@ namespace Burs
         // }
 
         std::shared_ptr<BurTree> tgp = planner_parameters.target_poses;
+        int best_grasp_id = -1;
         for (unsigned int i = 0; i < current_poses.size(); ++i)
         {
             KDL::Vector v = current_poses[i].p;
@@ -85,6 +86,7 @@ namespace Burs
             {
                 best_total_cost = total_cost;
                 best_cost_index = i;
+                best_grasp_id = n_i;
             }
         }
 
@@ -92,6 +94,15 @@ namespace Burs
         distance_to_goal = best_total_cost;
         if (best_total_cost < planner_parameters.p_close_enough)
         {
+            // std::ofstream pos_file("pos_file.txt");
+            // if (pos_file.is_open())
+            // {
+            //     pos_file << "grasp," << tgp->GetQ(best_grasp_id).transpose() << "\n";
+            //     pos_file << "current_pose," << current_poses[best_cost_index].p << "\n";
+            //     pos_file << "best_total_cost," << best_total_cost << "\n";
+            //     pos_file.close();
+            // }
+            // exit(1);
             return AlgorithmState::Reached;
         }
         else
@@ -619,7 +630,7 @@ namespace Burs
         // Eigen::VectorXd q_new;
 
         AlgorithmState algorithm_state = AlgorithmState::Trapped;
-        int last_idx = -1;
+        // int last_idx = -1;
         Eigen::VectorXd last_q;
         planning_result.distance_to_goal = 1e10;
 
@@ -727,6 +738,7 @@ namespace Burs
                     {
                         std::runtime_error("RRT section: couldn't do p_inv forward kinematics");
                     }
+                    // std::cout << "RRT: biased dir\n";
                 }
                 else
                 {
@@ -755,18 +767,18 @@ namespace Burs
                     {
                         planning_result.distance_to_goal = distance_to_goal;
                         last_q = q_new;
-                        std::cout << "nearest\n";
+                        std::cout << "RRT nearest\n";
                     }
 
                     if (algorithm_state == AlgorithmState::Reached)
                     {
-                        std::cout << "finished in random section\n";
-                        last_idx = q_tree->Nearest(q_new.data());
+                        std::cout << "finished in RRT section\n";
+                        // last_idx = q_tree->Nearest(q_new.data());
                     }
                 }
                 else
                 {
-                    std::cout << "colliding\n";
+                    std::cout << "RRT colliding\n";
                 }
             }
             else
@@ -843,14 +855,14 @@ namespace Burs
                 {
                     planning_result.distance_to_goal = distance_to_goal;
                     last_q = new_bur.endpoints.col(closest_index);
-                    std::cout << "nearest\n";
+                    std::cout << "RBT nearest\n";
                 }
 
                 if (algorithm_state == AlgorithmState::Reached)
                 {
-                    // std::cout << "finished in random section\n";
+                    std::cout << "finished in RBT section\n";
 
-                    last_idx = q_tree->Nearest(new_bur.endpoints.col(closest_index).data());
+                    // last_idx = q_tree->Nearest(new_bur.endpoints.col(closest_index).data());
                 }
             }
 
@@ -863,14 +875,18 @@ namespace Burs
                 // TODO: add time measurement
 
                 std::cout << "FINISHED\n";
+                planning_result.distance_to_goal = sqrt(planning_result.distance_to_goal);
+                int last_idx = q_tree->Nearest(last_q.data());
                 return this->ConstructPathFromTree(q_tree, last_idx);
             }
         }
         planning_result.num_iterations = planner_parameters.max_iters;
         planning_result.tree_size = q_tree->GetNumberOfNodes();
         planning_result.success = false;
-        last_idx = q_tree->Nearest(last_q.data());
+        int last_idx = q_tree->Nearest(last_q.data());
 
+        planning_result.distance_to_goal = sqrt(planning_result.distance_to_goal);
+        std::cout << "FAILED\n";
         return this->ConstructPathFromTree(q_tree, last_idx);
     }
 
@@ -961,6 +977,104 @@ namespace Burs
         Bur b = this->GetBur(q_near, Qe, closest_distance);
 
         return b;
+    }
+
+    std::pair<AlgorithmState, Eigen::VectorXd>
+    JPlusRbtPlanner::ExtendTowardsGoalRRT(std::shared_ptr<BurTree> q_tree, const Eigen::VectorXd q_near, const JPlusRbtParameters &plan_params, PlanningResult &planning_result)
+    {
+        // begin use once:
+        auto env = this->GetEnv<URDFEnv>();
+        auto chain = env->myURDFRobot->kdl_chain;
+
+        KDL::ChainFkSolverPos_recursive fk_solver(chain);
+        KDL::ChainIkSolverVel_pinv pinv_solver(chain);
+
+        KDL::Frame p_out;
+        KDL::JntArray q_kdl;
+        KDL::JntArray q_kdl_dot;
+
+        // Get random target poses from the workspace targets to extend to
+        std::shared_ptr<BurTree> target_poses = plan_params.target_poses;
+        std::vector<RRTNode> target_nodes = target_poses->mNodes;
+        int randint = this->rng->getRandomInt();
+        RRTNode random_node = target_nodes[randint];
+        Eigen::VectorXd pose_target = random_node.q;
+
+        auto new_twist_target = KDL::Twist();
+        KDL::Vector tgt_pos(pose_target(0), pose_target(1), pose_target(2));
+
+        std::vector<KDL::Frame> newest_poses(1);
+        // :end use once
+        double dist_to_goal = 1e10;
+
+        Eigen::VectorXd q_old(q_near);
+        Eigen::VectorXd q_new(q_near);
+
+        Eigen::VectorXd final_q(q_near);
+
+        while (dist_to_goal > plan_params.p_close_enough)
+        {
+            // directed approach to goal
+            q_kdl.data = q_old;
+
+            // Get Cartesian end-effector position & rotation
+            if (fk_solver.JntToCart(q_kdl, p_out) < 0)
+            {
+                throw std::runtime_error("JPlusRbt: couldn't perform forward kinematics inside steer-to-target");
+            }
+            new_twist_target.vel = tgt_pos - p_out.p;
+            if (new_twist_target.vel.Norm() < plan_params.p_close_enough)
+            {
+                // FINISH
+
+                int closest_index = -1;
+                double distance_to_goal;
+
+                // check only once in a while perhaps
+                newest_poses[0] = p_out;
+                AlgorithmState algorithm_state = this->CheckGoalStatus(newest_poses, plan_params, closest_index, distance_to_goal);
+
+                if (distance_to_goal < planning_result.distance_to_goal)
+                {
+                    planning_result.distance_to_goal = distance_to_goal;
+                    final_q = q_new;
+                    std::cout << "nearest\n";
+                }
+
+                if (algorithm_state == AlgorithmState::Reached)
+                {
+                    return std::pair<AlgorithmState, Eigen::VectorXd>(AlgorithmState::Reached, final_q);
+                    // last_idx = q_tree->Nearest(q_new.data());
+                }
+            }
+            // TODO: include rotation
+            // For now no rotation
+            new_twist_target.rot = KDL::Vector::Zero();
+
+            // TODO: optimize this to reuse the jacobian
+            // Possibly fork the library:
+            // https://github.com/orocos/orocos_kinematics_dynamics/blob/master/orocos_kdl/src/chainiksolvervel_pinv.cpp
+            if (pinv_solver.CartToJnt(q_kdl, new_twist_target, q_kdl_dot) >= 0)
+            {
+                Eigen::VectorXd delta_q = q_kdl_dot.data;
+                // q_new = this->GetEndpoint(q_dir, q_near, planner_parameters.epsilon_q);
+                q_new = (q_old + delta_q).normalized() * plan_params.epsilon_q;
+            }
+            else
+            {
+                std::runtime_error("RRT section: couldn't do p_inv forward kinematics");
+            }
+            if (!this->IsColliding(q_new))
+            {
+                int n_i = q_tree->Nearest(q_new.data());
+                q_tree->AddNode(n_i, q_new);
+                q_old = q_new;
+            }
+            else
+            {
+                return std::pair<AlgorithmState, Eigen::VectorXd>(AlgorithmState::Trapped, q_near);
+            }
+        }
     }
 
     int JPlusRbtPlanner::AddObstacle(std::string obstacle_file, Eigen::Matrix3d R, Eigen::Vector3d t)
