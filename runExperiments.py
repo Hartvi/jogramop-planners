@@ -34,7 +34,7 @@ goalBiasProbability2 = 0.1
 urdfFile = "jogramop/robots/franka_panda/mobile_panda_fingers.urdf"
 seed = 1
 
-for scenario in range(1,2):
+for scenario in range(1,4):
     scenarioDir = "jogramop/scenarios/{:03d}/export/".format(scenario)
     obstacleFile = "{}/obstacles.obj".format(scenarioDir)
     startFile = "{}/robot_start_conf.csv".format(scenarioDir)
@@ -48,11 +48,17 @@ for scenario in range(1,2):
         resultsDir = "results/{}/{}".format(scenario, planner)
         os.system("mkdir -p {}".format(resultsDir))
 
-        for iteration in range(3):
+        for iteration in range(50):
+
             outFile = "{}/out-{:03d}".format(resultsDir,iteration)
+
+            if os.path.isfile(outFile):
+                print("Result ", outFile, " finished ")
+                continue
+
             cmd = "./burs_of_free_space test "
             cmd += " -grasp {} -urdf {} -obstacle {} -start_config {}".format(graspFile, urdfFile, obstacleFile, startFile)
-            cmd += " -planner 1  -delta_q 3.1415 -epsilon_q 0.05 -num_spikes 2  "
+            cmd += " -delta_q 3.1415 -epsilon_q 0.05 -num_spikes 2  "
             cmd += " -render 0 -vis_script scripts/animate_scene.py -cx -1 -cy 3 -cz 6 -groundLevel 0.00 -minColSegIdx 6 "
             cmd += " -target_prefix {} ".format(outFile)
             cmd += " -d_crit {} ".format(dcrit)
@@ -70,7 +76,7 @@ for scenario in range(1,2):
                 cmd += "-target_configs {} ".format(ikFile)
                 cmd += "-ik_index {} ".format(ikindex)
 
-            fout.write("{}\n".format( cmd ) )
+            fout.write("{} > {}.stdout \n".format( cmd, outFile ) )
 
 
 fout.close()        
