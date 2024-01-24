@@ -131,6 +131,10 @@ int main(int argc, char **argv)
         std::srand( seed );
     }
     std::cout << "setting seed " << seed << "\n";
+    std::cout << "CMDLINE params:\n";
+    for(int i =0; i < argc; i++) {
+        std::cout << argv[i] << "\n";
+    }
 
 
     // the cmd-line parameters are now loaded into the variables
