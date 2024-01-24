@@ -668,6 +668,7 @@ namespace Burs
             if (k % 512 == 0)
             {
                 std::cout << "          iter: " << k << "\n";
+                std::cout.flush();
             }
             algorithm_state = AlgorithmState::Trapped;
 
