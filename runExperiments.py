@@ -15,18 +15,18 @@ def loadGrasps(filename):
 
 
 planners = {}
-#planners["rbt"] = "-planner 0 "
-planners["jrbt"] = "-planner 1 "
-#planners["rrt"] = "-planner 2 -d_crit 100000 "
-#planners["jrrt"] = "-planner 3 -d_crit 100000 "
+planners["rbt"] = "-planner 0 " #blind RTB: no goal bias, no goal-steer
+planners["jrbt"] = "-planner 1 " #burs rrt + j+ expand
+planners["rrt"] = "-planner 2 -d_crit 100000 "  #rrt, no goal bias
+planners["jrrt"] = "-planner 3 -d_crit 100000 " #rrt, alternating random expansion + goal bias 
 
-#planners["ikrbt"] = "-planner 4 "
-#planners["ikrrt"] = "-planner 5 -d_cirt 100000 "
+#planners["ikrbt"] = "-planner 4 "   #goal is IK solution, goes to only single goal
+#planners["ikrrt"] = "-planner 5 -d_cirt 100000 "  #goal is IK solution, goes to only single goal
 
 fout = open("all-cmds.sh", "wt")
     
-rrtSize = 50 * 1000
-distanceToGoal = 0.122  #should be 0.05!!
+rrtSize = 70 * 1000
+distanceToGoal = 0.05  #should be 0.05!!
 dcrit = 0.11
 goalBiasProbability = 0.9 #goal bias neer the goal, should be larger than goalBiasProbability2
 goalBiasProbability2 = 0.1
@@ -35,7 +35,7 @@ goalBiasProbability2 = 0.1
 urdfFile = "jogramop/robots/franka_panda/mobile_panda_fingers.urdf"
 seed = 1
 
-for scenario in range(1,4):
+for scenario in range(1,5):
     scenarioDir = "jogramop/scenarios/{:03d}/export/".format(scenario)
     obstacleFile = "{}/obstacles.obj".format(scenarioDir)
     startFile = "{}/robot_start_conf.csv".format(scenarioDir)
@@ -48,7 +48,7 @@ for scenario in range(1,4):
         resultsDir = "results/{}/{}".format(scenario, planner)
         os.system("mkdir -p {}".format(resultsDir))
 
-        for iteration in range(50):
+        for iteration in range(100):
 
             for ikindex in range(len(graspConfigurations)):
 
