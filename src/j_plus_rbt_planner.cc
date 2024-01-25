@@ -76,7 +76,8 @@ namespace Burs
         {
             KDL::Vector v = current_poses[i].p;
             double *vdata = v.data;
-            auto [n_i, dist] = tgp->NearestIdxAndDist(vdata);
+            auto [n_i, dist] = tgp->NearestIdxAndDist(vdata);  
+            // dist is squared L2
 
             double tmp_rot_cost = 0.0;
             double tmp_tr_cost = dist;
@@ -171,7 +172,8 @@ namespace Burs
         {
             if (k % 512 == 0)
             {
-                std::cout << "          iter: " << k << "\n";
+                std::cout << "iter: " << k << ", tree.size = " << q_tree->GetNumberOfNodes() << ", distToGoal=" << sqrt(planning_result.distance_to_goal) << ", ";
+                std::cout << ", p_close_enough=" << planner_parameters.p_close_enough << "\n";
                 std::cout.flush();
             }
             algorithm_state = AlgorithmState::Trapped;
