@@ -1,3 +1,4 @@
+
 // tinyobjloader must be first
 #define TINYOBJLOADER_IMPLEMENTATION
 #include "tiny_obj_loader.h"
@@ -327,7 +328,7 @@ int main(int argc, char **argv)
         {
             snprintf(fname, sizeof(fname), "%s.txt", targetPrefixFile);
             ofstream ofs(fname);
-            ofs << planning_result.toCSVString();
+            ofs << planning_result.toCSVString() << "\n";
             ofs.close();
         }
         {

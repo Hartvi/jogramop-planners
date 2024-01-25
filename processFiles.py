@@ -1,10 +1,19 @@
 #!/usr/bin/env python3
 
-import glob, sys
+import glob, sys, re
 import matplotlib.pyplot as plt
 
+if len(sys.argv) != 3:
+    print("usage: ", sys.argv[0], " <resultDir> <prefix> ")
+    quit()
+    
+    
+plt.rcParams["figure.figsize"] = (12,8)
 
-DTG = 0.015
+resultDir = sys.argv[1].replace("/","")
+prefix = sys.argv[2]
+
+DTG = 0.025
 
 def getSRCurve(values, distances):
     if len(values) == 0 or len(distances) == 0:
@@ -18,9 +27,6 @@ def getSRCurve(values, distances):
 
     value = minValue
     srCurve = []  #each value is [value, sucess ratio]
-    print("EE", len(values), len(distances))
-
-
     while value <= maxValue:
         finishedRuns = [ values[i] for i in range(len(values)) if distances[i] <= DTG and values[i] <= value ]
         
@@ -31,51 +37,130 @@ def getSRCurve(values, distances):
 
 
 
-fognuplot = open("res.gpl", "wt")
-fognuplot.write("set term png size 1024,768\n")
-fognuplot.write("set border 3\n")
+results = {}
+
+iks = []
 
 
-for experimentDir in glob.glob("results/*"):
+for plannerDir in glob.glob("{}/*/*".format(resultDir)):
+    res = re.search(r"{}\/(.*)\/(.*)".format(resultDir), plannerDir)
+    if len(res.groups()) != 2:
+        print("Cannot parse directory name ", plannerDir)
+        quit()
+    scenarioNum = res.group(1)
+    plannerName = res.group(2)
 
-    files = glob.glob("{}/*.txt".format(experimentDir))
-    outfile = experimentDir.replace("results/","")
-
+    files = glob.glob("{}/out-*-*.txt".format(plannerDir))
     allLines = []
     for fn in files:
+        res = re.search(r"out-(\d+)-(\d+)\.txt", fn)
+        if len(res.groups()) != 2:
+            print("Cannot read ikindex and iteration from ", fn)
+            quit()
+        ikindex = int(res.group(1))
+        trial = int(res.group(2))
+        iks.append( ikindex )
         with open(fn, "rt") as f:
             for line in f:
                 allLines.append( line.strip().replace(","," ") )
-    print("Loaded ", len(allLines), "lines from", len(allLines), "files in", experimentDir)
+                allLines[-1] += " {} {}".format(ikindex, trial)
 
+    if len(allLines) == 0:
+        continue
     #each measurement is [finished, distanceToGoal, time ,treeSize ]
-    measurements = [ list(map(float, line.split() ) ) for line in allLines ]
+    print("Loaded ", len(allLines), "lines from", len(allLines), "files in", plannerDir)
+    mes = [ list(map(float, line.split() ) ) for line in allLines ]
+    if not scenarioNum in results:
+        results[ scenarioNum ] = {}
+    results[scenarioNum][plannerName] = mes
 
-    times = [ measurements[i][2] for i in range(len(measurements)) ]
-    distances = [ measurements[i][1] for i in range(len(measurements)) ]
+print("Largest tested ikindex ", max(iks) )
 
-    srCurve = getSRCurve( times, distances )
 
-    xvals = [ item[0] for item in srCurve ]
-    yvals = [ item[1] for item in srCurve ]
+for scenario in results:
     plt.clf()
-    plt.plot(xvals, yvals)
     plt.xlabel("time [s]")
     plt.ylabel("sucess rate")
+    srCurves = []
+
+    for planner in results[scenario]:
+
+        measurement = results[scenario][planner]
+
+        times = [ measurement[i][2] for i in range(len(measurement)) ]
+        distances = [ measurement[i][1] for i in range(len(measurement)) ]
+
+        srCurve = getSRCurve( times, distances )
+
+        xvals = [ item[0] for item in srCurve ]
+        yvals = [ item[1] for item in srCurve ]
+
+        if len(srCurve) != 0:
+            srCurves.append([planner, srCurve])
+
+        line = plt.plot( xvals, yvals, label="{}".format(planner) )
+    plt.legend()
+    outfile = "{}-scenario-{}.png".format(prefix, scenario)
     plt.savefig("{}.png".format(outfile))
 
-    """
+    def val(x):
+        return x[1][-1][1]
 
-    fo = open("res-{}.txt".format(outfile), "wt")
-    for item in srCurve:
-        fo.write("{} {}\n".format(item[0], item[1]) )
-    fo.close()
+    srCurves.sort( key=val, reverse=True)
+    plt.clf()
 
-    fognuplot.write("set output '{}.png'\n".format(outfile))
-    fognuplot.write("plot 'res-{}.txt' u 1:2 w l lw 4 \n".format(outfile))
-    fognuplot.write("set output\n\n")
-    """
-fognuplot.close()
+    plt.xlabel("time [s]")
+    plt.ylabel("sucess rate")
+    for i in range(min(5, len(srCurves))):
+        srCurve = srCurves[i][1]
+        planner = srCurves[i][0]
+        xvals = [ item[0] for item in srCurve ]
+        yvals = [ item[1] for item in srCurve ]
+        line = plt.plot( xvals, yvals, label="{}".format(planner) )
+    plt.legend()
+
+    outfile = "{}-scenario-{}-best.png".format(prefix, scenario)
+    plt.savefig("{}.png".format(outfile))
+
+
+
+
+
+
+for scenario in results:
+    plt.clf()
+    plt.xlabel("ikindex [-]")
+    plt.ylabel("sr")
+
+
+    for planner in results[scenario]:
+        if planner == "ikrrt" or planner=="ikrbt":
+            pass
+        else:
+            continue
+        pts = []
+        for ikindex in range(max(iks)):
+            measurement = results[scenario][planner]
+            print("measurement", measurement)
+
+            times = [ measurement[i][2] for i in range(len(measurement)) if measurement[i][-2] == ikindex ]
+            distances = [ measurement[i][1] for i in range(len(measurement)) if measurement[i][-2] == ikindex ]
+            print("planner", planner, ikindex, times, distances)
+            srCurve = getSRCurve( times, distances )
+            if len(srCurve) != 0:
+                maxSR = srCurve[-1][1]
+                pts.append([ ikindex, maxSR])
+            else:
+                pts.append([ ikindex, 0 ] )
+
+        xvals = [ item[0] for item in pts ]
+        yvals = [ item[1] for item in pts ]
+        line = plt.plot( xvals, yvals, label="{}".format(planner) )
+    plt.legend()
+
+    outfile = "{}-scenarioIK-SR-{}.png".format(prefix, scenario)
+
+    plt.savefig("{}.png".format(outfile))
 
 
 
