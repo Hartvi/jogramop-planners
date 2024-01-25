@@ -193,9 +193,13 @@ namespace Burs
                 Eigen::VectorXd q_new;
                 // Biased towards goal
                 double rand_num = this->rng->getRandomReal();
-                if (rand_num < planner_parameters.probability_to_steer_to_target || exploit * planner_parameters.goal_bias_probability)
+                if (rand_num < planner_parameters.probability_to_steer_to_target || rand_num < exploit * planner_parameters.goal_bias_probability)
                 // if (this->rng->getRandomReal() < planner_parameters.probability_to_steer_to_target)
                 {
+                    // if (rand_num < exploit * planner_parameters.goal_bias_probability && rand_num > planner_parameters.probability_to_steer_to_target)
+                    // {
+                    //     std::cout << "using exploit probability\n";
+                    // }
                     KDL::ChainIkSolverVel_pinv pinv_solver(chain);
 
                     KDL::Frame p_out;
@@ -290,8 +294,13 @@ namespace Burs
             { // Grow biased/random bur
                 Bur new_bur;
                 double rand_num = this->rng->getRandomReal();
-                if (rand_num < planner_parameters.probability_to_steer_to_target || exploit * planner_parameters.goal_bias_probability)
+
+                if (rand_num < planner_parameters.probability_to_steer_to_target || rand_num < exploit * planner_parameters.goal_bias_probability)
                 {
+                    // if (rand_num < exploit * planner_parameters.goal_bias_probability && rand_num > planner_parameters.probability_to_steer_to_target)
+                    // {
+                    //     std::cout << "using exploit probability\n";
+                    // }
                     // Biased bur in target directions
 
                     new_bur = this->ExtendTowardsCartesian(q_near, planner_parameters, d_closest);
@@ -580,6 +589,7 @@ namespace Burs
                 return std::pair<AlgorithmState, Eigen::VectorXd>(AlgorithmState::Trapped, q_near);
             }
         }
+        return std::pair<AlgorithmState, Eigen::VectorXd>(AlgorithmState::Trapped, q_near);
     }
 
     std::pair<AlgorithmState, Eigen::VectorXd>
@@ -683,6 +693,7 @@ namespace Burs
             //     return std::pair<AlgorithmState, Eigen::VectorXd>(AlgorithmState::Trapped, q_near);
             // }
         }
+        return std::pair<AlgorithmState, Eigen::VectorXd>(AlgorithmState::Trapped, q_near);
     }
 
     int JPlusRbtPlanner::AddObstacle(std::string obstacle_file, Eigen::Matrix3d R, Eigen::Vector3d t)
