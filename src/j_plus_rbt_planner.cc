@@ -180,7 +180,7 @@ namespace Burs
             if (k % 1000 == 0)
             {
                 getTime(&gt2);
-                totalRunTime += getTime(gt1, gt2);
+                totalRunTime = getTime(gt1, gt2);
                 std::cout << "iter: " << k << "/" << planner_parameters.max_iters << ", tree.size: " << q_tree->GetNumberOfNodes() << ", distToGoal: " << sqrt(planning_result.distance_to_goal) << ", ";
                 std::cout << ", p_close_enough: " << planner_parameters.p_close_enough << ", totalNNtime: " << totalNNtime << ", totalAddTime: " << totalAddTime << ", totalCollisionTime: " << totalCollisionTime << ", totalRunTime: "<< totalRunTime << "\n";
                 std::cout.flush();
