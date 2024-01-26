@@ -25,7 +25,8 @@ namespace Burs
         //  - reuse the Jacobian from a single configuration
 
         // Idk how to random numbers in C++:
-        this->rng = std::make_shared<RandomNumberGenerator>(1);
+
+        this->rng = std::make_shared<RandomNumberGenerator>(1, 1); // temporary seed is one, the proper seed is set at the begiging of JPlusRbt 
     }
 
     AlgorithmState
@@ -119,7 +120,8 @@ namespace Burs
         int num_nodes = planner_parameters.target_poses->GetNumberOfNodes();
         assert(planner_parameters.num_spikes < num_nodes);
 
-        this->rng = std::make_shared<RandomNumberGenerator>(num_nodes - 1);
+        this->rng = std::make_shared<RandomNumberGenerator>(planner_parameters.seed, num_nodes - 1);
+        std::cout << "Planner sets seed " << planner_parameters.seed << "\n";
 
         auto my_env = this->GetEnv<URDFEnv>();
         auto chain = my_env->myURDFRobot->kdl_chain;

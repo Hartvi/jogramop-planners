@@ -7,8 +7,10 @@
 class RandomNumberGenerator
 {
 public:
-    RandomNumberGenerator(int maxNodes)
-        : rng(rd()), realDistr(0.0, 1.0), intDistr(0, maxNodes) {}
+    RandomNumberGenerator(const int seed, const int maxNodes)
+        : rng(rd()), realDistr(0.0, 1.0), intDistr(0, maxNodes) {
+            rng.seed(seed);
+        }
 
     double getRandomReal()
     {
