@@ -14,6 +14,7 @@
 
 #include <random>
 #include <cmath>
+#include "ut.h"
 
 namespace Burs
 {
@@ -167,13 +168,21 @@ namespace Burs
         // check only once in a while perhaps
         // algorithm_state = this->CheckGoalStatus(newest_poses, planner_parameters, closest_index, distance_to_goal);
         // std::cout << "initial distance to goal:" << distance_to_goal << " \n";
+        double totalNNtime = 0;
+        double totalAddTime = 0;
+        double totalRunTime = 0;
+        double totalCollisionTime = 0;
+        struct rusage gt1, gt2;
+        getTime(&gt1);
 
         for (int k = 0; k < planner_parameters.max_iters; k++)
         {
-            if (k % 512 == 0)
+            if (k % 1000 == 0)
             {
+                getTime(&gt2);
+                totalRunTime += getTime(gt1, gt2);
                 std::cout << "iter: " << k << "/" << planner_parameters.max_iters << ", tree.size: " << q_tree->GetNumberOfNodes() << ", distToGoal: " << sqrt(planning_result.distance_to_goal) << ", ";
-                std::cout << ", p_close_enough: " << planner_parameters.p_close_enough << "\n";
+                std::cout << ", p_close_enough: " << planner_parameters.p_close_enough << ", totalNNtime: " << totalNNtime << ", totalAddTime: " << totalAddTime << ", totalCollisionTime: " << totalCollisionTime << ", totalRunTime: "<< totalRunTime << "\n";
                 std::cout.flush();
             }
             algorithm_state = AlgorithmState::Trapped;
@@ -181,7 +190,11 @@ namespace Burs
             Eigen::VectorXd q_rand = this->GetRandomQ(1);
 
             // q_near <- NEAREST(q_{e1}, T_a)
+            struct rusage tt1,tt2;
+            getTime(&tt1);
             int nearest_index = this->NearestIndex(q_tree, q_rand);
+            getTime(&tt2);
+            totalNNtime += getTime(tt1, tt2);
 
             const VectorXd q_near = q_tree->GetQ(nearest_index);
 
@@ -257,10 +270,18 @@ namespace Burs
                     Eigen::VectorXd q_dir = this->GetRandomQ(1);
                     q_new = this->GetEndpoint(q_dir, q_near, planner_parameters.epsilon_q);
                 }
+                
+                getTime(&tt1);
+                const bool isColliding = IsColliding(q_new);
+                getTime(&tt2);
+                totalCollisionTime += getTime(tt1, tt2);
 
-                if (!this->IsColliding(q_new))
+                if (!isColliding) 
                 {
+                    getTime(&tt1);
                     q_tree->AddNode(nearest_index, q_new);
+                    getTime(&tt2);
+                    totalAddTime += getTime(tt1, tt2);
 
                     KDL::Frame p_out;
                     q_kdl.data = q_new;

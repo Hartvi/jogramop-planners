@@ -15,9 +15,9 @@ def loadGrasps(filename):
 
 
 planners = {}
-planners["rbt"] = "-planner 0 " #blind RTB: no goal bias, no goal-steer
+#planners["rbt"] = "-planner 0 " #blind RTB: no goal bias, no goal-steer
 planners["jrbt"] = "-planner 1 " #burs rrt + j+ expand
-planners["rrt"] = "-planner 2 -d_crit 100000 "  #rrt, no goal bias
+#planners["rrt"] = "-planner 2 -d_crit 100000 "  #rrt, no goal bias
 planners["jrrt"] = "-planner 3 -d_crit 100000 " #rrt, alternating random expansion + goal bias 
 
 #planners["ikrbt"] = "-planner 4 "   #goal is IK solution, goes to only single goal
@@ -35,7 +35,7 @@ goalBiasProbability2 = 0.1
 urdfFile = "jogramop/robots/franka_panda/mobile_panda_fingers.urdf"
 seed = 1
 
-for scenario in range(1,5):
+for scenario in range(1,2):
     scenarioDir = "jogramop/scenarios/{:03d}/export/".format(scenario)
     obstacleFile = "{}/obstacles.obj".format(scenarioDir)
     startFile = "{}/robot_start_conf.csv".format(scenarioDir)
@@ -51,6 +51,8 @@ for scenario in range(1,5):
         for iteration in range(100):
 
             for ikindex in range(len(graspConfigurations)):
+                if planner != "ikrrt" and planner != "ikrbt" and ikindex > 0:
+                    break
 
                 outFile = "{}/out-{:03d}-{:03d}".format(resultsDir,ikindex,iteration)
 
@@ -58,7 +60,7 @@ for scenario in range(1,5):
                     print("Result ", outFile, " finished ")
                     continue
 
-                cmd = "./burs_of_free_space test "
+                cmd = "timeout 600s ./burs_of_free_space test "
                 cmd += " -grasp {} -urdf {} -obstacle {} -start_config {}".format(graspFile, urdfFile, obstacleFile, startFile)
                 cmd += " -delta_q 3.1415 -epsilon_q 0.05 -num_spikes 7  "
                 cmd += " -render 0 -vis_script scripts/animate_scene.py -cx -1 -cy 3 -cz 6 -groundLevel 0.00 -minColSegIdx 6 "
