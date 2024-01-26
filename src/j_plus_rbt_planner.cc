@@ -172,6 +172,7 @@ namespace Burs
         double totalAddTime = 0;
         double totalRunTime = 0;
         double totalCollisionTime = 0;
+        double totalGetClosesDistTime = 0;
         struct rusage gt1, gt2;
         getTime(&gt1);
 
@@ -182,7 +183,7 @@ namespace Burs
                 getTime(&gt2);
                 totalRunTime = getTime(gt1, gt2);
                 std::cout << "iter: " << k << "/" << planner_parameters.max_iters << ", tree.size: " << q_tree->GetNumberOfNodes() << ", distToGoal: " << sqrt(planning_result.distance_to_goal) << ", ";
-                std::cout << ", p_close_enough: " << planner_parameters.p_close_enough << ", totalNNtime: " << totalNNtime << ", totalAddTime: " << totalAddTime << ", totalCollisionTime: " << totalCollisionTime << ", totalRunTime: "<< totalRunTime << "\n";
+                std::cout << ", p_close_enough: " << planner_parameters.p_close_enough << ", totalNNtime: " << totalNNtime << ", totalAddTime: " << totalAddTime << ", totalCollisionTime: " << totalCollisionTime << ", totalGetClosesDistTime: " << totalGetClosesDistTime << ", totalRunTime: "<< totalRunTime << "\n";
                 std::cout.flush();
             }
             algorithm_state = AlgorithmState::Trapped;
@@ -199,7 +200,10 @@ namespace Burs
             const VectorXd q_near = q_tree->GetQ(nearest_index);
 
             // dc(q_near)
+            getTime(&tt1);
             double d_closest = this->GetClosestDistance(q_near);
+            getTime(&tt2);
+            totalGetClosesDistTime += getTime(tt1, tt2);
             // std::cout << "d closest " << d_closest << "\n";
 
             // If obstacles close, use RRT steps => d_crit
