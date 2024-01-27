@@ -15,27 +15,27 @@ def loadGrasps(filename):
 
 
 planners = {}
-planners["rbt"] = "-planner 0 "
-planners["jrbt"] = "-planner 1 "
-planners["rrt"] = "-planner 2 -d_crit 100000 "
-planners["jrrt"] = "-planner 3 -d_crit 100000 "
+#planners["rbt"] = "-planner 0 " #blind RTB: no goal bias, no goal-steer
+planners["jrbt"] = "-planner 1 " #burs rrt + j+ expand
+#planners["rrt"] = "-planner 2 -d_crit 100000 "  #rrt, no goal bias
+planners["jrrt"] = "-planner 3 -d_crit 100000 " #rrt, alternating random expansion + goal bias 
 
-planners["ikrbt"] = "-planner 4 "
-planners["ikrrt"] = "-planner 5 -d_cirt 100000 "
+#planners["ikrbt"] = "-planner 4 "   #goal is IK solution, goes to only single goal
+#planners["ikrrt"] = "-planner 5 -d_cirt 100000 "  #goal is IK solution, goes to only single goal
 
 fout = open("all-cmds.sh", "wt")
     
-rrtSize = 50 * 1000
-distanceToGoal = 0.025
-dcrit = 0.1
-goalBiasProbability = 0.1 #goal bias neer the goal, should be larger than goalBiasProbability2
+rrtSize = 70 * 1000
+distanceToGoal = 0.05  #should be 0.05!!
+dcrit = 0.11
+goalBiasProbability = 0.9 #goal bias neer the goal, should be larger than goalBiasProbability2
 goalBiasProbability2 = 0.1
     
 #urdfFile = "jogramop/robots/franka_panda/mobile_panda.urdf"
 urdfFile = "jogramop/robots/franka_panda/mobile_panda_fingers.urdf"
 seed = 1
 
-for scenario in range(1,4):
+for scenario in range(1,2):
     scenarioDir = "jogramop/scenarios/{:03d}/export/".format(scenario)
     obstacleFile = "{}/obstacles.obj".format(scenarioDir)
     startFile = "{}/robot_start_conf.csv".format(scenarioDir)
@@ -51,6 +51,8 @@ for scenario in range(1,4):
         for iteration in range(100):
 
             for ikindex in range(len(graspConfigurations)):
+                if planner != "ikrrt" and planner != "ikrbt" and ikindex > 0:
+                    break
 
                 outFile = "{}/out-{:03d}-{:03d}".format(resultsDir,ikindex,iteration)
 
@@ -58,16 +60,16 @@ for scenario in range(1,4):
                     print("Result ", outFile, " finished ")
                     continue
 
-                cmd = "./burs_of_free_space test "
+                cmd = "timeout 600s ./burs_of_free_space test "
                 cmd += " -grasp {} -urdf {} -obstacle {} -start_config {}".format(graspFile, urdfFile, obstacleFile, startFile)
-                cmd += " -delta_q 3.1415 -epsilon_q 0.05 -num_spikes 2  "
+                cmd += " -delta_q 3.1415 -epsilon_q 0.05 -num_spikes 7  "
                 cmd += " -render 0 -vis_script scripts/animate_scene.py -cx -1 -cy 3 -cz 6 -groundLevel 0.00 -minColSegIdx 6 "
                 cmd += " -target_prefix {} ".format(outFile)
                 cmd += " -d_crit {} ".format(dcrit)
                 cmd += " -max_iters {} ".format(rrtSize)
                 cmd += " -p_close_enough {} ".format(distanceToGoal)
                 cmd += " -q_resolution 0.1 "
-                cmd += " -goal_bias_radius 0.1 "
+                cmd += " -goal_bias_radius 0.35 "
                 cmd += " -goal_bias_prob {} ".format(goalBiasProbability)
                 cmd += " -prob_steer {} ".format(goalBiasProbability2)
                 cmd += planners[ planner ]

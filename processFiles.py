@@ -13,7 +13,7 @@ plt.rcParams["figure.figsize"] = (12,8)
 resultDir = sys.argv[1].replace("/","")
 prefix = sys.argv[2]
 
-DTG = 0.025
+DTG = 0.122
 
 def getSRCurve(values, distances):
     if len(values) == 0 or len(distances) == 0:

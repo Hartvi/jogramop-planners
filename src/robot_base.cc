@@ -194,7 +194,7 @@ namespace Burs
                 std::string mesh_filename = mesh->filename;
                 std::string link_name = l.second->name;
                 // Do something with mesh_filename, which is the path to the .obj file
-                // std::cout << "Link children: " << l.second->child_links.size() << " has mesh: " << mesh_filename << " mesh file name length: " << mesh_filename.size() << std::endl;
+                std::cout << "Link children: " << l.second->child_links.size() << " has mesh: " << mesh_filename << " mesh file name length: " << mesh_filename.size() << std::endl;
                 // std::cout << "Link " << l.second->name << " has mesh: " << mesh_filename << std::endl;
                 my_map[link_name] = mesh_filename;
                 // std::cout << "Segment: " << my_map[link_name] << " File: " << mesh_filename << std::endl;
@@ -404,13 +404,9 @@ namespace Burs
         // typedef enum { RotAxis,RotX,RotY,RotZ,TransAxis,TransX,TransY,TransZ,None} JointType;
         for (unsigned int i = 0; i < nrSegments; ++i)
         {
-            if (this->kdl_chain.getSegment(i).getJoint().getType() == KDL::Joint::JointType::None)
-            {
-                continue;
-            }
-            auto segment_pose = fk_res[i];
+            auto segment_pose = fk_res[i].p;
             // Convert KDL position to Eigen vector
-            Vector3d position(segment_pose.p.x(), segment_pose.p.y(), segment_pose.p.z());
+            Vector3d position(segment_pose.x(), segment_pose.y(), segment_pose.z());
             segment_positions[i] = position;
         }
 

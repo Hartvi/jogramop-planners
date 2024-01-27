@@ -126,15 +126,17 @@ int main(int argc, char **argv)
             exit(0);
         }
     }
+    int usedSeed = seed;
     if (seed == -1)
     {
-        std::srand(static_cast<unsigned int>(std::time(nullptr)));
+        usedSeed = std::time(NULL);
+        std::srand(usedSeed);
     }
     else
     {
         std::srand(seed);
     }
-    std::cout << "setting seed " << seed << "\n";
+    std::cout << "setting seed " << seed << ", usedSeed: " << usedSeed << "\n";
     std::cout << "CMDLINE params:\n";
     for(int i =0; i < argc; i++) {
         std::cout << argv[i] << "\n";
@@ -188,6 +190,7 @@ int main(int argc, char **argv)
         double goal_bias_radius_sqr = goal_bias_radius * goal_bias_radius;
 
         JPlusRbtParameters params(max_iters, d_crit, delta_q, epsilon_q, num_spikes, p_close_sqr, probability_to_steer_to_target, grasp_frames, goal_bias_radius_sqr, goal_bias_probability, q_resolution);
+        params.seed = usedSeed;
         // END COMMON SETTINGS ------------------------------------------------------------------------------------------------------------
 
         switch (plannerType)

@@ -9,7 +9,7 @@
 -delta_q 3.1415 \
 -epsilon_q 0.1 \
 -num_spikes 7 \
--p_close_enough 0.015 \
+-p_close_enough 0.050 \
 -prob_steer 0.2 \
 -target_prefix /home/hartvi/Documents/CVUT/diploma_thesis/burs_of_free_space/lel \
 -render 1 \

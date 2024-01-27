@@ -14,6 +14,7 @@
 
 #include <random>
 #include <cmath>
+#include "ut.h"
 
 namespace Burs
 {
@@ -24,7 +25,8 @@ namespace Burs
         //  - reuse the Jacobian from a single configuration
 
         // Idk how to random numbers in C++:
-        this->rng = std::make_shared<RandomNumberGenerator>(1);
+
+        this->rng = std::make_shared<RandomNumberGenerator>(1, 1); // temporary seed is one, the proper seed is set at the begiging of JPlusRbt
     }
 
     AlgorithmState
@@ -48,6 +50,7 @@ namespace Burs
             KDL::Vector v = current_poses[i].p;
             double *vdata = v.data;
             auto [n_i, dist] = tgp->NearestIdxAndDist(vdata);
+            // dist is squared L2
 
             double tmp_rot_cost = 0.0;
             double tmp_tr_cost = dist;
@@ -88,7 +91,8 @@ namespace Burs
         int num_nodes = planner_parameters.target_poses->GetNumberOfNodes();
         assert(planner_parameters.num_spikes < num_nodes);
 
-        this->rng = std::make_shared<RandomNumberGenerator>(num_nodes - 1);
+        this->rng = std::make_shared<RandomNumberGenerator>(planner_parameters.seed, num_nodes - 1);
+        std::cout << "Planner sets seed " << planner_parameters.seed << "\n";
 
         auto my_env = this->GetEnv<URDFEnv>();
         auto chain = my_env->myURDFRobot->kdl_chain;
@@ -113,11 +117,46 @@ namespace Burs
 
         int exploit = 0;
 
+        // // KDL::Frame p_out;
+        // std::vector<KDL::Frame> p_out(chain.getNrOfSegments());
+        // std::cout << "number of segments: " << p_out.size() << "\n";
+        // q_kdl.data = q_start;
+        // if (fk_solver.JntToCart(q_kdl, p_out) < 0)
+        // {
+        //     throw std::runtime_error("Failed forward kinematics in goal status checking");
+        // }
+        // newest_poses[0] = p_out[chain.getNrOfSegments() - 1];
+        // for (int i = 0; i < chain.getNrOfSegments(); ++i)
+        // {
+        //     std::cout << "segment " << i << ": " << chain.getSegment(i).getName() << " " << p_out[i].p << "\n";
+        // }
+
+        // if (fk_solver.JntToCart(q_kdl, p_out[0]) < 0)
+        // {
+        //     throw std::runtime_error("Failed forward kinematics in goal status checking");
+        // }
+
+        // int closest_index = -1;
+        // double distance_to_goal;
+        // check only once in a while perhaps
+        // algorithm_state = this->CheckGoalStatus(newest_poses, planner_parameters, closest_index, distance_to_goal);
+        // std::cout << "initial distance to goal:" << distance_to_goal << " \n";
+        double totalNNtime = 0;
+        double totalAddTime = 0;
+        double totalRunTime = 0;
+        double totalCollisionTime = 0;
+        double totalGetClosesDistTime = 0;
+        struct rusage gt1, gt2;
+        getTime(&gt1);
+
         for (int k = 0; k < planner_parameters.max_iters; k++)
         {
-            if (k % 512 == 0)
+            if (k % 1000 == 0)
             {
-                std::cout << "          iter: " << k << "\n";
+                getTime(&gt2);
+                totalRunTime = getTime(gt1, gt2);
+                std::cout << "iter: " << k << "/" << planner_parameters.max_iters << ", tree.size: " << q_tree->GetNumberOfNodes() << ", distToGoal: " << sqrt(planning_result.distance_to_goal) << ", ";
+                std::cout << ", p_close_enough: " << planner_parameters.p_close_enough << ", totalNNtime: " << totalNNtime << ", totalAddTime: " << totalAddTime << ", totalCollisionTime: " << totalCollisionTime << ", totalGetClosesDistTime: " << totalGetClosesDistTime << ", totalRunTime: " << totalRunTime << "\n";
                 std::cout.flush();
             }
             algorithm_state = AlgorithmState::Trapped;
@@ -125,12 +164,19 @@ namespace Burs
             Eigen::VectorXd q_rand = this->GetRandomQ(1);
 
             // q_near <- NEAREST(q_{e1}, T_a)
+            struct rusage tt1, tt2;
+            getTime(&tt1);
             int nearest_index = this->NearestIndex(q_tree, q_rand);
+            getTime(&tt2);
+            totalNNtime += getTime(tt1, tt2);
 
             const VectorXd q_near = q_tree->GetQ(nearest_index);
 
             // dc(q_near)
+            getTime(&tt1);
             double d_closest = this->GetClosestDistance(q_near);
+            getTime(&tt2);
+            totalGetClosesDistTime += getTime(tt1, tt2);
             // std::cout << "d closest " << d_closest << "\n";
 
             // If obstacles close, use RRT steps => d_crit
@@ -202,9 +248,17 @@ namespace Burs
                     q_new = this->GetEndpoint(q_dir, q_near, planner_parameters.epsilon_q);
                 }
 
-                if (!this->IsColliding(q_new))
+                getTime(&tt1);
+                const bool isColliding = IsColliding(q_new);
+                getTime(&tt2);
+                totalCollisionTime += getTime(tt1, tt2);
+
+                if (!isColliding)
                 {
+                    getTime(&tt1);
                     q_tree->AddNode(nearest_index, q_new);
+                    getTime(&tt2);
+                    totalAddTime += getTime(tt1, tt2);
 
                     KDL::Frame p_out;
                     q_kdl.data = q_new;

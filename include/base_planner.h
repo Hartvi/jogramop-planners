@@ -24,6 +24,9 @@ namespace Burs
 
         virtual ~BasePlanner() = default;
 
+        VectorXd
+        GetEndpoint(const VectorXd &q_ei, const VectorXd &q_near, double factor) const;
+
         // EXAMPLE USAGE OF BASIC FUNCTIONS
         void
         ExampleFunctions(const VectorXd &q_start, const VectorXd &q_goal);

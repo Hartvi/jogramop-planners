@@ -44,7 +44,7 @@ namespace Burs
 
         template <typename T>
         std::shared_ptr<T>
-        GetEnv();
+        GetEnv() const;
 
         void
         SetEnv(std::shared_ptr<BaseEnv> bur_env);
@@ -77,7 +77,7 @@ namespace Burs
 
     template <typename T>
     std::shared_ptr<T>
-    MinPlanner::GetEnv()
+    MinPlanner::GetEnv() const
     {
         static_assert(std::is_base_of<BaseEnv, T>::value, "T must be a derived class of MinEnv");
 
