@@ -11,6 +11,9 @@
 #include "bur_tree.h"
 #include "min_planner.h"
 
+#include "robot_collision.h"
+#include "collision_env.h"
+
 namespace Burs
 {
     using namespace Eigen;
@@ -30,6 +33,14 @@ namespace Burs
         // EXAMPLE USAGE OF BASIC FUNCTIONS
         void
         ExampleFunctions(const VectorXd &q_start, const VectorXd &q_goal);
+
+        double
+        MaxMovedDistance(const VectorXd &q1, const VectorXd &q2) const;
+
+    public:
+        std::shared_ptr<URDFEnv> myEnv;
+
+        std::shared_ptr<RobotCollision> myRobot;
     };
 }
 

@@ -50,7 +50,7 @@ namespace Burs
         SetEnv(std::shared_ptr<BaseEnv> bur_env);
 
         bool
-        IsColliding(const VectorXd &q);
+        IsColliding(const VectorXd &q) const;
 
         double
         GetClosestDistance(const VectorXd &q);

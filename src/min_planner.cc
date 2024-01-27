@@ -83,7 +83,7 @@ namespace Burs
     }
 
     bool
-    MinPlanner::IsColliding(const VectorXd &q)
+    MinPlanner::IsColliding(const VectorXd &q) const
     {
         this->base_env->SetPoses(q);
         return this->base_env->IsColliding();

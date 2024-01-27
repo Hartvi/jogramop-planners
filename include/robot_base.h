@@ -81,8 +81,8 @@ namespace Burs
         std::vector<Eigen::Vector3d>
         GetForwardPointParallel(const Eigen::VectorXd &q_in);
 
-        ForwardKinematics
-        GetForwardPointFunc();
+        // ForwardKinematics
+        // GetForwardPointFunc();
 
         ForwardKinematicsParallel
         GetForwardPointParallelFunc();

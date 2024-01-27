@@ -35,12 +35,33 @@ namespace Burs
             }
         }
         this->bounds = minMaxBounds;
+
+        this->myEnv = this->GetEnv<URDFEnv>();
+        this->myRobot = this->myEnv->myURDFRobot;
     }
 
     BasePlanner::BasePlanner()
     {
     }
 
+    double
+    BasePlanner::MaxMovedDistance(const VectorXd &q1, const VectorXd &q2) const
+    {
+
+        auto fk1 = myRobot->GetForwardPointParallel(q1);
+        auto fk2 = myRobot->GetForwardPointParallel(q2);
+
+        double max_dist = 0;
+        for (unsigned int i = 0; i < fk1.size(); ++i)
+        {
+            // dist is in meters
+            double dist = (fk2[i] - fk1[i]).norm();
+            if (dist > max_dist)
+            {
+                max_dist = dist;
+            }
+        }
+    }
     VectorXd
     BasePlanner::GetEndpoint(const VectorXd &q_ei, const VectorXd &q_near, double factor) const
     {
@@ -49,42 +70,18 @@ namespace Burs
         // 2. do forward kinematics on target node q_ei => fk2
         // 3. if (fk1 - fk2).norm() < factor: return q_ei
         //    else get the ratio so the new config is < factor distance away
-        auto robot = this->GetEnv<URDFEnv>()->myURDFRobot;
+        // auto robot = this->GetEnv<URDFEnv>()->myURDFRobot;
 
-        auto fk1 = robot->GetForwardPointParallel(q_near);
-        auto fk2 = robot->GetForwardPointParallel(q_ei);
-
-        double min_dist = 1e10;
-        for (unsigned int i = 0; i < fk1.size(); ++i)
-        {
-            // dist is in meters
-            double dist = (fk2[i] - fk1[i]).norm();
-            if (dist < min_dist)
-            {
-                min_dist = dist;
-            }
-        }
-        // std::cout << "fk1: " << fk1.transpose() << " fk2: " << fk2.transpose() << " dist: " << dist << "\n";
-        // std::cout << "min_dist: " << min_dist << "\n";
-        if (min_dist < factor)
+        double max_dist = this->MaxMovedDistance(q_near, q_ei);
+        if (max_dist < factor)
         {
             return q_ei;
         }
         // dist > factor => scale down => factor/dist < 1
         // => (factor/dist) [m/m] unitless
         // q_new [config] = q_near [config] + [m / m * config = config]
-        VectorXd q_new = q_near + factor / min_dist * (q_ei - q_near);
+        VectorXd q_new = q_near + factor / max_dist * (q_ei - q_near);
         return q_new;
-
-        // diff is in C-space
-        // VectorXd diff = q_ei - q_near;
-
-        // double n = diff.norm();
-        // if (n < factor)
-        // {
-        //     return q_ei;
-        // }
-        // return q_near + factor * diff / n;
     }
 
     void

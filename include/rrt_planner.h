@@ -20,14 +20,19 @@ namespace Burs
 
         virtual ~RRTPlanner() = default;
 
-        std::optional<std::vector<Eigen::VectorXd>>
-        RRTConnect(const VectorXd &q_start, const VectorXd &q_goal, const RRTParameters &plan_parameters, PlanningResult &planning_result);
+        KDL::Frame
+        GetEEPose(const VectorXd &q) const;
+
+        int
+        RRTStep(std::shared_ptr<BurTree> t, int node_idx, VectorXd rand_q, const Meters &epsilon_q) const;
+
+        std::optional<std::vector<Eigen::VectorXd>> RRTConnect(const VectorXd &q_start, const VectorXd &q_goal, const RRTParameters &plan_parameters, PlanningResult &planning_result);
 
         AlgorithmState
         GreedyExtend(std::shared_ptr<BurTree> t_a, std::shared_ptr<BurTree> t_b, Eigen::VectorXd q_a, const RRTParameters &planner_parameters);
 
         AlgorithmState
-        GreedyExtendRandomConfig(std::shared_ptr<BurTree> t_a, Eigen::VectorXd closest_q, const RRTParameters &planner_parameters);
+        GreedyExtendRandomConfig(std::shared_ptr<BurTree> t_a, VectorXd rand_q, const RRTParameters &planner_parameters, const VectorXd &q_goal, VectorXd &q_best) const;
 
     protected:
         // RadiusFuncParallel radius_func;
