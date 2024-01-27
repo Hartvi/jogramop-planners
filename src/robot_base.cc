@@ -193,7 +193,7 @@ namespace Burs
                 std::string mesh_filename = mesh->filename;
                 std::string link_name = l.second->name;
                 // Do something with mesh_filename, which is the path to the .obj file
-                 std::cout << "Link children: " << l.second->child_links.size() << " has mesh: " << mesh_filename << " mesh file name length: " << mesh_filename.size() << std::endl;
+                std::cout << "Link children: " << l.second->child_links.size() << " has mesh: " << mesh_filename << " mesh file name length: " << mesh_filename.size() << std::endl;
                 // std::cout << "Link " << l.second->name << " has mesh: " << mesh_filename << std::endl;
                 my_map[link_name] = mesh_filename;
                 // std::cout << "Segment: " << my_map[link_name] << " File: " << mesh_filename << std::endl;
@@ -417,7 +417,7 @@ namespace Burs
         }
 
         std::vector<KDL::Frame> segment_poses(this->kdl_chain.getNrOfSegments());
-        std::vector<Eigen::Vector3d> segment_positions(this->kdl_chain.getNrOfSegments());
+        std::vector<Eigen::Vector3d> segment_positions(this->kdl_chain.getNrOfSegments(), Vector3d::Zero());
         if (fk_solver.JntToCart(joint_positions, segment_poses) >= 0)
         {
 

@@ -7,7 +7,7 @@
 -max_iters 10000 \
 -d_crit 0.11 \
 -delta_q 3.1415 \
--epsilon_q 0.05 \
+-epsilon_q 0.1 \
 -num_spikes 7 \
 -p_close_enough 0.05 \
 -prob_steer 0.1 \
