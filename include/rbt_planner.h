@@ -10,12 +10,13 @@
 #include "bur_funcs.h"
 #include "bur_tree.h"
 #include "rbt_parameters.h"
+#include "rrt_planner.h"
 
 namespace Burs
 {
     using namespace Eigen;
 
-    class RbtPlanner : public BasePlanner
+    class RbtPlanner : public RRTPlanner
     {
     public:
         RbtPlanner(std::string path_to_urdf_file);
@@ -48,11 +49,11 @@ namespace Burs
         double
         GetDeltaTk(double phi_tk, double tk, const VectorXd &q_e, const VectorXd &q_k) const;
 
-        void
-        GetEndpoints(MatrixXd &Qe, const VectorXd &q_near, double factor) const;
+        // void
+        // GetEndpoints(MatrixXd &Qe, const VectorXd &q_near, double factor) const;
 
-        std::optional<std::vector<Eigen::VectorXd>>
-        RRTConnect(const VectorXd &q_start, const VectorXd &q_goal, const RbtParameters &plan_parameters, PlanningResult &planning_result);
+        // std::optional<std::vector<Eigen::VectorXd>>
+        // RRTConnect(const VectorXd &q_start, const VectorXd &q_goal, const RbtParameters &plan_parameters, PlanningResult &planning_result);
 
         std::optional<std::vector<Eigen::VectorXd>>
         RbtConnect(const VectorXd &q_start, const VectorXd &q_goal, const RbtParameters &plan_parameters, PlanningResult &planning_result);
@@ -62,8 +63,8 @@ namespace Burs
         std::optional<std::vector<Eigen::VectorXd>>
         RbtConnect(const VectorXd &q_start, const VectorXd &q_goal, const RbtParameters &plan_parameters);
 
-        std::vector<Eigen::VectorXd>
-        Path(std::shared_ptr<BurTree> t_a, int a_closest, std::shared_ptr<BurTree> t_b, int b_closest);
+        // std::vector<Eigen::VectorXd>
+        // Path(std::shared_ptr<BurTree> t_a, int a_closest, std::shared_ptr<BurTree> t_b, int b_closest);
 
         AlgorithmState
         BurConnect(std::shared_ptr<BurTree> t, VectorXd &q, const RbtParameters &plan_parameters);
@@ -71,11 +72,11 @@ namespace Burs
         Bur
         GetBur(const VectorXd &q_near, const MatrixXd &Q_e, double d_closest);
 
-        AlgorithmState
-        GreedyExtend(std::shared_ptr<BurTree> t_a, std::shared_ptr<BurTree> t_b, Eigen::VectorXd q_a, const RbtParameters &planner_parameters);
+        // AlgorithmState
+        // GreedyExtend(std::shared_ptr<BurTree> t_a, std::shared_ptr<BurTree> t_b, Eigen::VectorXd q_a, const RbtParameters &planner_parameters);
 
-        AlgorithmState
-        GreedyExtendRandomConfig(std::shared_ptr<BurTree> t_a, Eigen::VectorXd closest_q, const RbtParameters &planner_parameters);
+        // AlgorithmState
+        // GreedyExtendRandomConfig(std::shared_ptr<BurTree> t_a, Eigen::VectorXd closest_q, const RbtParameters &planner_parameters);
 
         std::vector<Eigen::VectorXd>
         Densify(const VectorXd &src, const VectorXd &tgt, const RbtParameters &plan_params);

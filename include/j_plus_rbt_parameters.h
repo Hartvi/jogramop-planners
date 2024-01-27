@@ -11,27 +11,9 @@
 
 namespace Burs
 {
-    struct JPlusRbtParameters : RbtParameters
+    class JPlusRbtParameters : public RbtParameters
     {
-
-        /*The CSV:
-        max_iters,100,
-        d_crit,0.1,
-        delta_q,3.1415,
-        epsilon_q,0.1,
-        num_spikes,5,
-        p_close_enough,0.01,
-        probability_to_steer_to_target,0.1,
-        target_poses,/path/to/poses.csv,
-        */
-
-        // int max_iters;
-        // double d_crit;
-        // double delta_q;
-        // double epsilon_q;
-        // int num_spikes;
-
-        int pureRbt;
+    public:
         double p_close_enough;
         double probability_to_steer_to_target;
         std::shared_ptr<BurTree> target_poses;
@@ -85,47 +67,8 @@ namespace Burs
             }
         }
 
-        // JPlusRbtParameters(const std::string &filename, const std::string &targetPosesPath)
-        // {
-        //     std::ifstream file(filename);
-        //     std::string line;
-        //     std::unordered_map<std::string, std::string> params;
-
-        //     while (std::getline(file, line))
-        //     {
-        //         std::stringstream ss(line);
-        //         std::string key, value;
-        //         if (std::getline(ss, key, ',') && std::getline(ss, value, ','))
-        //         {
-        //             params[key] = value;
-        //         }
-        //     }
-
-        //     // Set parameters, including the base class parameters
-        //     max_iters = std::stoi(params["max_iters"]);
-        //     d_crit = std::stod(params["d_crit"]);
-        //     delta_q = std::stod(params["delta_q"]);
-        //     epsilon_q = std::stod(params["epsilon_q"]);
-        //     num_spikes = std::stoi(params["num_spikes"]);
-        //     p_close_enough = std::stod(params["p_close_enough"]);
-        //     probability_to_steer_to_target = std::stod(params["probability_to_steer_to_target"]);
-
-        //     // // Load target poses
-        //     // std::string targetPosesPath = params["target_poses"];
-        //     // // std::cout << "target poses file: " << targetPosesPath << "\n";
-        //     std::vector<Grasp> grasps = Grasp::LoadGrasps(targetPosesPath);
-        //     std::vector<KDL::Frame> kdlFrames = Grasp::GraspsToFrames(grasps);
-
-        //     // std::cout << "target poses size: " << kdlFrames.size() << "\n";
-        //     // std::cout << "example of first grasp: \n"
-        //     //           << kdlFrames[0] << "\n";
-
-        //     // Assuming ConstructTreeFromTargets and GetMeanTranslation are already implemented
-        //     ConstructTreeFromTargets(kdlFrames);
-        //     GetMeanTranslation(kdlFrames);
-        // }
-
-        std::string toString() const override
+        std::string
+        toString() const override
         {
             std::ostringstream oss;
             // Call toString of parent class

@@ -41,35 +41,6 @@ namespace Burs
 
         unsigned int best_cost_index = -1; // select from `i`, i.e. current_poses
 
-        // TODO: handle rotations in the tree-search
-        // for (unsigned int i = 0; i < current_poses.size(); ++i)
-        // {
-        //     auto current_pose = current_poses[i];
-        //     double x1, y1, z1;
-        //     current_pose.M.GetRPY(x1, y1, z1);
-
-        //     for (unsigned int k = 0; k < planner_parameters.target_poses->mNodes.size(); ++k)
-        //     {
-        //         auto target_pose = target_poses[k];
-        //         double tmp_tr_cost = 1000.0 * (current_pose.p - target_pose.p).Norm();
-
-        //         double x2, y2, z2;
-        //         // Difference in RPY can be used in a Twist command???
-        //         target_pose.M.GetRPY(x2, y2, z2);
-
-        //         // pitch (y) lies in +- PI/2
-        //         // Note: norm is linear => can take out rad_to_deg outside of each element
-        //         double tmp_rot_cost = rad_to_deg * Eigen::Vector3d(normalizeAngle(x1 - x2), 0.5 * normalizeAngle(2 * (y1 - y2)), normalizeAngle(z1 - z2)).norm();
-        //         // As per Martin Rudorfer :
-        //         double total_cost = tmp_tr_cost + tmp_rot_cost;
-        //         if (total_cost < best_total_cost)
-        //         {
-        //             best_total_cost = total_cost;
-        //             best_cost_index = i;
-        //         }
-        //     }
-        // }
-
         std::shared_ptr<BurTree> tgp = planner_parameters.target_poses;
         int best_grasp_id = -1;
         for (unsigned int i = 0; i < current_poses.size(); ++i)
@@ -142,31 +113,6 @@ namespace Burs
 
         int exploit = 0;
 
-        // // KDL::Frame p_out;
-        // std::vector<KDL::Frame> p_out(chain.getNrOfSegments());
-        // std::cout << "number of segments: " << p_out.size() << "\n";
-        // q_kdl.data = q_start;
-        // if (fk_solver.JntToCart(q_kdl, p_out) < 0)
-        // {
-        //     throw std::runtime_error("Failed forward kinematics in goal status checking");
-        // }
-        // newest_poses[0] = p_out[chain.getNrOfSegments() - 1];
-        // for (int i = 0; i < chain.getNrOfSegments(); ++i)
-        // {
-        //     std::cout << "segment " << i << ": " << chain.getSegment(i).getName() << " " << p_out[i].p << "\n";
-        // }
-
-        // if (fk_solver.JntToCart(q_kdl, p_out[0]) < 0)
-        // {
-        //     throw std::runtime_error("Failed forward kinematics in goal status checking");
-        // }
-
-        // int closest_index = -1;
-        // double distance_to_goal;
-        // check only once in a while perhaps
-        // algorithm_state = this->CheckGoalStatus(newest_poses, planner_parameters, closest_index, distance_to_goal);
-        // std::cout << "initial distance to goal:" << distance_to_goal << " \n";
-
         for (int k = 0; k < planner_parameters.max_iters; k++)
         {
             if (k % 512 == 0)
@@ -200,7 +146,7 @@ namespace Burs
                     // {
                     //     std::cout << "using exploit probability\n";
                     // }
-                    KDL::ChainIkSolverVel_pinv pinv_solver(chain);
+                    // KDL::ChainIkSolverVel_pinv pinv_solver(chain);
 
                     KDL::Frame p_out;
 

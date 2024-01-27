@@ -35,12 +35,12 @@ namespace Burs
         GetRandomQ(const int &num_spikes) const;
 
         void
-        GetEndpoints(MatrixXd &Qe, const VectorXd &q_near, double factor) const;
+        GetEndpoints(MatrixXd &Qe, const VectorXd &q_near, const double &factor) const;
 
         /// @brief normalize spine to some length
         // q_{e_i} \leftarrow q_{near} + \delta \frac{q_{e_i} - q_{near}}{\| q_{e_i} - q_{near} \|}
         VectorXd
-        GetEndpoint(const VectorXd &q_ei, const VectorXd &q_near, double factor) const;
+        GetEndpoint(const VectorXd &q_ei, const VectorXd &q_near, const double &factor) const;
 
         template <typename T>
         std::shared_ptr<T>

@@ -228,8 +228,8 @@ namespace test
             std::cout << "Grasp:\n"
                       << grasps[i].ToFrame() << std::endl;
         }
-        auto params = RbtParameters(paramsFile);
-        std::cout << "Planning params: " << params.toString() << "\n";
+        // auto params = RbtParameters(paramsFile);
+        // std::cout << "Planning params: " << params.toString() << "\n";
         std::cout << "NOT USING MAIN_TEST\n";
         exit(1);
         // auto paramsjplusrbt = JPlusRbtParameters(paramsFile, std::string(graspFile));
