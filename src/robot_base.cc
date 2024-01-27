@@ -417,18 +417,18 @@ namespace Burs
         }
 
         std::vector<KDL::Frame> segment_poses(this->kdl_chain.getNrOfSegments());
-        std::vector<Eigen::Vector3d> segment_positions(this->kdl_chain.getNrOfSegments(), Vector3d::Zero());
+        std::vector<Eigen::Vector3d> segment_positions(this->kdl_chain.getNrOfSegments());
         if (fk_solver.JntToCart(joint_positions, segment_poses) >= 0)
         {
 
             // typedef enum { RotAxis,RotX,RotY,RotZ,TransAxis,TransX,TransY,TransZ,None} JointType;
             for (unsigned int i = 0; i < this->kdl_chain.getNrOfSegments(); ++i)
             {
-                if (this->kdl_chain.getSegment(i).getJoint().getType() == KDL::Joint::JointType::None)
-                {
-                    // std::cout << "segment: " << i << "none joint\n";
-                    continue;
-                }
+                // if (this->kdl_chain.getSegment(i).getJoint().getType() == KDL::Joint::JointType::None)
+                // {
+                //     // std::cout << "segment: " << i << "none joint\n";
+                //     continue;
+                // }
                 auto segment_pose = segment_poses[i];
                 // Convert KDL position to Eigen vector
                 Eigen::Vector3d position(segment_pose.p.x(), segment_pose.p.y(), segment_pose.p.z());

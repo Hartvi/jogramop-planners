@@ -65,6 +65,7 @@ namespace Burs
             }
         }
         // std::cout << "fk1: " << fk1.transpose() << " fk2: " << fk2.transpose() << " dist: " << dist << "\n";
+        // std::cout << "min_dist: " << min_dist << "\n";
         if (min_dist < factor)
         {
             return q_ei;
