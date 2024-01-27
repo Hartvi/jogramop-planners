@@ -35,20 +35,6 @@ namespace Burs
         return m;
     }
 
-    VectorXd
-    MinPlanner::GetEndpoint(const VectorXd &q_ei, const VectorXd &q_near, double factor) const
-    {
-        // return q_near + factor * (q_ei - q_near).normalized();
-        // return q_near + factor * (q_ei - q_near).normalized();
-        VectorXd diff = q_ei - q_near;
-        double n = diff.norm();
-        if (n < factor)
-        {
-            return q_ei;
-        }
-        return q_near + factor * diff / n;
-    }
-
     Eigen::VectorXd
     MinPlanner::Nearest(std::shared_ptr<BurTree> t, VectorXd &q)
     {
