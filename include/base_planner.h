@@ -27,9 +27,6 @@ namespace Burs
         // EXAMPLE USAGE OF BASIC FUNCTIONS
         void
         ExampleFunctions(const VectorXd &q_start, const VectorXd &q_goal);
-
-        std::vector<Eigen::VectorXd>
-        ConstructPathFromTree(std::shared_ptr<BurTree> t_a, int final_node_id);
     };
 }
 

@@ -10,16 +10,13 @@ namespace Burs
     {
         auto my_env = this->GetEnv<URDFEnv>();
         auto my_robot = my_env->myURDFRobot;
-
-        this->forwardKinematicsParallel = my_robot->GetForwardPointParallelFunc();
-        this->radius_func = my_robot->GetRadiusFunc();
     }
 
     RRTPlanner::RRTPlanner() : BasePlanner()
     {
     }
 
-    std::optional<std::vector<Eigen::VectorXd>>
+    std::optional<std::vector<VectorXd>>
     RRTPlanner::RRTConnect(const VectorXd &q_start, const VectorXd &q_goal, const RRTParameters &plan_parameters, PlanningResult &planning_result)
     {
         // start of actual algorithm
@@ -34,8 +31,9 @@ namespace Burs
         planning_result.distance_to_goal = 1e10;
         KDL::Frame p_out;
         KDL::Vector p_goal;
+
         KDL::JntArray q_kdl(this->q_dim);
-        Eigen::VectorXd best_q;
+        VectorXd best_q;
 
         q_kdl.data = q_goal;
         if (fk_solver.JntToCart(q_kdl, p_out) >= 0)
@@ -71,7 +69,7 @@ namespace Burs
             for i in 1:N:
                 Qe |= random_config()
             */
-            Eigen::MatrixXd Qe = this->GetRandomQ(1);
+            MatrixXd Qe = this->GetRandomQ(1);
 
             // random growth direction; can be any other among the random vectors from Qe
             VectorXd q_e_0 = Qe.col(0);
@@ -87,7 +85,7 @@ namespace Burs
             if (!this->IsColliding(q_new))
             {
                 t_a->AddNode(nearest_index, q_new);
-                Eigen::VectorXd q_rand = this->GetRandomQ(1);
+                VectorXd q_rand = this->GetRandomQ(1);
                 auto status_a = this->GreedyExtendRandomConfig(t_a, q_rand, plan_parameters);
                 auto status_b = this->GreedyExtendRandomConfig(t_b, q_rand, plan_parameters);
                 if (status_a == AlgorithmState::Reached && status_b == AlgorithmState::Reached)
@@ -133,66 +131,19 @@ namespace Burs
         return this->ConstructPathFromTree(t_start, last_idx);
     }
 
-    std::vector<Eigen::VectorXd>
-    RRTPlanner::Path(std::shared_ptr<BurTree> t_a, int a_closest, std::shared_ptr<BurTree> t_b, int b_closest)
-    {
-        // std::cout << "PATH: " << std::endl;
-        // std::cout << "A closest: " << t_a->GetQ(a_closest).transpose() << std::endl;
-        // std::cout << "B closest: " << t_b->GetQ(b_closest).transpose() << std::endl;
-        std::vector<int> res_a;
-        std::vector<int> res_b;
-
-        // connect the two path from the two trees, NODE B and NODE A to each tree's roots respectively
-        int node_id_a = a_closest;
-        do
-        {
-            res_a.push_back(node_id_a);
-            node_id_a = t_a->GetParentIdx(node_id_a);
-        } while (node_id_a != -1);
-
-        // connect the two path from the two trees, NODE B and NODE A to each tree's roots respectively
-        int node_id_b = b_closest;
-        do
-        {
-            res_b.push_back(node_id_b);
-            node_id_b = t_b->GetParentIdx(node_id_b);
-        } while (node_id_b != -1);
-
-        std::vector<Eigen::VectorXd> final_path(res_a.size() + res_b.size());
-
-        std::reverse(res_a.begin(), res_a.end());
-
-        int k = 0;
-        for (int i = 0; i < res_a.size(); ++i)
-        {
-            // std::cout << "Qa: " << t_a->GetQ(res_a[i]) << std::endl;
-            final_path[k] = t_a->GetQ(res_a[i]);
-            ++k;
-        }
-
-        for (int i = 0; i < res_b.size(); ++i)
-        {
-            // std::cout << "Qb: " << t_b->GetQ(res_b[i]) << std::endl;
-            final_path[k] = t_b->GetQ(res_b[i]);
-            ++k;
-        }
-
-        // std::cout << "END PATH" << std::endl;
-        return final_path;
-    }
-
     AlgorithmState
-    RRTPlanner::GreedyExtend(std::shared_ptr<BurTree> t_a, std::shared_ptr<BurTree> t_b, Eigen::VectorXd q_a, const RRTParameters &planner_parameters)
+    RRTPlanner::GreedyExtend(std::shared_ptr<BurTree> t_a, std::shared_ptr<BurTree> t_b, VectorXd q_a, const RRTParameters &planner_parameters)
     {
         // Get closest point in tree b to point q_a from tree a
         int nearest_in_b = t_b->Nearest(q_a.data());
-        Eigen::VectorXd closest_q = t_b->GetQ(nearest_in_b);
+        VectorXd closest_q = t_b->GetQ(nearest_in_b);
 
-        Eigen::VectorXd new_q = this->GetEndpoint(closest_q, q_a, planner_parameters.epsilon_q);
+        VectorXd new_q = this->GetEndpoint(closest_q, q_a, planner_parameters.epsilon_q);
         while (!this->IsColliding(new_q))
         {
             // Check if new point isn't too close to already existing points in the tree
             auto [n_a, d_a] = t_a->NearestIdxAndDist(new_q.data());
+            // TODO CONVERT EPSILONQ TO SQUARED AS WELL TO COMPARE WITH THE KDTREE DISTANCES
             // if (d_a > planner_parameters.epsilon_q)
             // {
             //     t_a->AddNode(n_a, new_q);
@@ -213,12 +164,12 @@ namespace Burs
     }
 
     AlgorithmState
-    RRTPlanner::GreedyExtendRandomConfig(std::shared_ptr<BurTree> t_a, Eigen::VectorXd closest_q, const RRTParameters &planner_parameters)
+    RRTPlanner::GreedyExtendRandomConfig(std::shared_ptr<BurTree> t_a, VectorXd closest_q, const RRTParameters &planner_parameters)
     {
         int nearest_in_a = t_a->Nearest(closest_q.data());
-        Eigen::VectorXd q_a = t_a->GetQ(nearest_in_a);
+        VectorXd q_a = t_a->GetQ(nearest_in_a);
 
-        Eigen::VectorXd new_q = this->GetEndpoint(closest_q, q_a, planner_parameters.epsilon_q);
+        VectorXd new_q = this->GetEndpoint(closest_q, q_a, planner_parameters.epsilon_q);
         double smaller_epsilon = 99 * planner_parameters.epsilon_q;
         while (!this->IsColliding(new_q))
         {

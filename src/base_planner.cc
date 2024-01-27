@@ -70,22 +70,4 @@ namespace Burs
         std::cout << "d < d_crit" << std::endl;
     }
 
-    std::vector<Eigen::VectorXd>
-    BasePlanner::ConstructPathFromTree(std::shared_ptr<BurTree> q_tree, int final_node_id)
-    {
-        std::vector<Eigen::VectorXd> res_a;
-
-        // connect the two path from the two trees, NODE B and NODE A to each tree's roots respectively
-        int node_id_a = final_node_id;
-        do
-        {
-            res_a.push_back(q_tree->GetQ(node_id_a));
-            node_id_a = q_tree->GetParentIdx(node_id_a);
-        } while (node_id_a != -1);
-
-        std::reverse(res_a.begin(), res_a.end());
-
-        return res_a;
-    }
-
 }

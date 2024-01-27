@@ -57,7 +57,7 @@ namespace Burs
         return q_near + factor * diff / n;
     }
 
-    Eigen::VectorXd
+    VectorXd
     MinPlanner::Nearest(std::shared_ptr<BurTree> t, VectorXd &q)
     {
         return t->GetQ(t->Nearest(q.data()));
@@ -87,6 +87,66 @@ namespace Burs
     {
         this->base_env->SetPoses(q);
         return this->base_env->IsColliding();
+    }
+
+    std::vector<VectorXd>
+    MinPlanner::ConstructPathFromTree(std::shared_ptr<BurTree> q_tree, int final_node_id)
+    {
+        std::vector<VectorXd> res_a;
+
+        // connect the two path from the two trees, NODE B and NODE A to each tree's roots respectively
+        int node_id_a = final_node_id;
+        do
+        {
+            res_a.push_back(q_tree->GetQ(node_id_a));
+            node_id_a = q_tree->GetParentIdx(node_id_a);
+        } while (node_id_a != -1);
+
+        std::reverse(res_a.begin(), res_a.end());
+
+        return res_a;
+    }
+
+    std::vector<VectorXd>
+    MinPlanner::Path(std::shared_ptr<BurTree> t_a, int a_closest, std::shared_ptr<BurTree> t_b, int b_closest)
+    {
+        std::vector<int> res_a;
+        std::vector<int> res_b;
+
+        // connect the two path from the two trees, NODE B and NODE A to each tree's roots respectively
+        int node_id_a = a_closest;
+        do
+        {
+            res_a.push_back(node_id_a);
+            node_id_a = t_a->GetParentIdx(node_id_a);
+        } while (node_id_a != -1);
+
+        // connect the two path from the two trees, NODE B and NODE A to each tree's roots respectively
+        int node_id_b = b_closest;
+        do
+        {
+            res_b.push_back(node_id_b);
+            node_id_b = t_b->GetParentIdx(node_id_b);
+        } while (node_id_b != -1);
+
+        std::vector<VectorXd> final_path(res_a.size() + res_b.size());
+
+        std::reverse(res_a.begin(), res_a.end());
+
+        int k = 0;
+        for (int i = 0; i < res_a.size(); ++i)
+        {
+            final_path[k] = t_a->GetQ(res_a[i]);
+            ++k;
+        }
+
+        for (int i = 0; i < res_b.size(); ++i)
+        {
+            final_path[k] = t_b->GetQ(res_b[i]);
+            ++k;
+        }
+
+        return final_path;
     }
 
 }

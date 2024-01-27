@@ -61,6 +61,12 @@ namespace Burs
         int
         NearestIndex(std::shared_ptr<BurTree> t, VectorXd &q);
 
+        std::vector<VectorXd>
+        Path(std::shared_ptr<BurTree> t_a, int a_closest, std::shared_ptr<BurTree> t_b, int b_closest);
+
+        std::vector<VectorXd>
+        ConstructPathFromTree(std::shared_ptr<BurTree> t_a, int final_node_id);
+
         std::shared_ptr<BaseEnv> base_env;
 
     protected:

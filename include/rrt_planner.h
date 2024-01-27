@@ -23,9 +23,6 @@ namespace Burs
         std::optional<std::vector<Eigen::VectorXd>>
         RRTConnect(const VectorXd &q_start, const VectorXd &q_goal, const RRTParameters &plan_parameters, PlanningResult &planning_result);
 
-        std::vector<Eigen::VectorXd>
-        Path(std::shared_ptr<BurTree> t_a, int a_closest, std::shared_ptr<BurTree> t_b, int b_closest);
-
         AlgorithmState
         GreedyExtend(std::shared_ptr<BurTree> t_a, std::shared_ptr<BurTree> t_b, Eigen::VectorXd q_a, const RRTParameters &planner_parameters);
 
@@ -33,9 +30,9 @@ namespace Burs
         GreedyExtendRandomConfig(std::shared_ptr<BurTree> t_a, Eigen::VectorXd closest_q, const RRTParameters &planner_parameters);
 
     protected:
-        RadiusFuncParallel radius_func;
-        ForwardKinematicsParallel forwardKinematicsParallel;
-        bool checkGround;
+        // RadiusFuncParallel radius_func;
+        // ForwardKinematicsParallel forwardKinematicsParallel;
+        // bool checkGround;
     };
 
 }

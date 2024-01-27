@@ -12,6 +12,7 @@
 
 namespace Burs
 {
+    using namespace Eigen;
 
     RobotBase::RobotBase(std::string urdf_filename)
     {
@@ -306,20 +307,20 @@ namespace Burs
         return fk_solver;
     }
 
-    std::tuple<std::vector<Eigen::Matrix3d>, std::vector<Eigen::Vector3d>>
-    RobotBase::ForwardQ(const Eigen::VectorXd &q_in)
+    std::tuple<std::vector<Matrix3d>, std::vector<Vector3d>>
+    RobotBase::ForwardQ(const VectorXd &q_in)
     {
         auto fk_res = this->CachedForwardPass(q_in);
 
         unsigned int nrSegments = this->kdl_chain.getNrOfSegments();
 
-        std::vector<Eigen::Matrix3d> rotations(nrSegments);
-        std::vector<Eigen::Vector3d> positions(nrSegments);
+        std::vector<Matrix3d> rotations(nrSegments);
+        std::vector<Vector3d> positions(nrSegments);
 
         for (unsigned int i = 0; i < nrSegments; ++i)
         {
             // Convert KDL rotation to Eigen matrix
-            Eigen::Matrix3d rotation;
+            Matrix3d rotation;
             auto segment_pose = fk_res[i];
             for (int j = 0; j < 3; ++j)
             {
@@ -331,7 +332,7 @@ namespace Burs
             rotations[i] = rotation;
 
             // Convert KDL position to Eigen vector
-            Eigen::Vector3d position(segment_pose.p.x(), segment_pose.p.y(), segment_pose.p.z());
+            Vector3d position(segment_pose.p.x(), segment_pose.p.y(), segment_pose.p.z());
 
             positions[i] = position;
         }
@@ -353,8 +354,8 @@ namespace Burs
         // }
 
         // // Prepare the output vectors for rotations and positions
-        // std::vector<Eigen::Matrix3d> rotations;
-        // std::vector<Eigen::Vector3d> positions;
+        // std::vector<Matrix3d> rotations;
+        // std::vector<Vector3d> positions;
 
         // // Compute forward kinematics for all segments
         // for (unsigned int i = 0; i < this->kdl_chain.getNrOfSegments(); ++i)
@@ -363,7 +364,7 @@ namespace Burs
         //     if (fk_solver.JntToCart(joint_positions, segment_pose, i + 1) >= 0)
         //     {
         //         // Convert KDL rotation to Eigen matrix
-        //         Eigen::Matrix3d rotation;
+        //         Matrix3d rotation;
         //         for (int j = 0; j < 3; ++j)
         //         {
         //             for (int k = 0; k < 3; ++k)
@@ -374,7 +375,7 @@ namespace Burs
         //         rotations.push_back(rotation);
 
         //         // Convert KDL position to Eigen vector
-        //         Eigen::Vector3d position(segment_pose.p.x(), segment_pose.p.y(), segment_pose.p.z());
+        //         Vector3d position(segment_pose.p.x(), segment_pose.p.y(), segment_pose.p.z());
         //         // std::cout << "Segment " << i << ": " << position.transpose() << std::endl;
         //         positions.push_back(position);
         //     }
@@ -392,13 +393,13 @@ namespace Burs
         // return std::make_tuple(rotations, positions);
     }
 
-    std::vector<Eigen::Vector3d>
-    RobotBase::GetForwardPointParallel(const Eigen::VectorXd &q_in)
+    std::vector<Vector3d>
+    RobotBase::GetForwardPointParallel(const VectorXd &q_in)
     {
         auto fk_res = this->CachedForwardPass(q_in);
         unsigned int nrSegments = this->kdl_chain.getNrOfSegments();
 
-        std::vector<Eigen::Vector3d> segment_positions(nrSegments);
+        std::vector<Vector3d> segment_positions(nrSegments);
 
         // typedef enum { RotAxis,RotX,RotY,RotZ,TransAxis,TransX,TransY,TransZ,None} JointType;
         for (unsigned int i = 0; i < nrSegments; ++i)
@@ -409,7 +410,7 @@ namespace Burs
             }
             auto segment_pose = fk_res[i];
             // Convert KDL position to Eigen vector
-            Eigen::Vector3d position(segment_pose.p.x(), segment_pose.p.y(), segment_pose.p.z());
+            Vector3d position(segment_pose.p.x(), segment_pose.p.y(), segment_pose.p.z());
             segment_positions[i] = position;
         }
 
@@ -431,7 +432,7 @@ namespace Burs
         // }
 
         // std::vector<KDL::Frame> segment_poses(this->kdl_chain.getNrOfSegments());
-        // std::vector<Eigen::Vector3d> segment_positions(this->kdl_chain.getNrOfSegments());
+        // std::vector<Vector3d> segment_positions(this->kdl_chain.getNrOfSegments());
         // if (fk_solver.JntToCart(joint_positions, segment_poses) >= 0)
         // {
 
@@ -445,7 +446,7 @@ namespace Burs
         //         }
         //         auto segment_pose = segment_poses[i];
         //         // Convert KDL position to Eigen vector
-        //         Eigen::Vector3d position(segment_pose.p.x(), segment_pose.p.y(), segment_pose.p.z());
+        //         Vector3d position(segment_pose.p.x(), segment_pose.p.y(), segment_pose.p.z());
         //         segment_positions[i] = position;
         //         // std::cout << "Forward point " << ith_distal_point << ": " << position.transpose() << std::endl;
         //     }
@@ -465,25 +466,25 @@ namespace Burs
     ForwardKinematicsParallel
     RobotBase::GetForwardPointParallelFunc()
     {
-        ForwardKinematicsParallel fpf = [this](const VectorXd &configuration) -> std::vector<Eigen::Vector3d>
+        ForwardKinematicsParallel fpf = [this](const VectorXd &configuration) -> std::vector<Vector3d>
         {
             return this->GetForwardPointParallel(configuration);
         };
         return fpf;
     }
 
-    Eigen::VectorXd
-    RobotBase::GetRadii(const Eigen::VectorXd &q_in)
+    VectorXd
+    RobotBase::GetRadii(const VectorXd &q_in)
     {
         auto fk_res = this->CachedForwardPass(q_in);
-        Eigen::VectorXd radii(q_in.size());
+        VectorXd radii(q_in.size());
         unsigned int nrSegments = this->kdl_chain.getNrOfSegments();
 
         unsigned int j = 0;
         for (unsigned int i = 0; i < nrSegments - 1; ++i)
         {
             auto segment_pose = fk_res[i];
-            Eigen::Vector3d position(segment_pose.p.x(), segment_pose.p.y(), segment_pose.p.z());
+            Vector3d position(segment_pose.p.x(), segment_pose.p.y(), segment_pose.p.z());
 
             // Local axis: https://docs.ros.org/en/indigo/api/orocos_kdl/html/classKDL_1_1Joint.html#a57c97b32765b0caeb84b303d66a96a1b
             auto joint = this->kdl_chain.getSegment(i).getJoint();
@@ -528,19 +529,19 @@ namespace Burs
             {
                 KDL::Frame next_segment_pose = fk_res[k];
                 KDL::Vector next_segment_kdl = next_segment_pose.p;
-                Eigen::Vector3d next_segment(next_segment_kdl.x(), next_segment_kdl.y(), next_segment_kdl.z());
+                Vector3d next_segment(next_segment_kdl.x(), next_segment_kdl.y(), next_segment_kdl.z());
 
                 // Transform the local joint axis to the world reference frame
                 KDL::Vector joint_axis_world = segment_pose.M * joint_axis_local;
                 // std::cout << "GetRadius axis: " << joint_axis_world << std::endl;
-                Eigen::Vector3d joint_axis(joint_axis_world.x(), joint_axis_world.y(), joint_axis_world.z());
+                Vector3d joint_axis(joint_axis_world.x(), joint_axis_world.y(), joint_axis_world.z());
 
-                Eigen::Vector3d diff = next_segment - position;
+                Vector3d diff = next_segment - position;
                 // Project the end effector onto the plane defined by the joint axis
                 double dot_product = diff.dot(joint_axis);
 
                 // joint_axis has norm = 1 => NO NORMALIZATION NECESSARY
-                Eigen::Vector3d projection = diff - dot_product * joint_axis;
+                Vector3d projection = diff - dot_product * joint_axis;
 
                 // Update the radius
                 // std::cout << "Radius distance " << ith_distal_point << ": " << projection.norm() << std::endl;
@@ -560,7 +561,7 @@ namespace Burs
         // unsigned int num_joints = this->kdl_chain.getNrOfJoints();
         // // std::cout << "Number of joints: " << num_joints << "  Number of segments: " << num_segments << std::endl;
 
-        // Eigen::VectorXd radii(q_in.size());
+        // VectorXd radii(q_in.size());
 
         // KDL::ChainFkSolverPos_recursive fk_solver(this->kdl_chain);
 
@@ -585,7 +586,7 @@ namespace Burs
         //     for (unsigned int i = 0; i < segment_poses.size() - 1; ++i)
         //     {
         //         auto segment_pose = segment_poses[i];
-        //         Eigen::Vector3d position(segment_pose.p.x(), segment_pose.p.y(), segment_pose.p.z());
+        //         Vector3d position(segment_pose.p.x(), segment_pose.p.y(), segment_pose.p.z());
 
         //         // Local axis: https://docs.ros.org/en/indigo/api/orocos_kdl/html/classKDL_1_1Joint.html#a57c97b32765b0caeb84b303d66a96a1b
         //         auto joint = this->kdl_chain.getSegment(i).getJoint();
@@ -630,19 +631,19 @@ namespace Burs
         //         {
         //             KDL::Frame next_segment_pose = segment_poses[k];
         //             KDL::Vector next_segment_kdl = next_segment_pose.p;
-        //             Eigen::Vector3d next_segment(next_segment_kdl.x(), next_segment_kdl.y(), next_segment_kdl.z());
+        //             Vector3d next_segment(next_segment_kdl.x(), next_segment_kdl.y(), next_segment_kdl.z());
 
         //             // Transform the local joint axis to the world reference frame
         //             KDL::Vector joint_axis_world = segment_pose.M * joint_axis_local;
         //             // std::cout << "GetRadius axis: " << joint_axis_world << std::endl;
-        //             Eigen::Vector3d joint_axis(joint_axis_world.x(), joint_axis_world.y(), joint_axis_world.z());
+        //             Vector3d joint_axis(joint_axis_world.x(), joint_axis_world.y(), joint_axis_world.z());
 
-        //             Eigen::Vector3d diff = next_segment - position;
+        //             Vector3d diff = next_segment - position;
         //             // Project the end effector onto the plane defined by the joint axis
         //             double dot_product = diff.dot(joint_axis);
 
         //             // joint_axis has norm = 1 => NO NORMALIZATION NECESSARY
-        //             Eigen::Vector3d projection = diff - dot_product * joint_axis;
+        //             Vector3d projection = diff - dot_product * joint_axis;
 
         //             // Update the radius
         //             // std::cout << "Radius distance " << ith_distal_point << ": " << projection.norm() << std::endl;
@@ -667,7 +668,7 @@ namespace Burs
     RadiusFuncParallel
     RobotBase::GetRadiusFunc()
     {
-        RadiusFuncParallel rf = [this](const VectorXd &configuration) -> Eigen::VectorXd
+        RadiusFuncParallel rf = [this](const VectorXd &configuration) -> VectorXd
         {
             // return this->GetRadius(ith_distal_point, configuration);
             return this->GetRadii(configuration);
@@ -682,7 +683,7 @@ namespace Burs
     }
 
     std::vector<KDL::Frame>
-    RobotBase::CachedForwardPass(const Eigen::VectorXd &q_in)
+    RobotBase::CachedForwardPass(const VectorXd &q_in)
     {
         // IF CACHED:
         std::vector<double> vec(q_in.data(), q_in.data() + q_in.size());
@@ -696,10 +697,10 @@ namespace Burs
             // Key found, return the associated value
             // std::cout << "cached: " << this->fkResults.size() << "\n";
             auto res = it->second;
-            if (this->fkResults.size() > 1000)
-            {
-                this->fkResults.clear();
-            }
+            // if (this->fkResults.size() > 1000)
+            // {
+            //     this->fkResults.clear();
+            // }
             return res;
         }
 
@@ -710,7 +711,7 @@ namespace Burs
     }
 
     std::vector<KDL::Frame>
-    RobotBase::ForwardPass(const Eigen::VectorXd &q_in)
+    RobotBase::ForwardPass(const VectorXd &q_in)
     {
         KDL::JntArray q_kdl;
         q_kdl.data = q_in;
@@ -725,7 +726,7 @@ namespace Burs
         return p_out;
     }
 
-    Eigen::VectorXd
+    VectorXd
     RobotBase::parseCSVToVectorXd(const std::string &path)
     {
         std::ifstream file(path);
@@ -751,7 +752,7 @@ namespace Burs
             }
         }
 
-        Eigen::VectorXd vec(values.size());
+        VectorXd vec(values.size());
         for (size_t i = 0; i < values.size(); ++i)
         {
             vec[i] = values[i];
@@ -760,7 +761,7 @@ namespace Burs
         return vec;
     }
 
-    std::vector<Eigen::VectorXd>
+    std::vector<VectorXd>
     RobotBase::parseCSVToVectors(const std::string &path)
     {
         std::ifstream file(path);
@@ -770,7 +771,7 @@ namespace Burs
         }
 
         std::string line;
-        std::vector<Eigen::VectorXd> vectors;
+        std::vector<VectorXd> vectors;
 
         while (std::getline(file, line))
         {
@@ -791,7 +792,7 @@ namespace Burs
                 }
             }
 
-            Eigen::VectorXd vec(values.size());
+            VectorXd vec(values.size());
             for (size_t i = 0; i < values.size(); ++i)
             {
                 vec[i] = values[i];
