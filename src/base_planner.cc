@@ -72,7 +72,7 @@ namespace Burs
         // dist > factor => scale down => factor/dist < 1
         // => (factor/dist) [m/m] unitless
         // q_new [config] = q_near [config] + [m / m * config = config]
-        VectorXd q_new = q_near + factor / dist * (q_ei - q_near);
+        VectorXd q_new = q_near + factor / min_dist * (q_ei - q_near);
         return q_new;
 
         // diff is in C-space
