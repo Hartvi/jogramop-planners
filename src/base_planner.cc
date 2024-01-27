@@ -51,13 +51,21 @@ namespace Burs
         //    else get the ratio so the new config is < factor distance away
         auto robot = this->GetEnv<URDFEnv>()->myURDFRobot;
 
-        auto fk1 = robot->GetForwardPoint(-1, q_near);
-        auto fk2 = robot->GetForwardPoint(-1, q_ei);
+        auto fk1 = robot->GetForwardPointParallel(q_near);
+        auto fk2 = robot->GetForwardPointParallel(q_ei);
 
-        // dist is in meters
-        double dist = (fk2 - fk1).norm();
+        double min_dist = 1e10;
+        for (unsigned int i = 0; i < fk1.size(); ++i)
+        {
+            // dist is in meters
+            double dist = (fk2[i] - fk1[i]).norm();
+            if (dist < min_dist)
+            {
+                min_dist = dist;
+            }
+        }
         // std::cout << "fk1: " << fk1.transpose() << " fk2: " << fk2.transpose() << " dist: " << dist << "\n";
-        if (dist < factor)
+        if (min_dist < factor)
         {
             return q_ei;
         }
@@ -124,5 +132,4 @@ namespace Burs
 
         return res_a;
     }
-
 }
