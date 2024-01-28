@@ -72,6 +72,9 @@ namespace Burs
         Bur
         GetBur(const VectorXd &q_near, const MatrixXd &Q_e, double d_closest);
 
+        std::vector<MatrixXd>
+        GetSteppedEndpoints(const VectorXd &q_near, const MatrixXd &Q_e, double d_closest);
+
         // AlgorithmState
         // GreedyExtend(std::shared_ptr<BurTree> t_a, std::shared_ptr<BurTree> t_b, Eigen::VectorXd q_a, const RbtParameters &planner_parameters);
 

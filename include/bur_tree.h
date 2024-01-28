@@ -58,7 +58,7 @@ namespace Burs
         BurTree();
         BurTree(VectorXd q_location, int q_dim);
 
-        void
+        int
         AddNode(int p, VectorXd q_location);
 
         std::pair<int, double>

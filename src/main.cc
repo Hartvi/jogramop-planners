@@ -104,7 +104,7 @@ int main(int argc, char **argv)
         o.addOption(Option<double>("groundLevel", &groundLevel, "ground z coodinate"));
         o.addOption(Option<int>("minColSegIdx", &minColSegmentIdx, "segment id from which it can collide with ground"));
 
-        o.addOption(Option<int>("ik_index", &ik_index_in_target_configs, 0, "max iters for all ik solutions"));  // default value is 0
+        o.addOption(Option<int>("ik_index", &ik_index_in_target_configs, 0, "max iters for all ik solutions")); // default value is 0
         o.addOption(Option<double>("goal_bias_radius", &goal_bias_radius, "radius to start turning towards goal"));
         o.addOption(Option<double>("goal_bias_prob", &goal_bias_probability, "probability to turn to goal when close to goal"));
         o.addOption(Option<double>("q_resolution", &q_resolution, "resolution of individual steps in rbt"));
@@ -138,7 +138,8 @@ int main(int argc, char **argv)
     }
     std::cout << "setting seed " << seed << ", usedSeed: " << usedSeed << "\n";
     std::cout << "CMDLINE params:\n";
-    for(int i =0; i < argc; i++) {
+    for (int i = 0; i < argc; i++)
+    {
         std::cout << argv[i] << "\n";
     }
 
@@ -374,8 +375,8 @@ int main(int argc, char **argv)
         }
 
         std::cout << "planning result " << planning_result.toCSVString() << "\n";
-        std::cout << "argc: ";
-        std::cout << argc;
+        // std::cout << "argc: ";
+        // std::cout << argc;
         std::cout << "\n";
 
         return 0;

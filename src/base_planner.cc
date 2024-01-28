@@ -102,7 +102,7 @@ namespace Burs
         // std::cout << "start q: " << q_near.transpose() << "\n";
         for (int i = 0; i < Q_e.cols(); ++i)
         {
-            // If this won't move further that it is allowed
+            // // If this won't move further that it is allowed
             double maxPossibleDist = this->MaxMovedDistance(q_near, Q_e.col(i));
             if (maxPossibleDist < d_max)
             {

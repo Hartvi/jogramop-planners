@@ -66,6 +66,17 @@ namespace Burs
         // TODO: check collision at the beginning
         auto ee_goal = this->GetEEPose(q_goal).p;
 
+        if (this->IsColliding(q_start))
+        {
+            std::cout << "START COLLIDING\n";
+            return {};
+        }
+
+        if (this->IsColliding(q_goal))
+        {
+            std::cout << "GOAL COLLIDING\n";
+            return {};
+        }
         // Changing
         auto t_a = t_start;
         auto t_b = t_goal;
@@ -76,12 +87,13 @@ namespace Burs
         {
             MatrixXd Qe = this->GetRandomQ(plan_parameters.num_spikes);
 
-            // random column
+            // Random column
             int nearest_idx = t_a->Nearest(Qe.col(0).data());
             VectorXd q_near = t_a->GetQ(nearest_idx);
 
             // Slow => maybe in the future use FCL and somehow compile it because it had a ton of compilation errors and version mismatches
             double d_closest = this->GetClosestDistance(q_near);
+            // std::cout << "d_closest: " << d_closest << "\n";
 
             if (d_closest < plan_parameters.d_crit)
             {
@@ -89,6 +101,7 @@ namespace Burs
                 if (step_result < 0)
                 {
                     // If small basic rrt collides, then don't go here, hence the `continue`
+                    // std::cout << "RRT COLLIDE\n";
                     continue;
                 }
 
@@ -99,6 +112,7 @@ namespace Burs
 
                     if (tmp_dist < best_dist)
                     {
+                        std::cout << "RRT best dist: " << best_dist << "\n";
                         best_dist = tmp_dist;
                         q_best = tmp_vec;
                     }
@@ -106,15 +120,63 @@ namespace Burs
             }
             else
             {
-                // Qe is already scaled to max euclidean delta_q
-                Bur b = this->GetBur(q_near, Qe, d_closest);
+                // Qe is scaled to max euclidean delta_q or closest obstacle distance
+                MatrixXd endpoints = this->GetEndpoints(q_near, Qe, std::min(d_closest, plan_parameters.delta_q));
+                // std::cout << "dclosest: " << d_closest << "\n";
+                // for (unsigned int i = 0; i < endpoints.cols(); ++i)
+                // {
+                //     double bur_dist = this->MaxMovedDistance(q_near, endpoints.col(i));
+                //     std::cout << "bur max dist: " << bur_dist << "\n";
 
-                for (int i = 0; i < Qe.cols(); ++i)
+                //     // if (this->IsColliding(end))
+                //     // {
+                //     //     std::cout << "TRYING TO ADD COLLIDING POINT\n";
+                //     //     double collide_dist = this->MaxMovedDistance(q_near, point);
+                //     //     std::cout << "col point: " << point.transpose() << "\n";
+                //     //     std::cout << "distance from q_near to colliding point: " << collide_dist << "\n";
+                //     //     // k = plan_parameters.max_iters;
+                //     //     // throw std::runtime_error("");
+                //     // }
+                // }
+
+                // TRAVELLED DISTANCES ARE ALWAYS SMALLER THAN D_CLOSEST
+                for (unsigned int i = 0; i < endpoints.cols(); ++i)
                 {
-                    t_a->AddNode(nearest_idx, b.endpoints.col(i));
+                    auto endpoint = endpoints.col(i);
+                    auto max_epsilon_separated_points = this->Densify(q_near, endpoint, plan_parameters);
+                    int prev_idx = nearest_idx; // idx of q_near
+
+                    for (VectorXd &point : max_epsilon_separated_points)
+                    {
+                        // if (this->IsColliding(point))
+                        // {
+                        //     // std::cout << "TRYING TO ADD COLLIDING POINT\n";
+                        //     double collide_dist = this->MaxMovedDistance(q_near, point);
+                        //     // std::cout << "col point: " << point.transpose() << "\n";
+                        //     // std::cout << "distance from q_near to colliding point: " << collide_dist << "\n";
+                        //     // k = plan_parameters.max_iters;
+                        //     throw std::runtime_error("");
+                        // }
+                        prev_idx = t_a->AddNode(prev_idx, point);
+
+                        // Measure distance to goal if this is the starting tree
+                        if (t_a == t_start)
+                        {
+                            VectorXd tmp_vec = t_start->GetQ(prev_idx);
+                            double tmp_dist = this->GetDistToGoal(tmp_vec, ee_goal);
+
+                            if (tmp_dist < best_dist)
+                            {
+                                best_dist = tmp_dist;
+                                std::cout << "RBT best dist: " << best_dist << "\n";
+                                q_best = tmp_vec;
+                            }
+                        }
+                    }
                 }
             }
-            // It is either the one added through RRT, or the last node in the bur
+
+            // It is either the one added through RRT, or in the bur
             int last_node_idx = t_a->GetNumberOfNodes() - 1;
             VectorXd q_new = t_a->GetQ(last_node_idx);
 
@@ -388,13 +450,17 @@ namespace Burs
         while (delta_s >= plan_parameters.epsilon_q)
         {
             double d_closest = this->GetClosestDistance(q_n);
+            std::cout << "burconnect closest: " << d_closest << "\n";
 
             if (d_closest > plan_parameters.d_crit)
             {
                 // if q_n is within the collision free bur of q, then we finish, game over
-                Bur b = this->GetBur(q_n, q, d_closest);
+                // std::cout << "before bur\n";
+                MatrixXd endpoint = this->GetEndpoints(q_n, q, d_closest);
+                // Bur b = this->GetBur(q_n, q, d_closest);
+                // std::cout << "after bur\n";
 
-                VectorXd q_t = b.endpoints.col(0);
+                VectorXd q_t = endpoint;
 
                 delta_s = (q_t - q_n).norm();
 
@@ -402,12 +468,13 @@ namespace Burs
 
                 if (q_n.isApprox(q, threshold))
                 {
+                    std::cout << "rBt reached\n";
                     return AlgorithmState::Reached;
                 }
             }
             else
             {
-                VectorXd q_t = this->GetEndpoints(q, q_n, plan_parameters.epsilon_q);
+                VectorXd q_t = this->GetEndpoints(q_n, q, plan_parameters.epsilon_q);
 
                 // if not colliding then proceed
                 if (!this->IsColliding(q_t))
@@ -416,14 +483,17 @@ namespace Burs
                 }
                 else
                 {
+                    std::cout << "RRT trapped\n";
                     return AlgorithmState::Trapped;
                 }
 
                 if ((q_n - q_0).norm() >= (q - q_0).norm())
                 {
+                    std::cout << "RRT reached\n";
                     return AlgorithmState::Reached;
                 }
             }
+            // std::cout << "iterating in burconnect\n";
         }
         return AlgorithmState::Trapped;
     }
@@ -448,8 +518,8 @@ namespace Burs
             // So either:
             //  1. iterate until 0.1*dc
             //  2. 4-5 iterations
-            for (unsigned int k = 0; k < 5; ++k)
-            // while (phi_result > d_small)
+            // for (unsigned int k = 0; k < 5; ++k)
+            while (phi_result > d_small)
             {
                 // CHECK: this is indeed PI away from q_near
                 phi_result = d_closest - this->RhoR(q_near, q_k);
@@ -470,29 +540,103 @@ namespace Burs
         return myBur;
     }
 
+    // MAYBE LATER: SAVE THE INTERMEDIATE STEPS
+    // std::vector<MatrixXd>
+    // RbtPlanner::GetSteppedEndpoints(const VectorXd &q_near, const MatrixXd &Q_e, double d_closest)
+    // {
+    //     double d_small = 0.1 * d_closest;
+    //     std::vector<MatrixXd> endpoints;
+    //     // MatrixXd::Zero(this->q_dim, Q_e.cols());
+
+    //     for (int i = 0; i < Q_e.cols(); ++i)
+    //     {
+    //         double tk = 0;
+
+    //         // always start out from the center
+    //         VectorXd q_k(q_near);
+    //         double phi_result = d_closest;
+
+    //         const VectorXd q_e = Q_e.col(i);
+
+    //         // They said 4-5 iterations to reach 0.1*closest_distance
+    //         // So either:
+    //         //  1. iterate until 0.1*dc
+    //         //  2. 4-5 iterations
+    //         // for (unsigned int k = 0; k < 5; ++k)
+    //         while (phi_result > d_small)
+    //         {
+    //             // CHECK: this is indeed PI away from q_near
+    //             phi_result = d_closest - this->RhoR(q_near, q_k);
+    //             double delta_tk = this->GetDeltaTk(phi_result, tk, q_e, q_k);
+    //             tk = tk + delta_tk;
+    //             // has actually never reached > 1
+    //             // if (tk > 1.0) // some tolerance
+    //             // {
+    //             //     q_k = q_e;
+    //             //     // std::runtime_error("t_k was greater than 1. This shouldn't happen.");
+    //             //     break;
+    //             // }
+    //             q_k = q_near + tk * (q_e - q_near);
+    //         }
+    //         endpoints.col(i) = q_k;
+    //     }
+    //     Bur myBur(q_near, endpoints);
+    //     return myBur;
+    // }
+
     std::vector<Eigen::VectorXd>
     RbtPlanner::Densify(const Eigen::VectorXd &src, const Eigen::VectorXd &tgt, const RbtParameters &plan_params)
     {
-        double threshold = plan_params.q_resolution;
+        // less than 2x upper distance between neighbouring positions
+        double upper_dist = plan_params.q_resolution * 0.5;
+        // const double max_dist = this->MaxMovedDistance(tgt, src);
+        // double current_max_dist = max_dist;
 
-        const auto max_dist = this->MaxMovedDistance(tgt, src);
+        std::vector<VectorXd> configs = {src, tgt};
+        // std::cout << "src: " << src.transpose() << "\n";
+        // std::cout << "tgt: " << tgt.transpose() << "\n";
 
-        const int steps = static_cast<int>(std::ceil(max_dist / threshold));
-        // Adjust for integer multiple of steps
-        threshold = max_dist / steps;
-
-        std::vector<Eigen::VectorXd> dense_path(steps + 1);
-        // Assuming src->tgt goes in a straight line
-        auto dir = (tgt - src).normalized();
-
-        for (int i = 0; i < steps + 1; ++i)
+        for (int i = 0; i + 1 < configs.size();)
         {
-            // i = 0 => src
-            // i = steps => src + steps * unit(tgt-src) * max_dist / steps = src + unit(tgt-src) * norm(tgt-src) = src + tgt - src == tgt
-            auto new_point = src + i * dir * threshold;
-            dense_path[i] = new_point;
-        }
+            VectorXd middle_config = (configs[i] + configs[i + 1]) * 0.5;
+            double tmp_dist = this->MaxMovedDistance(configs[i], middle_config);
 
-        return dense_path;
+            // std::cout << "tmpdist: " << tmp_dist << "\n";
+            if (tmp_dist > upper_dist)
+            {
+                configs.insert(configs.begin() + i + 1, middle_config);
+                // std::cout << "configs: " << configs.size() << "\n";
+            }
+            else
+            {
+                // std::cout << "LEVEL UP: " << tmp_dist << "<" << upper_dist << " i: " << i << "\n";
+                ++i;
+            }
+        }
+        // std::cout << "densified configs: " << configs.size() << "\n";
+        return configs;
+
+        // ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        // double threshold = plan_params.q_resolution;
+        // const double max_dist = this->MaxMovedDistance(tgt, src);
+
+        // const int steps = static_cast<int>(std::ceil(max_dist / threshold));
+
+        // // Adjust for integer multiple of steps
+        // threshold = max_dist / (double)steps;
+
+        // std::vector<Eigen::VectorXd> dense_path(steps + 1);
+        // // Assuming src->tgt goes in a straight line
+        // auto dir = (tgt - src).normalized();
+
+        // for (int i = 0; i < steps + 1; ++i)
+        // {
+        //     // i = 0 => src
+        //     // i = steps => src + steps * unit(tgt-src) * max_dist / steps = src + unit(tgt-src) * norm(tgt-src) = src + tgt - src == tgt
+        //     auto new_point = src + i * dir * threshold;
+        //     dense_path[i] = new_point;
+        // }
+
+        // return dense_path;
     }
 }

@@ -23,9 +23,8 @@ namespace Burs
 
         if (!this->IsColliding(q_new))
         {
-            t->AddNode(node_idx, q_new);
             // The result is the INDEX of the new node => 0 to N-1
-            return t->GetNumberOfNodes() - 1;
+            return t->AddNode(node_idx, q_new);
         }
         return -1;
     }
