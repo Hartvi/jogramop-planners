@@ -315,7 +315,7 @@ namespace Burs
                     // Bur b = this->ExtendTowardsCartesian(q_near, planner_parameters, d_closest);
 
                     // limit to max pi rotation
-                    this->GetEndpoints(Qe, q_near, planner_parameters.delta_q);
+                    this->SetEndpoints(Qe, q_near, planner_parameters.delta_q);
                     new_bur = this->GetBur(q_near, Qe, d_closest);
                 }
 

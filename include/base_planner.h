@@ -27,6 +27,9 @@ namespace Burs
 
         virtual ~BasePlanner() = default;
 
+        void
+        SetEndpoints(MatrixXd &Qe, const VectorXd &q_near, const double &factor) const;
+
         VectorXd
         GetEndpoint(const VectorXd &q_ei, const VectorXd &q_near, double factor) const;
 

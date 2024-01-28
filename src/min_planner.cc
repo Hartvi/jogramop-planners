@@ -35,28 +35,6 @@ namespace Burs
         return m;
     }
 
-    void
-    MinPlanner::GetEndpoints(MatrixXd &Qe, const VectorXd &q_near, const double &factor) const
-    {
-        // MatrixXd normalized_Qe = Qe; // Create a copy of Qe to store the normalized results
-        for (int j = 0; j < Qe.cols(); ++j)
-        {
-            Qe.col(j) = GetEndpoint(Qe.col(j), q_near, factor);
-        }
-    }
-
-    VectorXd
-    MinPlanner::GetEndpoint(const VectorXd &q_ei, const VectorXd &q_near, const double &factor) const
-    {
-        VectorXd diff = q_ei - q_near;
-        double n = diff.norm();
-        if (n < factor)
-        {
-            return q_ei;
-        }
-        return q_near + factor * diff / n;
-    }
-
     VectorXd
     MinPlanner::Nearest(std::shared_ptr<BurTree> t, VectorXd &q)
     {

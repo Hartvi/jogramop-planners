@@ -50,7 +50,7 @@ namespace Burs
         GetDeltaTk(double phi_tk, double tk, const VectorXd &q_e, const VectorXd &q_k) const;
 
         // void
-        // GetEndpoints(MatrixXd &Qe, const VectorXd &q_near, double factor) const;
+        // SetEndpoints(MatrixXd &Qe, const VectorXd &q_near, double factor) const;
 
         // std::optional<std::vector<Eigen::VectorXd>>
         // RRTConnect(const VectorXd &q_start, const VectorXd &q_goal, const RbtParameters &plan_parameters, PlanningResult &planning_result);

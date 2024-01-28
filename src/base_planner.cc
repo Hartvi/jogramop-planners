@@ -62,6 +62,17 @@ namespace Burs
             }
         }
     }
+
+    void
+    BasePlanner::SetEndpoints(MatrixXd &Qe, const VectorXd &q_near, const double &factor) const
+    {
+        // MatrixXd normalized_Qe = Qe; // Create a copy of Qe to store the normalized results
+        for (int j = 0; j < Qe.cols(); ++j)
+        {
+            Qe.col(j) = GetEndpoint(Qe.col(j), q_near, factor);
+        }
+    }
+
     VectorXd
     BasePlanner::GetEndpoint(const VectorXd &q_ei, const VectorXd &q_near, double factor) const
     {
