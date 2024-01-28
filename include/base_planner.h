@@ -27,11 +27,17 @@ namespace Burs
 
         virtual ~BasePlanner() = default;
 
-        void
-        SetEndpoints(MatrixXd &Qe, const VectorXd &q_near, const double &factor) const;
+        double
+        GetDistToGoal(const VectorXd &q, const KDL::Vector &goal_pos) const;
 
-        VectorXd
-        GetEndpoint(const VectorXd &q_ei, const VectorXd &q_near, double factor) const;
+        KDL::Frame
+        GetEEPose(const VectorXd &q) const;
+
+        double
+        GetDeltaTk(double phi_tk, double tk, const VectorXd &q_e, const VectorXd &q_k) const;
+
+        MatrixXd
+        GetEndpoints(const VectorXd &q_near, const MatrixXd &Q_e, double d_max) const;
 
         // EXAMPLE USAGE OF BASIC FUNCTIONS
         void
@@ -44,6 +50,9 @@ namespace Burs
         std::shared_ptr<URDFEnv> myEnv;
 
         std::shared_ptr<RobotCollision> myRobot;
+
+        RadiusFuncParallel radius_func;
+        ForwardKinematicsParallel forwardKinematicsParallel;
     };
 }
 

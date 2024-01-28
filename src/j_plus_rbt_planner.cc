@@ -232,7 +232,7 @@ namespace Burs
                     if (pinv_solver.CartToJnt(q_kdl, new_twist_target, q_kdl_dot) >= 0)
                     {
                         Eigen::VectorXd delta_q = q_kdl_dot.data;
-                        // q_new = this->GetEndpoint(q_dir, q_near, planner_parameters.epsilon_q);
+                        // q_new = this->GetEndpoints(q_dir, q_near, planner_parameters.epsilon_q);
                         q_new = (q_near + delta_q).normalized() * planner_parameters.epsilon_q;
                     }
                     else
@@ -245,7 +245,7 @@ namespace Burs
                 {
                     // Random direction
                     Eigen::VectorXd q_dir = this->GetRandomQ(1);
-                    q_new = this->GetEndpoint(q_dir, q_near, planner_parameters.epsilon_q);
+                    q_new = this->GetEndpoints(q_dir, q_near, planner_parameters.epsilon_q);
                 }
 
                 getTime(&tt1);
@@ -315,8 +315,11 @@ namespace Burs
                     // Bur b = this->ExtendTowardsCartesian(q_near, planner_parameters, d_closest);
 
                     // limit to max pi rotation
-                    this->SetEndpoints(Qe, q_near, planner_parameters.delta_q);
-                    new_bur = this->GetBur(q_near, Qe, d_closest);
+                    Qe = this->GetEndpoints(q_near, Qe, d_closest);
+                    new_bur.center = q_near;
+                    new_bur.endpoints = Qe;
+                    // this->SetEndpoints(Qe, q_near, planner_parameters.delta_q);
+                    // new_bur = this->GetBur(q_near, Qe, d_closest);
                 }
 
                 for (int i = 0; i < planner_parameters.num_spikes; ++i)
@@ -571,7 +574,7 @@ namespace Burs
             if (pinv_solver.CartToJnt(q_kdl, new_twist_target, q_kdl_dot) >= 0)
             {
                 Eigen::VectorXd delta_q = q_kdl_dot.data;
-                // q_new = this->GetEndpoint(q_dir, q_near, planner_parameters.epsilon_q);
+                // q_new = this->GetEndpoints(q_dir, q_near, planner_parameters.epsilon_q);
                 q_new = (q_old + delta_q).normalized() * plan_params.epsilon_q;
             }
             else

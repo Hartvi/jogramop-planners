@@ -1,6 +1,7 @@
 #include <kdl_parser/kdl_parser.hpp>
 #include <kdl/chainfksolverpos_recursive.hpp>
 #include <kdl/frames_io.hpp>
+#include <kdl/chainjnttojacsolver.hpp>
 
 #include <urdf_model/model.h>
 #include <urdf_parser/urdf_parser.h>
@@ -720,6 +721,51 @@ namespace Burs
             throw std::runtime_error("RobotBase::ForwardPass failed.");
         }
         return p_out;
+    }
+
+    KDL::Jacobian
+    RobotBase::CachedJacobian(const VectorXd &q_in)
+    {
+        // IF CACHED:
+        std::vector<double> vec(q_in.data(), q_in.data() + q_in.size());
+
+        /* ERROR: caching causes hash conflict and the robot to JUMP BETWEEN FAR CONFIGS !!! */
+
+        // Find the key in the map
+        auto it = this->jacResults.find(vec);
+        if (it != this->jacResults.end())
+        {
+            // Key found, return the associated value
+            // std::cout << "cached: " << this->fkResults.size() << "\n";
+            auto res = it->second;
+            // if (this->fkResults.size() > 1000)
+            // {
+            //     this->fkResults.clear();
+            // }
+            return res;
+        }
+
+        // IF SEEING FOR FIRST TIME:
+        auto j_out = this->ForwardJac(q_in);
+        this->jacResults[vec] = j_out;
+        return j_out;
+    }
+
+    KDL::Jacobian
+    RobotBase::ForwardJac(const VectorXd &q_in)
+    {
+        KDL::JntArray q_kdl;
+        q_kdl.data = q_in;
+
+        KDL::Jacobian jac;
+
+        KDL::ChainJntToJacSolver jac_solver(this->kdl_chain);
+
+        if (jac_solver.JntToJac(q_kdl, jac) < 0)
+        {
+            throw std::runtime_error("RobotBase::ForwardJac failed.");
+        }
+        return jac;
     }
 
     VectorXd

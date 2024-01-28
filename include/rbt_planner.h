@@ -82,8 +82,6 @@ namespace Burs
         Densify(const VectorXd &src, const VectorXd &tgt, const RbtParameters &plan_params);
 
     protected:
-        RadiusFuncParallel radius_func;
-        ForwardKinematicsParallel forwardKinematicsParallel;
         bool checkGround;
 
         // int num_spikes;

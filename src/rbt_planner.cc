@@ -1,3 +1,4 @@
+#include <cmath>
 #include <optional>
 #include "collision_env.h"
 #include "base_planner.h"
@@ -22,11 +23,6 @@ namespace Burs
     RbtPlanner::RbtPlanner(std::string path_to_urdf_file)
         : RRTPlanner(path_to_urdf_file)
     {
-        auto my_env = this->GetEnv<URDFEnv>();
-        auto my_robot = my_env->myURDFRobot;
-
-        this->forwardKinematicsParallel = my_robot->GetForwardPointParallelFunc();
-        this->radius_func = my_robot->GetRadiusFunc();
     }
 
     RbtPlanner::RbtPlanner() : RRTPlanner()
@@ -83,8 +79,6 @@ namespace Burs
             // random column
             int nearest_idx = t_a->Nearest(Qe.col(0).data());
             VectorXd q_near = t_a->GetQ(nearest_idx);
-
-            SetEndpoints(Qe, q_near, plan_parameters.delta_q);
 
             // Slow => maybe in the future use FCL and somehow compile it because it had a ton of compilation errors and version mismatches
             double d_closest = this->GetClosestDistance(q_near);
@@ -206,7 +200,7 @@ namespace Burs
         //     for (int i = 0; i < plan_parameters.num_spikes; i++)
         //     {
         //         VectorXd q_e_i = Qe.col(i);
-        //         q_e_i = this->GetEndpoint(q_e_i, q_near, plan_parameters.delta_q);
+        //         q_e_i = this->GetEndpoints(q_e_i, q_near, plan_parameters.delta_q);
         //         Qe.col(i).array() = q_e_i;
         //     }
 
@@ -226,7 +220,7 @@ namespace Burs
         //         std::cout << "d < d_crit" << std::endl;
         //         // q_new from above, will be used as the new endpoint for BurConnect
         //         // small step RRT
-        //         q_new = this->GetEndpoint(q_e_0, q_near, plan_parameters.epsilon_q);
+        //         q_new = this->GetEndpoints(q_e_0, q_near, plan_parameters.epsilon_q);
         //         std::cout << "q_new: " << q_new.transpose() << std::endl;
 
         //         if (!this->IsColliding(q_new))
@@ -320,7 +314,7 @@ namespace Burs
             for (int i = 0; i < plan_parameters.num_spikes; i++)
             {
                 VectorXd q_e_i = Qe.col(i);
-                q_e_i = this->GetEndpoint(q_e_i, q_near, plan_parameters.delta_q);
+                q_e_i = this->GetEndpoints(q_e_i, q_near, plan_parameters.delta_q);
                 Qe.col(i).array() = q_e_i;
             }
 
@@ -340,7 +334,7 @@ namespace Burs
                 std::cout << "d < d_crit" << std::endl;
                 // q_new from above, will be used as the new endpoint for BurConnect
                 // small step RRT
-                q_new = this->GetEndpoint(q_e_0, q_near, plan_parameters.epsilon_q);
+                q_new = this->GetEndpoints(q_e_0, q_near, plan_parameters.epsilon_q);
                 std::cout << "q_new: " << q_new.transpose() << std::endl;
 
                 if (!this->IsColliding(q_new))
@@ -413,7 +407,7 @@ namespace Burs
             }
             else
             {
-                VectorXd q_t = this->GetEndpoint(q, q_n, plan_parameters.epsilon_q);
+                VectorXd q_t = this->GetEndpoints(q, q_n, plan_parameters.epsilon_q);
 
                 // if not colliding then proceed
                 if (!this->IsColliding(q_t))
@@ -479,27 +473,26 @@ namespace Burs
     std::vector<Eigen::VectorXd>
     RbtPlanner::Densify(const Eigen::VectorXd &src, const Eigen::VectorXd &tgt, const RbtParameters &plan_params)
     {
-        std::vector<Eigen::VectorXd> dense_path;
-        dense_path.push_back(src);
-
-        Eigen::VectorXd delta_path = tgt - src;
         double threshold = plan_params.q_resolution;
-        double delta_path_norm = delta_path.norm();
 
-        // Calculate the number of steps needed
-        int steps = static_cast<int>(std::ceil(delta_path_norm / threshold));
-        // 2>1 => 2 steps
-        // Adjust threshold to evenly distribute points
-        threshold = delta_path_norm / steps; // => split in half
+        const auto max_dist = this->MaxMovedDistance(tgt, src);
 
-        for (int i = 1; i < steps; ++i)
+        const int steps = static_cast<int>(std::ceil(max_dist / threshold));
+        // Adjust for integer multiple of steps
+        threshold = max_dist / steps;
+
+        std::vector<Eigen::VectorXd> dense_path(steps + 1);
+        // Assuming src->tgt goes in a straight line
+        auto dir = (tgt - src).normalized();
+
+        for (int i = 0; i < steps + 1; ++i)
         {
-            Eigen::VectorXd new_point = src + i * threshold * delta_path.normalized();
-            dense_path.push_back(new_point);
+            // i = 0 => src
+            // i = steps => src + steps * unit(tgt-src) * max_dist / steps = src + unit(tgt-src) * norm(tgt-src) = src + tgt - src == tgt
+            auto new_point = src + i * dir * threshold;
+            dense_path[i] = new_point;
         }
-        dense_path.push_back(tgt);
 
         return dense_path;
     }
-
 }

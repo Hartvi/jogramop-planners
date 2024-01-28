@@ -40,6 +40,7 @@ namespace Burs
         // TODO: cache like this?????
         // it has to be ideally < 6 elements
         std::map<std::vector<double>, std::vector<KDL::Frame>> fkResults;
+        std::map<std::vector<double>, KDL::Jacobian> jacResults;
 
         // std::shared_ptr<KDL::ChainFkSolverPos_recursive> fk_solver;
 
@@ -107,6 +108,12 @@ namespace Burs
 
         std::vector<KDL::Frame>
         ForwardPass(const Eigen::VectorXd &q_in);
+
+        KDL::Jacobian
+        CachedJacobian(const VectorXd &q_in);
+
+        KDL::Jacobian
+        ForwardJac(const VectorXd &q_in);
 
         static Eigen::VectorXd
         parseCSVToVectorXd(const std::string &path);

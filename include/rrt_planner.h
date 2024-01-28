@@ -20,14 +20,8 @@ namespace Burs
 
         virtual ~RRTPlanner() = default;
 
-        double
-        GetDistToGoal(const VectorXd &q, const KDL::Vector &goal_pos) const;
-
-        KDL::Frame
-        GetEEPose(const VectorXd &q) const;
-
         int
-        RRTStep(std::shared_ptr<BurTree> t, int node_idx, VectorXd rand_q, const Meters &epsilon_q) const;
+        RRTStep(std::shared_ptr<BurTree> t, int node_idx, const VectorXd &rand_q, const Meters &epsilon_q) const;
 
         std::optional<std::vector<Eigen::VectorXd>> RRTConnect(const VectorXd &q_start, const VectorXd &q_goal, const RRTParameters &plan_parameters, PlanningResult &planning_result);
 
