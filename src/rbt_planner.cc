@@ -148,15 +148,6 @@ namespace Burs
 
                     for (VectorXd &point : max_epsilon_separated_points)
                     {
-                        // if (this->IsColliding(point))
-                        // {
-                        //     // std::cout << "TRYING TO ADD COLLIDING POINT\n";
-                        //     double collide_dist = this->MaxMovedDistance(q_near, point);
-                        //     // std::cout << "col point: " << point.transpose() << "\n";
-                        //     // std::cout << "distance from q_near to colliding point: " << collide_dist << "\n";
-                        //     // k = plan_parameters.max_iters;
-                        //     throw std::runtime_error("");
-                        // }
                         prev_idx = t_a->AddNode(prev_idx, point);
 
                         // Measure distance to goal if this is the starting tree
@@ -446,12 +437,14 @@ namespace Burs
 
         double delta_s = 1e14;
         double threshold = 1e-2;
+        int previous_step = nearest_index;
 
-        while (delta_s >= plan_parameters.epsilon_q)
+        while (delta_s >= plan_parameters.delta_q)
         {
             double d_closest = this->GetClosestDistance(q_n);
-            std::cout << "burconnect closest: " << d_closest << "\n";
+            // std::cout << "BC CLOSE: " << d_closest << "\n";
 
+            // TODO: interpolate burconnect as well
             if (d_closest > plan_parameters.d_crit)
             {
                 // if q_n is within the collision free bur of q, then we finish, game over
@@ -464,11 +457,14 @@ namespace Burs
 
                 delta_s = (q_t - q_n).norm();
 
+                std::vector<VectorXd> configs = this->Densify(q_n, q_t, plan_parameters);
+                previous_step = this->AddPointsExceptFirst(t, previous_step, configs);
+
                 q_n = q_t;
 
                 if (q_n.isApprox(q, threshold))
                 {
-                    std::cout << "rBt reached\n";
+                    std::cout << "RBT reached\n";
                     return AlgorithmState::Reached;
                 }
             }
@@ -476,15 +472,16 @@ namespace Burs
             {
                 VectorXd q_t = this->GetEndpoints(q_n, q, plan_parameters.epsilon_q);
 
-                // if not colliding then proceed
-                if (!this->IsColliding(q_t))
-                {
-                    q_n = q_t;
-                }
-                else
+                int step_result = this->RRTStep(t, previous_step, q, plan_parameters.epsilon_q);
+                if (step_result < 0)
                 {
                     std::cout << "RRT trapped\n";
                     return AlgorithmState::Trapped;
+                }
+                else
+                {
+                    previous_step = step_result;
+                    q_n = q_t;
                 }
 
                 if ((q_n - q_0).norm() >= (q - q_0).norm())
@@ -494,7 +491,16 @@ namespace Burs
                 }
             }
             // std::cout << "iterating in burconnect\n";
+            // if (delta_s < plan_parameters.epsilon_q)
+            // {
+            //     std::cout << "delta_s: " << delta_s << " epsilon: " << plan_parameters.epsilon_q << "\n";
+            // }
+            // else
+            // {
+            //     std::cout << "delta_s: " << delta_s << "\n";
+            // }
         }
+        // std::cout << "TRAPPED DELTA S TOO SMALL\n";
         return AlgorithmState::Trapped;
     }
 
@@ -583,6 +589,17 @@ namespace Burs
     //     Bur myBur(q_near, endpoints);
     //     return myBur;
     // }
+
+    int
+    RbtPlanner::AddPointsExceptFirst(std::shared_ptr<BurTree> t, const int &first_el_idx, const std::vector<VectorXd> vec)
+    {
+        int prev_id = first_el_idx;
+        for (unsigned int i = 1; i < vec.size(); ++i)
+        {
+            prev_id = t->AddNode(prev_id, vec[i]);
+        }
+        return prev_id;
+    }
 
     std::vector<Eigen::VectorXd>
     RbtPlanner::Densify(const Eigen::VectorXd &src, const Eigen::VectorXd &tgt, const RbtParameters &plan_params)

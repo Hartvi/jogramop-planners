@@ -81,8 +81,10 @@ namespace Burs
         // AlgorithmState
         // GreedyExtendRandomConfig(std::shared_ptr<BurTree> t_a, Eigen::VectorXd closest_q, const RbtParameters &planner_parameters);
 
-        std::vector<Eigen::VectorXd>
-        Densify(const VectorXd &src, const VectorXd &tgt, const RbtParameters &plan_params);
+        int
+        AddPointsExceptFirst(std::shared_ptr<BurTree> t, const int &first_el_idx, const std::vector<VectorXd> vec);
+
+        std::vector<Eigen::VectorXd> Densify(const VectorXd &src, const VectorXd &tgt, const RbtParameters &plan_params);
 
     protected:
         bool checkGround;
