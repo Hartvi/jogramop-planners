@@ -66,8 +66,8 @@ namespace Burs
         // std::vector<Eigen::VectorXd>
         // Path(std::shared_ptr<BurTree> t_a, int a_closest, std::shared_ptr<BurTree> t_b, int b_closest);
 
-        AlgorithmState
-        BurConnect(std::shared_ptr<BurTree> t, VectorXd &q, const RbtParameters &plan_parameters);
+        std::pair<AlgorithmState, int>
+        BurConnect(std::shared_ptr<BurTree> t, VectorXd &q, const RbtParameters &plan_parameters, const KDL::Vector &goal_ee, VectorXd &q_best, double &best_dist);
 
         Bur
         GetBur(const VectorXd &q_near, const MatrixXd &Q_e, double d_closest);

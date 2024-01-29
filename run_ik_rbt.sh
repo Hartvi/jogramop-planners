@@ -7,14 +7,14 @@
 -max_iters 100000 \
 -d_crit 0.1 \
 -delta_q 3.0 \
--epsilon_q 0.8 \
+-epsilon_q 0.08 \
 -num_spikes 7 \
 -p_close_enough 0.015 \
 -prob_steer 0.2 \
 -target_prefix /home/hartvi/Documents/CVUT/diploma_thesis/burs_of_free_space/lel \
 -render 0 \
 -vis_script /home/hartvi/Documents/CVUT/diploma_thesis/burs_of_free_space/scripts/animate_scene.py \
--cx 3 \
+-cx -3 \
 -cy 1 \
 -cz 7 \
 -groundLevel 0.00 \

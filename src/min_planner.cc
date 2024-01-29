@@ -104,6 +104,8 @@ namespace Burs
         do
         {
             res_b.push_back(node_id_b);
+            // std::cout << "node:\n"
+            //           << t_b->GetQ(node_id_b).transpose() << "\n\n";
             node_id_b = t_b->GetParentIdx(node_id_b);
         } while (node_id_b != -1);
 

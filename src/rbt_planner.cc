@@ -90,6 +90,8 @@ namespace Burs
             // Random column
             int nearest_idx = t_a->Nearest(Qe.col(0).data());
             VectorXd q_near = t_a->GetQ(nearest_idx);
+            std::cout << "q_near:\n"
+                      << q_near.transpose() << "\n";
 
             // Slow => maybe in the future use FCL and somehow compile it because it had a ton of compilation errors and version mismatches
             double d_closest = this->GetClosestDistance(q_near);
@@ -122,34 +124,18 @@ namespace Burs
             {
                 // Qe is scaled to max euclidean delta_q or closest obstacle distance
                 MatrixXd endpoints = this->GetEndpoints(q_near, Qe, std::min(d_closest, plan_parameters.delta_q));
-                // std::cout << "dclosest: " << d_closest << "\n";
-                // for (unsigned int i = 0; i < endpoints.cols(); ++i)
-                // {
-                //     double bur_dist = this->MaxMovedDistance(q_near, endpoints.col(i));
-                //     std::cout << "bur max dist: " << bur_dist << "\n";
+                // TRAVELLED DISTANCES ARE INDEED ALWAYS SMALLER THAN D_CLOSEST
 
-                //     // if (this->IsColliding(end))
-                //     // {
-                //     //     std::cout << "TRYING TO ADD COLLIDING POINT\n";
-                //     //     double collide_dist = this->MaxMovedDistance(q_near, point);
-                //     //     std::cout << "col point: " << point.transpose() << "\n";
-                //     //     std::cout << "distance from q_near to colliding point: " << collide_dist << "\n";
-                //     //     // k = plan_parameters.max_iters;
-                //     //     // throw std::runtime_error("");
-                //     // }
-                // }
-
-                // TRAVELLED DISTANCES ARE ALWAYS SMALLER THAN D_CLOSEST
                 for (unsigned int i = 0; i < endpoints.cols(); ++i)
                 {
                     auto endpoint = endpoints.col(i);
                     auto max_epsilon_separated_points = this->Densify(q_near, endpoint, plan_parameters);
                     int prev_idx = nearest_idx; // idx of q_near
 
+                    this->AddPointsExceptFirst(t_a, prev_idx, max_epsilon_separated_points);
+
                     for (VectorXd &point : max_epsilon_separated_points)
                     {
-                        prev_idx = t_a->AddNode(prev_idx, point);
-
                         // Measure distance to goal if this is the starting tree
                         if (t_a == t_start)
                         {
@@ -171,21 +157,53 @@ namespace Burs
             int last_node_idx = t_a->GetNumberOfNodes() - 1;
             VectorXd q_new = t_a->GetQ(last_node_idx);
 
-            AlgorithmState status = this->BurConnect(t_b, q_new, plan_parameters);
+            auto [status, best_idx_t_b] = this->BurConnect(t_b, q_new, plan_parameters, ee_goal, q_best, best_dist);
             if (status == AlgorithmState::Reached)
             {
+                // std::cout << "t_a q_new: \n"
+                //           << q_new.transpose() << "\n";
+                // std::cout << "t_b q_best: \n"
+                //           << t_b->GetQ(best_idx_t_b).transpose() << "\n";
+                // if (t_b == t_start)
+                // {
+                //     std::cout << "reached when t_b == t_start\n";
+                // }
+                // else
+                // {
+                //     std::cout << "reached when t_b == t_goal\n";
+                //     // exit(1);
+                // }
+                int start_closest;
+                int goal_closest;
+                if (t_b == t_goal)
+                {
+                    goal_closest = best_idx_t_b;
+                    start_closest = last_node_idx;
+                }
+                else
+                { // t_b == t_start
+                    start_closest = best_idx_t_b;
+                    goal_closest = last_node_idx;
+                }
                 // `q_new` is in `t_a`
                 // `t_b` extends to `q_new` => it has a node near `q_new`
-                int a_closest = t_start->Nearest(q_new.data());
-                int b_closest = t_goal->Nearest(q_new.data());
+                // int a_closest = t_start->Nearest(q_new.data());
+                // int b_closest = t_goal->Nearest(q_new.data());
 
                 planning_result.distance_to_goal = 0.0;
                 planning_result.num_iterations = k;
                 planning_result.tree_size = t_start->GetNumberOfNodes() + t_goal->GetNumberOfNodes();
                 planning_result.success = true;
-                return this->Path(t_start, a_closest, t_goal, b_closest);
-            }
 
+                // std::cout << "start node: \n"
+                //           << t_start->GetQ(start_closest).transpose() << "\n";
+                // std::cout << "goal node: \n"
+                //           << t_goal->GetQ(goal_closest).transpose() << "\n";
+                auto path = this->Path(t_start, start_closest, t_goal, goal_closest);
+                // std::cout << "path ";
+                return path;
+            }
+            // exit(1);
             std::swap(t_a, t_b);
         }
 
@@ -197,243 +215,16 @@ namespace Burs
         planning_result.distance_to_goal = this->GetDistToGoal(q_best, ee_goal);
 
         return this->ConstructPathFromTree(t_start, best_idx);
-
-        // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        // auto env = this->GetEnv<URDFEnv>();
-        // KDL::ChainFkSolverPos_recursive fk_solver(env->myURDFRobot->kdl_chain);
-        // planning_result.distance_to_goal = 1e10;
-        // KDL::Frame p_out;
-        // KDL::Vector p_goal;
-        // KDL::JntArray q_kdl(this->q_dim);
-        // Eigen::VectorXd best_q;
-
-        // q_kdl.data = q_goal;
-        // if (fk_solver.JntToCart(q_kdl, p_out) >= 0)
-        // {
-        //     p_goal = p_out.p;
-        // }
-        // else
-        // {
-        //     throw std::runtime_error("RbtConnect: couldn't perform forward kinematics for goal position");
-        // }
-        // // std::cout << "goal pos: " << p_goal << "\n";
-
-        // q_kdl.data = q_start;
-        // // std::cout << "qkdl data: " << q_kdl.data.transpose() << " p_pout: " << p_out << "\n";
-        // if (fk_solver.JntToCart(q_kdl, p_out) >= 0)
-        // {
-        //     double new_distance = (p_out.p - p_goal).Norm();
-        //     if (planning_result.distance_to_goal > new_distance)
-        //     {
-        //         planning_result.distance_to_goal = new_distance;
-        //         best_q = q_start;
-        //     }
-        // }
-        // else
-        // {
-        //     throw std::runtime_error("RbtConnect: couldn't perform forward kinematics for start position");
-        // }
-
-        // for (int k = 0; k < plan_parameters.max_iters; k++)
-        // {
-        //     VectorXd q_new(this->q_dim);
-        //     /*
-        //     for i in 1:N:
-        //         Qe |= random_config()
-        //     */
-        //     Eigen::MatrixXd Qe = this->GetRandomQ(plan_parameters.num_spikes);
-
-        //     // random growth direction; can be any other among the random vectors from Qe
-        //     VectorXd q_e_0 = Qe.col(0);
-        //     // q_near <- NEAREST(q_{e1}, T_a)
-        //     int nearest_index = this->NearestIndex(t_a, q_e_0);
-
-        //     const VectorXd q_near = t_a->GetQ(nearest_index);
-
-        //     for (int i = 0; i < plan_parameters.num_spikes; i++)
-        //     {
-        //         VectorXd q_e_i = Qe.col(i);
-        //         q_e_i = this->GetEndpoints(q_e_i, q_near, plan_parameters.delta_q);
-        //         Qe.col(i).array() = q_e_i;
-        //     }
-
-        //     // dc(q_near)
-        //     double d_closest = this->GetClosestDistance(q_near);
-        //     // std::cout << "d_closest: " << d_closest << std::endl;
-
-        //     // if (d_closest < 1e-3)
-        //     // {
-        //     //     std::cout << "CLOSEST DISTANCE TOO SMALL" << std::endl;
-
-        //     //     return {};
-        //     // }
-
-        //     if (d_closest < plan_parameters.d_crit)
-        //     {
-        //         std::cout << "d < d_crit" << std::endl;
-        //         // q_new from above, will be used as the new endpoint for BurConnect
-        //         // small step RRT
-        //         q_new = this->GetEndpoints(q_e_0, q_near, plan_parameters.epsilon_q);
-        //         std::cout << "q_new: " << q_new.transpose() << std::endl;
-
-        //         if (!this->IsColliding(q_new))
-        //         {
-        //             t_a->AddNode(nearest_index, q_new);
-        //         }
-        //         else
-        //         {
-        //             // if small basic rrt collides, then don't go here, hence the `continue`
-        //             continue;
-        //         }
-        //     }
-        //     else
-        //     {
-        //         Bur b = this->GetBur(q_near, Qe, d_closest);
-
-        //         for (int i = 0; i < Qe.cols(); ++i)
-        //         {
-        //             t_a->AddNode(nearest_index, b.endpoints.col(i));
-        //         }
-        //         // doesn't matter which column, since they all go in random directions
-        //         q_new = b.endpoints.col(0);
-        //     }
-
-        //     q_kdl.data = q_new;
-        //     if (fk_solver.JntToCart(q_kdl, p_out) >= 0)
-        //     {
-        //         double new_distance = (p_out.p - p_goal).Norm();
-        //         if (planning_result.distance_to_goal > new_distance)
-        //         {
-        //             planning_result.distance_to_goal = new_distance;
-        //             best_q = q_start;
-        //         }
-        //     }
-        //     else
-        //     {
-        //         throw std::runtime_error("RbtConnect: couldn't perform forward kinematics for progress check");
-        //     }
-
-        //     // if reached, then index is the closest node in `t_b` to `q_new` in `t_a`
-        //     AlgorithmState status = this->BurConnect(t_b, q_new, plan_parameters);
-        //     if (status == AlgorithmState::Reached)
-        //     {
-        //         int a_closest = t_start->Nearest(q_new.data());
-        //         int b_closest = t_goal->Nearest(q_new.data());
-
-        //         planning_result.num_iterations = k;
-        //         planning_result.tree_size = t_start->GetNumberOfNodes() + t_goal->GetNumberOfNodes();
-        //         planning_result.success = true;
-        //         return this->Path(t_start, a_closest, t_goal, b_closest);
-        //     }
-
-        //     std::swap(t_a, t_b);
-        // }
-
-        // planning_result.num_iterations = plan_parameters.max_iters;
-        // planning_result.tree_size = t_start->GetNumberOfNodes() + t_goal->GetNumberOfNodes();
-        // planning_result.success = false;
-
-        // int last_idx = t_start->Nearest(best_q.data());
-        // return this->ConstructPathFromTree(t_start, last_idx);
     }
 
-    std::optional<std::vector<Eigen::VectorXd>>
-    // RbtPlanner::RbtConnect(const VectorXd &q_start, const VectorXd &q_goal)
-    RbtPlanner::RbtConnect(const VectorXd &q_start, const VectorXd &q_goal, const RbtParameters &plan_parameters)
-    {
-        // start of actual algorithm
-        std::shared_ptr<BurTree> t_start = std::make_shared<BurTree>(q_start, q_start.rows());
-        std::shared_ptr<BurTree> t_goal = std::make_shared<BurTree>(q_goal, q_goal.rows());
-        auto t_a = t_start;
-        auto t_b = t_goal;
-        // TODO: check collision at the beginning
-
-        for (int k = 0; k < plan_parameters.max_iters; k++)
-        {
-            VectorXd q_new(this->q_dim);
-            /*
-            for i in 1:N:
-                Qe |= random_config()
-            */
-            Eigen::MatrixXd Qe = this->GetRandomQ(plan_parameters.num_spikes);
-
-            // random growth direction; can be any other among the random vectors from Qe
-            VectorXd q_e_0 = Qe.col(0);
-            // q_near <- NEAREST(q_{e1}, T_a)
-            int nearest_index = this->NearestIndex(t_a, q_e_0);
-
-            const VectorXd q_near = t_a->GetQ(nearest_index);
-
-            for (int i = 0; i < plan_parameters.num_spikes; i++)
-            {
-                VectorXd q_e_i = Qe.col(i);
-                q_e_i = this->GetEndpoints(q_e_i, q_near, plan_parameters.delta_q);
-                Qe.col(i).array() = q_e_i;
-            }
-
-            // dc(q_near)
-            double d_closest = this->GetClosestDistance(q_near);
-            // std::cout << "d_closest: " << d_closest << std::endl;
-
-            // if (d_closest < 1e-3)
-            // {
-            //     std::cout << "CLOSEST DISTANCE TOO SMALL" << std::endl;
-
-            //     return {};
-            // }
-
-            if (d_closest < plan_parameters.d_crit)
-            {
-                std::cout << "d < d_crit" << std::endl;
-                // q_new from above, will be used as the new endpoint for BurConnect
-                // small step RRT
-                q_new = this->GetEndpoints(q_e_0, q_near, plan_parameters.epsilon_q);
-                std::cout << "q_new: " << q_new.transpose() << std::endl;
-
-                if (!this->IsColliding(q_new))
-                {
-                    t_a->AddNode(nearest_index, q_new);
-                }
-                else
-                {
-                    // if small basic rrt collides, then don't go here, hence the `continue`
-                    continue;
-                }
-            }
-            else
-            {
-                Bur b = this->GetBur(q_near, Qe, d_closest);
-
-                for (int i = 0; i < Qe.cols(); ++i)
-                {
-                    t_a->AddNode(nearest_index, b.endpoints.col(i));
-                }
-                // doesn't matter which column, since they all go in random directions
-                q_new = b.endpoints.col(0);
-            }
-
-            // if reached, then index is the closest node in `t_b` to `q_new` in `t_a`
-            AlgorithmState status = this->BurConnect(t_b, q_new, plan_parameters);
-            if (status == AlgorithmState::Reached)
-            {
-                int a_closest = t_start->Nearest(q_new.data());
-                int b_closest = t_goal->Nearest(q_new.data());
-
-                return this->Path(t_start, a_closest, t_goal, b_closest);
-            }
-
-            std::swap(t_a, t_b);
-        }
-        return {};
-    }
-
-    AlgorithmState
-    RbtPlanner::BurConnect(std::shared_ptr<BurTree> t, VectorXd &q, const RbtParameters &plan_parameters)
+    std::pair<AlgorithmState, int>
+    RbtPlanner::BurConnect(std::shared_ptr<BurTree> t, VectorXd &q, const RbtParameters &plan_parameters, const KDL::Vector &goal_ee, VectorXd &q_best, double &best_dist)
     {
         int nearest_index = t->Nearest(q.data());
 
         VectorXd q_n = t->GetQ(nearest_index);
         VectorXd q_0(q_n);
+        double initial_distance = this->MaxMovedDistance(q_0, q);
 
         double delta_s = 1e14;
         double threshold = 1e-2;
@@ -452,20 +243,39 @@ namespace Burs
                 MatrixXd endpoint = this->GetEndpoints(q_n, q, d_closest);
                 // Bur b = this->GetBur(q_n, q, d_closest);
                 // std::cout << "after bur\n";
+                // std::cout << "q_n: \n"
+                //           << q_n.transpose() << "\n";
 
                 VectorXd q_t = endpoint;
 
                 delta_s = (q_t - q_n).norm();
 
                 std::vector<VectorXd> configs = this->Densify(q_n, q_t, plan_parameters);
-                previous_step = this->AddPointsExceptFirst(t, previous_step, configs);
 
+                for (unsigned int i = 1; i < configs.size(); ++i)
+                {
+                    double tmp_dist = this->GetDistToGoal(configs[i], goal_ee);
+                    if (tmp_dist < best_dist)
+                    {
+                        best_dist = tmp_dist;
+                        q_best = configs[i];
+                    }
+                }
+
+                previous_step = this->AddPointsExceptFirst(t, previous_step, configs);
                 q_n = q_t;
 
                 if (q_n.isApprox(q, threshold))
                 {
+                    // std::cout << "dense size: " << configs.size() << "\n";
+                    // for (auto &c : configs)
+                    // {
+                    //     std::cout << c.transpose() << "\n";
+                    // }
+                    // std::cout << "tree config with last IDX: \n"
+                    //           << t->GetQ(previous_step).transpose() << "\n";
                     std::cout << "RBT reached\n";
-                    return AlgorithmState::Reached;
+                    return {AlgorithmState::Reached, previous_step};
                 }
             }
             else
@@ -476,18 +286,36 @@ namespace Burs
                 if (step_result < 0)
                 {
                     std::cout << "RRT trapped\n";
-                    return AlgorithmState::Trapped;
+                    return {AlgorithmState::Trapped, previous_step};
                 }
                 else
                 {
                     previous_step = step_result;
                     q_n = q_t;
+
+                    double tmp_dist = this->GetDistToGoal(q_t, goal_ee);
+                    if (tmp_dist < best_dist)
+                    {
+                        best_dist = tmp_dist;
+                        q_best = q_t;
+                    }
                 }
 
-                if ((q_n - q_0).norm() >= (q - q_0).norm())
+                // if ((q_n - q_0).norm() >= (q - q_0).norm())
+                double qnq0_dist = this->MaxMovedDistance(q_n, q_0);
+                if (qnq0_dist > initial_distance)
                 {
+                    std::vector<VectorXd> configs = this->Densify(q_n, q, plan_parameters);
+                    previous_step = this->AddPointsExceptFirst(t, previous_step, configs);
+                    // std::cout << "dense size: " << configs.size() << "\n";
                     std::cout << "RRT reached\n";
-                    return AlgorithmState::Reached;
+                    // for (auto &c : configs)
+                    // {
+                    //     std::cout << c.transpose() << "\n";
+                    // }
+                    // std::cout << "tree config with last IDX: \n"
+                    //           << t->GetQ(previous_step).transpose() << "\n";
+                    return {AlgorithmState::Reached, previous_step};
                 }
             }
             // std::cout << "iterating in burconnect\n";
@@ -501,7 +329,7 @@ namespace Burs
             // }
         }
         // std::cout << "TRAPPED DELTA S TOO SMALL\n";
-        return AlgorithmState::Trapped;
+        return {AlgorithmState::Trapped, previous_step};
     }
 
     Bur
