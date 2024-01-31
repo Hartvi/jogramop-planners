@@ -285,23 +285,6 @@ namespace Burs
         {
             output << this->ToString(point, false);
         }
-<<<<<<< HEAD
-        // dist > factor => scale down => factor/dist < 1
-        // => (factor/dist) [m/m] unitless
-        // q_new [config] = q_near [config] + [m / m * config = config]
-        VectorXd q_new = q_near + factor / max_dist * (q_ei - q_near);
-        return q_new;
-
-        // diff is in C-space
-        // VectorXd diff = q_ei - q_near;
-
-        // double n = diff.norm();
-        // if (n < factor)
-        // {
-        //     return q_ei;
-        // }
-        // return q_near + factor * diff / n;
-=======
         return output.str();
     }
 
@@ -321,7 +304,6 @@ namespace Burs
             output << "\n";
         }
         return output.str();
->>>>>>> simple_classes
     }
 
     void
