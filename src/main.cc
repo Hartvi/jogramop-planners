@@ -154,7 +154,7 @@ int main(int argc, char **argv)
 
     // run: make clean && make && valgrind --leak-check=full ./load_obj_test ../Models/cube.obj ../Models/cube.obj out.txt
 
-    std::cout << "Arg 1: " << argv[1] << std::endl;
+    // std::cout << "Arg 1: " << argv[1] << std::endl;
     std::string arg1 = std::string(argv[1]);
     if (arg1 == "test")
     {
@@ -171,12 +171,12 @@ int main(int argc, char **argv)
         std::string grasp_path(graspFile);
 
         std::vector<Grasp> grasps = Grasp::LoadGrasps(grasp_path);
-        std::cout << "grasps: " << grasps.size() << std::endl;
-        for (unsigned int i = 0; i < grasps.size(); ++i)
-        {
-            std::cout << "Grasp:\n"
-                      << grasps[i].frame << std::endl;
-        }
+        // std::cout << "grasps: " << grasps.size() << std::endl;
+        // for (unsigned int i = 0; i < grasps.size(); ++i)
+        // {
+        //     std::cout << "Grasp:\n"
+        //               << grasps[i].frame << std::endl;
+        // }
 
         Eigen::VectorXd start_config = RobotBase::parseCSVToVectorXd(startConfigFile);
         std::cout << "start config " << start_config.transpose() << "\n";

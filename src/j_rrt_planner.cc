@@ -88,72 +88,6 @@ namespace Burs
         return path;
     }
 
-    void
-    JRRTPlanner::InitGraspClosestConfigs(JPlusRbtParameters &planner_parameters, VectorXd &q) const
-    {
-        auto tgts = planner_parameters.target_poses;
-        auto ee_q = this->GetEEPose(q);
-
-        for (unsigned int i = 0; i < tgts.size(); ++i)
-        {
-            auto tgt = tgts[i];
-            auto goal = tgt.frame;
-            double dist_to_goal = this->DistanceToGoal(goal, ee_q);
-            tgt.dv->d = dist_to_goal;
-            tgt.dv->v = q;
-            // std::cout << "init config: " << q.transpose() << "\n";
-            // std::cout << "target: " << i << ": " << tgt.dv->v.transpose() << "\n";
-            tgt.best_frame = ee_q;
-        }
-    }
-
-    void
-    JRRTPlanner::SetGraspClosestConfigs(JPlusRbtParameters &planner_parameters, VectorXd &q) const
-    {
-        auto tgts = planner_parameters.target_poses;
-        auto ee_q = this->GetEEPose(q);
-
-        for (unsigned int i = 0; i < tgts.size(); ++i)
-        {
-            auto tgt = tgts[i];
-            auto goal = tgt.frame;
-            double dist_to_goal = this->DistanceToGoal(goal, ee_q);
-            if (dist_to_goal < tgt.dv->d)
-            {
-                tgt.dv->d = dist_to_goal;
-                tgt.dv->v = q;
-                // std::cout << "new best config: " << tgt.dv->v.transpose() << "\n";
-                tgt.best_frame = ee_q;
-            }
-        }
-    }
-
-    unsigned int
-    JRRTPlanner::GetBestGrasp(JPlusRbtParameters &planner_parameters) const
-    {
-        auto tgts = planner_parameters.target_poses;
-        double best_dist = 1e14;
-        int best_idx = -1;
-
-        for (unsigned int i = 0; i < tgts.size(); ++i)
-        {
-            auto tgt = tgts[i];
-            auto goal = tgt.frame;
-            if (tgt.dv->d < best_dist)
-            {
-                best_dist = tgt.dv->d;
-                best_idx = i;
-            }
-        }
-        return best_idx;
-    }
-
-    double
-    JRRTPlanner::DistanceToGoal(const KDL::Frame &goal, const KDL::Frame &current) const
-    {
-        return (goal.p - current.p).Norm();
-    }
-
     KDL::Twist
     JRRTPlanner::GetTwist(const KDL::Frame &tgt, const KDL::Frame &src, const double &max_dist) const
     {
@@ -170,7 +104,7 @@ namespace Burs
     AlgorithmState
     JRRTPlanner::ExtendToGoalRRT(std::shared_ptr<BurTree> t_a, JPlusRbtParameters &planner_parameters) const
     {
-        std::cout << "inside extend to goal rrt\n";
+        // std::cout << "inside extend to goal rrt\n";
         Grasp random_grasp = planner_parameters.target_poses[this->rng->getRandomInt()];
         KDL::Frame p_goal = random_grasp.frame;
 
@@ -191,8 +125,8 @@ namespace Burs
             // Max dist => epsilon_q
             KDL::Twist twist = this->GetTwist(p_goal, p_near, std::min(delta_p, planner_parameters.epsilon_q));
 
-            std::cout << "q_near: " << q_near.transpose() << "\n";
-            std::cout << "twist: " << twist << "\n";
+            // std::cout << "q_near: " << q_near.transpose() << "\n";
+            // std::cout << "twist: " << twist << "\n";
             KDL::JntArray q_dot = this->myRobot->ForwardJPlus(q_near, twist);
             VectorXd delta_q = q_dot.data;
             q_near = q_near + delta_q;

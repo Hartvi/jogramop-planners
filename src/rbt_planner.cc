@@ -64,7 +64,7 @@ namespace Burs
         std::shared_ptr<BurTree> t_start = std::make_shared<BurTree>(q_start, q_start.rows());
         std::shared_ptr<BurTree> t_goal = std::make_shared<BurTree>(q_goal, q_goal.rows());
         // TODO: check collision at the beginning
-        auto ee_goal = this->GetEEPose(q_goal).p;
+        KDL::Frame ee_goal = this->GetEEPose(q_goal);
 
         if (this->IsColliding(q_start))
         {
@@ -199,7 +199,7 @@ namespace Burs
     }
 
     std::pair<AlgorithmState, int>
-    RbtPlanner::BurConnect(std::shared_ptr<BurTree> t, VectorXd &q, const RbtParameters &plan_parameters, const KDL::Vector &goal_ee, VectorXd &q_best, double &best_dist)
+    RbtPlanner::BurConnect(std::shared_ptr<BurTree> t, VectorXd &q, const RbtParameters &plan_parameters, const KDL::Frame &goal_ee, VectorXd &q_best, double &best_dist)
     {
         int nearest_index = t->Nearest(q.data());
 
@@ -220,13 +220,7 @@ namespace Burs
             if (d_closest > plan_parameters.d_crit)
             {
                 // if q_n is within the collision free bur of q, then we finish, game over
-                // std::cout << "before bur\n";
                 MatrixXd endpoint = this->GetEndpoints(q_n, q, d_closest);
-                // Bur b = this->GetBur(q_n, q, d_closest);
-                // std::cout << "after bur\n";
-                // std::cout << "q_n: \n"
-                //           << q_n.transpose() << "\n";
-
                 VectorXd q_t = endpoint;
 
                 delta_s = (q_t - q_n).norm();
@@ -248,13 +242,6 @@ namespace Burs
 
                 if (q_n.isApprox(q, threshold))
                 {
-                    // std::cout << "dense size: " << configs.size() << "\n";
-                    // for (auto &c : configs)
-                    // {
-                    //     std::cout << c.transpose() << "\n";
-                    // }
-                    // std::cout << "tree config with last IDX: \n"
-                    //           << t->GetQ(previous_step).transpose() << "\n";
                     std::cout << "RBT reached\n";
                     return {AlgorithmState::Reached, previous_step};
                 }
@@ -288,181 +275,135 @@ namespace Burs
                 {
                     std::vector<VectorXd> configs = this->Densify(q_n, q, plan_parameters);
                     previous_step = this->AddPointsExceptFirst(t, previous_step, configs);
-                    // std::cout << "dense size: " << configs.size() << "\n";
                     std::cout << "RRT reached\n";
-                    // for (auto &c : configs)
-                    // {
-                    //     std::cout << c.transpose() << "\n";
-                    // }
-                    // std::cout << "tree config with last IDX: \n"
-                    //           << t->GetQ(previous_step).transpose() << "\n";
                     return {AlgorithmState::Reached, previous_step};
                 }
             }
-            // std::cout << "iterating in burconnect\n";
-            // if (delta_s < plan_parameters.epsilon_q)
-            // {
-            //     std::cout << "delta_s: " << delta_s << " epsilon: " << plan_parameters.epsilon_q << "\n";
-            // }
-            // else
-            // {
-            //     std::cout << "delta_s: " << delta_s << "\n";
-            // }
         }
-        // std::cout << "TRAPPED DELTA S TOO SMALL\n";
         return {AlgorithmState::Trapped, previous_step};
     }
 
-    // Bur
-    // RbtPlanner::GetBur(const VectorXd &q_near, const MatrixXd &Q_e, double d_closest)
-    // {
-    //     double d_small = 0.1 * d_closest;
-    //     MatrixXd endpoints = MatrixXd::Zero(this->q_dim, Q_e.cols());
+    void
+    RbtPlanner::AddDenseBur(std::shared_ptr<BurTree> tree, const int &idx_near, const MatrixXd &endpoints, JPlusRbtParameters &plan_params) const
+    {
+        VectorXd q_near = tree->GetQ(idx_near);
 
-    //     for (int i = 0; i < Q_e.cols(); ++i)
-    //     {
-    //         double tk = 0;
+        for (unsigned int i = 0; i < endpoints.cols(); ++i)
+        {
+            auto endpoint = endpoints.col(i);
+            auto max_epsilon_separated_points = this->Densify(q_near, endpoint, plan_params);
+            int prev_idx = idx_near; // idx of q_near
 
-    //         // always start out from the center
-    //         VectorXd q_k(q_near);
-    //         double phi_result = d_closest;
-
-    //         const VectorXd q_e = Q_e.col(i);
-
-    //         // They said 4-5 iterations to reach 0.1*closest_distance
-    //         // So either:
-    //         //  1. iterate until 0.1*dc
-    //         //  2. 4-5 iterations
-    //         // for (unsigned int k = 0; k < 5; ++k)
-    //         while (phi_result > d_small)
-    //         {
-    //             // CHECK: this is indeed PI away from q_near
-    //             phi_result = d_closest - this->RhoR(q_near, q_k);
-    //             double delta_tk = this->GetDeltaTk(phi_result, tk, q_e, q_k);
-    //             tk = tk + delta_tk;
-    //             // has actually never reached > 1
-    //             // if (tk > 1.0) // some tolerance
-    //             // {
-    //             //     q_k = q_e;
-    //             //     // std::runtime_error("t_k was greater than 1. This shouldn't happen.");
-    //             //     break;
-    //             // }
-    //             q_k = q_near + tk * (q_e - q_near);
-    //         }
-    //         endpoints.col(i) = q_k;
-    //     }
-    //     Bur myBur(q_near, endpoints);
-    //     return myBur;
-    // }
-
-    // MAYBE LATER: SAVE THE INTERMEDIATE STEPS
-    // std::vector<MatrixXd>
-    // RbtPlanner::GetSteppedEndpoints(const VectorXd &q_near, const MatrixXd &Q_e, double d_closest)
-    // {
-    //     double d_small = 0.1 * d_closest;
-    //     std::vector<MatrixXd> endpoints;
-    //     // MatrixXd::Zero(this->q_dim, Q_e.cols());
-
-    //     for (int i = 0; i < Q_e.cols(); ++i)
-    //     {
-    //         double tk = 0;
-
-    //         // always start out from the center
-    //         VectorXd q_k(q_near);
-    //         double phi_result = d_closest;
-
-    //         const VectorXd q_e = Q_e.col(i);
-
-    //         // They said 4-5 iterations to reach 0.1*closest_distance
-    //         // So either:
-    //         //  1. iterate until 0.1*dc
-    //         //  2. 4-5 iterations
-    //         // for (unsigned int k = 0; k < 5; ++k)
-    //         while (phi_result > d_small)
-    //         {
-    //             // CHECK: this is indeed PI away from q_near
-    //             phi_result = d_closest - this->RhoR(q_near, q_k);
-    //             double delta_tk = this->GetDeltaTk(phi_result, tk, q_e, q_k);
-    //             tk = tk + delta_tk;
-    //             // has actually never reached > 1
-    //             // if (tk > 1.0) // some tolerance
-    //             // {
-    //             //     q_k = q_e;
-    //             //     // std::runtime_error("t_k was greater than 1. This shouldn't happen.");
-    //             //     break;
-    //             // }
-    //             q_k = q_near + tk * (q_e - q_near);
-    //         }
-    //         endpoints.col(i) = q_k;
-    //     }
-    //     Bur myBur(q_near, endpoints);
-    //     return myBur;
-    // }
+            int last_idx = this->AddPointsExceptFirst(tree, prev_idx, max_epsilon_separated_points);
+            // `last_idx` is the endpoint, all the other points inbetween lead to `idx_near`
+            while (last_idx != idx_near)
+            {
+                // Get distance to goal from each
+                this->SetGraspClosestConfigs(plan_params, tree->GetQ(last_idx));
+                last_idx = tree->GetParentIdx(last_idx);
+            }
+        }
+    }
 
     int
-    RbtPlanner::AddPointsExceptFirst(std::shared_ptr<BurTree> t, const int &first_el_idx, const std::vector<VectorXd> vec)
+    RbtPlanner::AddPointsExceptFirst(std::shared_ptr<BurTree> t, const int &first_el_idx, const std::vector<VectorXd> vec) const
     {
         int prev_id = first_el_idx;
         for (unsigned int i = 1; i < vec.size(); ++i)
         {
+            if (!this->InBounds(vec[i]))
+            {
+                // Skip the endpoint if it's out of bounds
+                continue;
+            }
             prev_id = t->AddNode(prev_id, vec[i]);
         }
         return prev_id;
     }
 
     std::vector<Eigen::VectorXd>
-    RbtPlanner::Densify(const Eigen::VectorXd &src, const Eigen::VectorXd &tgt, const RbtParameters &plan_params)
+    RbtPlanner::Densify(const Eigen::VectorXd &src, const Eigen::VectorXd &tgt, const RbtParameters &plan_params) const
     {
         // less than 2x upper distance between neighbouring positions
         double upper_dist = plan_params.q_resolution * 0.5;
-        // const double max_dist = this->MaxMovedDistance(tgt, src);
-        // double current_max_dist = max_dist;
 
         std::vector<VectorXd> configs = {src, tgt};
-        // std::cout << "src: " << src.transpose() << "\n";
-        // std::cout << "tgt: " << tgt.transpose() << "\n";
 
         for (int i = 0; i + 1 < configs.size();)
         {
             VectorXd middle_config = (configs[i] + configs[i + 1]) * 0.5;
             double tmp_dist = this->MaxMovedDistance(configs[i], middle_config);
 
-            // std::cout << "tmpdist: " << tmp_dist << "\n";
             if (tmp_dist > upper_dist)
             {
                 configs.insert(configs.begin() + i + 1, middle_config);
-                // std::cout << "configs: " << configs.size() << "\n";
             }
             else
             {
-                // std::cout << "LEVEL UP: " << tmp_dist << "<" << upper_dist << " i: " << i << "\n";
                 ++i;
             }
         }
-        // std::cout << "densified configs: " << configs.size() << "\n";
         return configs;
-
-        // ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        // double threshold = plan_params.q_resolution;
-        // const double max_dist = this->MaxMovedDistance(tgt, src);
-
-        // const int steps = static_cast<int>(std::ceil(max_dist / threshold));
-
-        // // Adjust for integer multiple of steps
-        // threshold = max_dist / (double)steps;
-
-        // std::vector<Eigen::VectorXd> dense_path(steps + 1);
-        // // Assuming src->tgt goes in a straight line
-        // auto dir = (tgt - src).normalized();
-
-        // for (int i = 0; i < steps + 1; ++i)
-        // {
-        //     // i = 0 => src
-        //     // i = steps => src + steps * unit(tgt-src) * max_dist / steps = src + unit(tgt-src) * norm(tgt-src) = src + tgt - src == tgt
-        //     auto new_point = src + i * dir * threshold;
-        //     dense_path[i] = new_point;
-        // }
-
-        // return dense_path;
     }
+
+    void
+    RbtPlanner::InitGraspClosestConfigs(JPlusRbtParameters &planner_parameters, const VectorXd &q) const
+    {
+        auto tgts = planner_parameters.target_poses;
+        auto ee_q = this->GetEEPose(q);
+
+        for (unsigned int i = 0; i < tgts.size(); ++i)
+        {
+            auto tgt = tgts[i];
+            auto goal = tgt.frame;
+            double dist_to_goal = this->DistanceToGoal(goal, ee_q);
+            tgt.dv->d = dist_to_goal;
+            tgt.dv->v = q;
+            // std::cout << "init config: " << q.transpose() << "\n";
+            // std::cout << "target: " << i << ": " << tgt.dv->v.transpose() << "\n";
+            tgt.best_frame = ee_q;
+        }
+    }
+
+    void
+    RbtPlanner::SetGraspClosestConfigs(JPlusRbtParameters &planner_parameters, const VectorXd &q) const
+    {
+        auto tgts = planner_parameters.target_poses;
+        auto ee_q = this->GetEEPose(q);
+
+        for (unsigned int i = 0; i < tgts.size(); ++i)
+        {
+            auto tgt = tgts[i];
+            auto goal = tgt.frame;
+            double dist_to_goal = this->DistanceToGoal(goal, ee_q);
+            if (dist_to_goal < tgt.dv->d)
+            {
+                tgt.dv->d = dist_to_goal;
+                tgt.dv->v = q;
+                // std::cout << "new best config: " << tgt.dv->v.transpose() << "\n";
+                tgt.best_frame = ee_q;
+            }
+        }
+    }
+
+    unsigned int
+    RbtPlanner::GetBestGrasp(JPlusRbtParameters &planner_parameters) const
+    {
+        auto tgts = planner_parameters.target_poses;
+        double best_dist = 1e14;
+        int best_idx = -1;
+
+        for (unsigned int i = 0; i < tgts.size(); ++i)
+        {
+            auto tgt = tgts[i];
+            auto goal = tgt.frame;
+            if (tgt.dv->d < best_dist)
+            {
+                best_dist = tgt.dv->d;
+                best_idx = i;
+            }
+        }
+        return best_idx;
+    }
+
 }

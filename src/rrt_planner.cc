@@ -38,7 +38,7 @@ namespace Burs
         std::shared_ptr<BurTree> t_start = std::make_shared<BurTree>(q_start, q_start.rows());
         std::shared_ptr<BurTree> t_goal = std::make_shared<BurTree>(q_goal, q_goal.rows());
         // TODO: check collision at the beginning
-        auto ee_goal = this->GetEEPose(q_goal).p;
+        auto ee_goal = this->GetEEPose(q_goal);
 
         VectorXd q_best(q_start);
 
@@ -80,7 +80,7 @@ namespace Burs
     }
 
     AlgorithmState
-    RRTPlanner::GreedyExtendRandomConfig(std::shared_ptr<BurTree> t_a, VectorXd rand_q, const RRTParameters &planner_parameters, const KDL::Vector &goal_ee, VectorXd &q_best) const
+    RRTPlanner::GreedyExtendRandomConfig(std::shared_ptr<BurTree> t_a, VectorXd rand_q, const RRTParameters &planner_parameters, const KDL::Frame &goal_ee, VectorXd &q_best) const
     {
         int nearest_idx = t_a->Nearest(rand_q.data());
         // std::cout << "last tree config: " << t_a->GetQ(t_a->GetNumberOfNodes() - 1).transpose() << "\n\n";

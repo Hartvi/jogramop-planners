@@ -27,18 +27,6 @@ namespace Burs
         std::optional<std::vector<VectorXd>>
         JRRT(VectorXd q_start, JPlusRbtParameters &planner_parameters, PlanningResult &plan_result);
 
-        void
-        InitGraspClosestConfigs(JPlusRbtParameters &planner_parameters, VectorXd &q) const;
-
-        void
-        SetGraspClosestConfigs(JPlusRbtParameters &planner_parameters, VectorXd &q) const;
-
-        unsigned int
-        GetBestGrasp(JPlusRbtParameters &planner_parameters) const;
-
-        double
-        DistanceToGoal(const KDL::Frame &goal, const KDL::Frame &current) const;
-
         KDL::Twist
         GetTwist(const KDL::Frame &tgt, const KDL::Frame &src, const double &max_dist) const;
 

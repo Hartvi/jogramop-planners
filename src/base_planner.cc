@@ -48,10 +48,17 @@ namespace Burs
     }
 
     double
-    BasePlanner::GetDistToGoal(const VectorXd &q, const KDL::Vector &goal_pos) const
+    BasePlanner::DistanceToGoal(const KDL::Frame &goal, const KDL::Frame &current) const
     {
-        auto ee = this->GetEEPose(q).p;
-        return (ee - goal_pos).Norm();
+        return (goal.p - current.p).Norm();
+    }
+
+    double
+    BasePlanner::GetDistToGoal(const VectorXd &q, const KDL::Frame &goal_pos) const
+    {
+        KDL::Frame ee = this->GetEEPose(q);
+        return this->DistanceToGoal(goal_pos, ee);
+        // return (ee - goal_pos).Norm();
     }
 
     KDL::Frame

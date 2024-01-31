@@ -9,7 +9,7 @@
 #include "base_env.h"
 #include "bur_funcs.h"
 #include "bur_tree.h"
-#include "rbt_parameters.h"
+#include "j_plus_rbt_parameters.h"
 #include "rrt_planner.h"
 
 namespace Burs
@@ -20,15 +20,6 @@ namespace Burs
     {
     public:
         RbtPlanner(std::string path_to_urdf_file);
-        // int q_dim,
-        //        ForwardKinematicsParallel f,
-        //        int max_iters,
-        //        double d_crit,
-        //        double delta_q,
-        //        double epsilon_q,
-        //        MatrixXd bounds,
-        //        RadiusFuncParallel radius_func,
-        //        int num_spikes);
 
         RbtPlanner();
 
@@ -49,42 +40,29 @@ namespace Burs
         double
         GetDeltaTk(double phi_tk, double tk, const VectorXd &q_e, const VectorXd &q_k) const;
 
-        // void
-        // SetEndpoints(MatrixXd &Qe, const VectorXd &q_near, double factor) const;
-
-        // std::optional<std::vector<Eigen::VectorXd>>
-        // RRTConnect(const VectorXd &q_start, const VectorXd &q_goal, const RbtParameters &plan_parameters, PlanningResult &planning_result);
-
         std::optional<std::vector<Eigen::VectorXd>>
         RbtConnect(const VectorXd &q_start, const VectorXd &q_goal, const RbtParameters &plan_parameters, PlanningResult &planning_result);
 
-        /// @brief Plan path using two opposing trees
-        /// @return Matrix (q_dim, n), where n is the number of steps. OTHERWISE `VectorXd()` if planning fails
-        // std::optional<std::vector<Eigen::VectorXd>>
-        // RbtConnect(const VectorXd &q_start, const VectorXd &q_goal, const RbtParameters &plan_parameters);
-
-        // std::vector<Eigen::VectorXd>
-        // Path(std::shared_ptr<BurTree> t_a, int a_closest, std::shared_ptr<BurTree> t_b, int b_closest);
-
         std::pair<AlgorithmState, int>
-        BurConnect(std::shared_ptr<BurTree> t, VectorXd &q, const RbtParameters &plan_parameters, const KDL::Vector &goal_ee, VectorXd &q_best, double &best_dist);
-
-        // Bur
-        // GetBur(const VectorXd &q_near, const MatrixXd &Q_e, double d_closest);
-
-        // std::vector<MatrixXd>
-        // GetSteppedEndpoints(const VectorXd &q_near, const MatrixXd &Q_e, double d_closest);
-
-        // AlgorithmState
-        // GreedyExtend(std::shared_ptr<BurTree> t_a, std::shared_ptr<BurTree> t_b, Eigen::VectorXd q_a, const RbtParameters &planner_parameters);
-
-        // AlgorithmState
-        // GreedyExtendRandomConfig(std::shared_ptr<BurTree> t_a, Eigen::VectorXd closest_q, const RbtParameters &planner_parameters);
+        BurConnect(std::shared_ptr<BurTree> t, VectorXd &q, const RbtParameters &plan_parameters, const KDL::Frame &goal_ee, VectorXd &q_best, double &best_dist);
 
         int
-        AddPointsExceptFirst(std::shared_ptr<BurTree> t, const int &first_el_idx, const std::vector<VectorXd> vec);
+        AddPointsExceptFirst(std::shared_ptr<BurTree> t, const int &first_el_idx, const std::vector<VectorXd> vec) const;
 
-        std::vector<Eigen::VectorXd> Densify(const VectorXd &src, const VectorXd &tgt, const RbtParameters &plan_params);
+        void
+        AddDenseBur(std::shared_ptr<BurTree> tree, const int &idx_near, const MatrixXd &endpoints, JPlusRbtParameters &plan_params) const;
+
+        std::vector<Eigen::VectorXd>
+        Densify(const VectorXd &src, const VectorXd &tgt, const RbtParameters &plan_params) const;
+
+        void
+        InitGraspClosestConfigs(JPlusRbtParameters &planner_parameters, const VectorXd &q) const;
+
+        void
+        SetGraspClosestConfigs(JPlusRbtParameters &planner_parameters, const VectorXd &q) const;
+
+        unsigned int
+        GetBestGrasp(JPlusRbtParameters &planner_parameters) const;
 
     protected:
         bool checkGround;

@@ -28,7 +28,10 @@ namespace Burs
         virtual ~BasePlanner() = default;
 
         double
-        GetDistToGoal(const VectorXd &q, const KDL::Vector &goal_pos) const;
+        DistanceToGoal(const KDL::Frame &goal, const KDL::Frame &current) const;
+
+        double
+        GetDistToGoal(const VectorXd &q, const KDL::Frame &goal_pos) const;
 
         KDL::Frame
         GetEEPose(const VectorXd &q) const;

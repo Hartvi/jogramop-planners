@@ -697,10 +697,10 @@ namespace Burs
             // Key found, return the associated value
             // std::cout << "cached: " << this->fkResults.size() << "\n";
             auto res = it->second;
-            // if (this->fkResults.size() > 1000)
-            // {
-            //     this->fkResults.clear();
-            // }
+            if (this->fkResults.size() > 100)
+            {
+                this->fkResults.clear();
+            }
             return res;
         }
 
@@ -741,10 +741,10 @@ namespace Burs
             // Key found, return the associated value
             // std::cout << "cached: " << this->fkResults.size() << "\n";
             auto res = it->second;
-            // if (this->fkResults.size() > 1000)
-            // {
-            //     this->fkResults.clear();
-            // }
+            if (this->fkResults.size() > 100)
+            {
+                this->fkResults.clear();
+            }
             return res;
         }
 

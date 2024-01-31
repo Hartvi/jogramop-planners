@@ -39,18 +39,20 @@ namespace Burs
     JRbtPlanner::GetBestAndRandomGrasps(JPlusRbtParameters &planner_parameters) const
     {
         std::vector<Grasp> grasps(planner_parameters.num_spikes);
+        // Get best grasp IDX
         unsigned int best_grasp_idx = this->GetBestGrasp(planner_parameters);
         Grasp best_grasp = planner_parameters.target_poses[best_grasp_idx];
         grasps[0] = best_grasp;
 
+        // Get shuffled integer vector
         auto non_repeating_ints = this->rng->getNonRepeatingInts();
         for (unsigned int i = 1; i < planner_parameters.num_spikes; ++i)
         {
-            // doesn't matter that it indexes at i=1..N since it's random anyway
+            // i-th element from shuffled vector
             unsigned int rand_int = *std::next(non_repeating_ints, i);
             if (rand_int == best_grasp_idx)
             {
-                // rand_int == best_idx => choose index 0 because we started at 1
+                // rand_int == best_idx => choose index 0 because we started at "i = 1"
                 grasps[i] = planner_parameters.target_poses[0];
             }
             else
@@ -62,53 +64,68 @@ namespace Burs
     }
 
     AlgorithmState
-    JRbtPlanner::ExtendToGoalRbt(std::shared_ptr<BurTree> t_a, JPlusRbtParameters &planner_parameters) const
+    JRbtPlanner::ExtendToGoalRbt(std::shared_ptr<BurTree> tree, JPlusRbtParameters &planner_parameters) const
     {
+        /* OUTLINE:
+        1. Get best grasp's best configuration
+        2. From that best configuration expand towards the grasp and some random grasps
+        3. Go to 1.
+        */
+        double delta_p = 1e14;
+        double closest_dist = 1e14;
+        do
+        {
+            // STEP 1.
+            // Best grasp is in index 0
+            std::vector<Grasp> tgt_grasps = this->GetBestAndRandomGrasps(planner_parameters);
+            Grasp best_grasp = tgt_grasps[0];
+            VectorXd q_near = best_grasp.dv->v;
 
-        // Copy since we will change it
+            // STEP 2.
+            int idx_near = tree->Nearest(q_near.data());
+            delta_p = best_grasp.dv->d;
 
-        // do
-        // {
-        //     VectorXd q_near(best_grasp.dv.v);
-        //     int prev_idx = t_a->Nearest(q_near.data());
-        //     double delta_p = best_grasp.dv.d;
+            // Get closest obstacle distance
+            closest_dist = this->GetClosestDistance(q_near);
 
-        //     // Get closest obstacle distance
-        //     double closest_dist = this->GetClosestDistance(q_near);
+            // Target configs to extend to gained from the jacobian
+            MatrixXd target_configs = MatrixXd(this->q_dim, planner_parameters.num_spikes);
 
-        //     // Target configs to extend to
-        //     MatrixXd target_configs = MatrixXd(this->q_dim, planner_parameters.num_spikes); /* target configs are given from the jacobian */
+            for (unsigned int i = 0; i < planner_parameters.num_spikes; ++i)
+            {
+                // Max dist => closest_dist / dist to goal (maybe better to have distance to goal since it can be farther)
+                KDL::Frame tgt_frame = tgt_grasps[i].frame;
+                KDL::Frame cur_frame = best_grasp.best_frame;
 
-        //     for (unsigned int i = 0; i < planner_parameters.num_spikes; ++i)
-        //     {
-        //         // Max dist => closest_dist / dist to goal (maybe better to have distance to goal since it can be farther)
-        //         KDL::Frame tgt_frame = grasps[i].frame;
-        //         KDL::Frame cur_frame = best_grasp;
-        //         KDL::Twist twist = this->GetTwist(tgt_frame, p_near, delta_p);
+                // From cur_frame (best config)
+                // To tgt_frame (one of the randomly chosen goals)
+                // Move `closest_dist` along that direction
+                // Can be farther that the goal, but that's fine because we interpolate using `Densify`
+                KDL::Twist twist = this->GetTwist(tgt_frame, cur_frame, closest_dist);
 
-        //         // TODO: reuse the jacobian for the pseudo-inverse J+
-        //         KDL::JntArray q_dot = this->myRobot->ForwardJPlus(q_near, twist);
-        //         VectorXd delta_q = q_dot.data;
-        //         target_configs.col(i) = q_near + delta_q;
-        //     }
-        //     // Get random configs based on number of spikes
-        //     // Jacobian => target configs
-        //     MatrixXd bur_endpoints = this->GetEndpoints(q_near, target_configs, closest_dist);
+                // TODO: reuse the jacobian for the pseudo-inverse J+
+                KDL::JntArray q_dot = this->myRobot->ForwardJPlus(q_near, twist);
+                VectorXd delta_q = q_dot.data;
+                target_configs.col(i) = q_near + delta_q;
+            }
+            // Iterate max `closest_dist` to `target_config`
+            MatrixXd bur_endpoints = this->GetEndpoints(q_near, target_configs, closest_dist);
 
-        //     for (unsigned int i = 0; i < planner_parameters.num_spikes; ++i)
-        //     {
-        //         VectorXd q_new = bur_endpoints.col(i);
-        //         if (!this->InBounds(q_near))
-        //         {
-        //             // Skip the bur endpoint if it's out of bounds
-        //             continue;
-        //         }
-        //         prev_idx = t_a->AddNode(prev_idx, q_new);
-        //         this->SetGraspClosestConfigs(planner_parameters, q_near);
-        //     }
-        // } while (delta_p > planner_parameters.p_close_enough);
+            // Checks bounds
+            // Interpolates with max resolution_q distance between points
+            // Updates best config for each grasp
+            this->AddDenseBur(tree, idx_near, bur_endpoints, planner_parameters);
 
-        return AlgorithmState::Reached;
+        } while (delta_p > planner_parameters.p_close_enough && closest_dist > planner_parameters.epsilon_q);
+
+        if (delta_p <= planner_parameters.p_close_enough)
+        {
+            return AlgorithmState::Reached;
+        }
+        else
+        {
+            return AlgorithmState::Trapped;
+        }
     }
 
 }

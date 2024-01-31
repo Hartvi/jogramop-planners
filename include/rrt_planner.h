@@ -30,7 +30,7 @@ namespace Burs
         // GreedyExtend(std::shared_ptr<BurTree> t_a, std::shared_ptr<BurTree> t_b, Eigen::VectorXd q_a, const RRTParameters &planner_parameters);
 
         AlgorithmState
-        GreedyExtendRandomConfig(std::shared_ptr<BurTree> t_a, VectorXd rand_q, const RRTParameters &planner_parameters, const KDL::Vector &goal_ee, VectorXd &q_best) const;
+        GreedyExtendRandomConfig(std::shared_ptr<BurTree> t_a, VectorXd rand_q, const RRTParameters &planner_parameters, const KDL::Frame &goal_ee, VectorXd &q_best) const;
 
     protected:
         // RadiusFuncParallel radius_func;

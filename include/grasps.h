@@ -41,6 +41,8 @@ namespace Burs
 
     public:
         std::shared_ptr<VecDistPair> dv;
+
+        /// Frame of best configuration
         KDL::Frame best_frame;
     };
 
