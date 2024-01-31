@@ -42,7 +42,7 @@ namespace Burs
     }
 
     std::pair<int, double>
-    BurTree::NearestIdxAndDist(double *new_point)
+    BurTree::NearestIdxAndDistSqr(double *new_point)
     {
         flann::Matrix<double> query(new_point, 1, this->mQDim); // Single row matrix for the new point
         flann::Matrix<int> indices(new int[1], 1, 1);           // Single row matrix for the index

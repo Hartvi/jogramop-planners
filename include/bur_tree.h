@@ -2,6 +2,9 @@
 #ifndef BUR_TREE_H
 #define BUR_TREE_H
 
+#include <kdl/frames.hpp>
+#include <kdl/jacobian.hpp>
+
 #include <flann/flann.hpp>
 #include <Eigen/Dense>
 #include <memory>
@@ -62,7 +65,7 @@ namespace Burs
         AddNode(int p, VectorXd q_location);
 
         std::pair<int, double>
-        NearestIdxAndDist(double *new_point);
+        NearestIdxAndDistSqr(double *new_point);
 
         int
         Nearest(double *new_point);
@@ -93,7 +96,10 @@ namespace Burs
             return os;
         }
 
+    public:
         std::vector<RRTNode> mNodes;
+        std::vector<std::vector<KDL::Frame>> mFrames;
+        std::vector<KDL::Jacobian> mJacs;
         int mQDim;
 
     private:

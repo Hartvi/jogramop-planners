@@ -38,10 +38,10 @@ namespace Burs
         }
 
         this->kdl_tree = kdl_tree_res.value();
-        for (auto &l : this->kdl_tree.getSegments())
-        {
-            std::cout << "segment: " << l.first << "\n";
-        }
+        // for (auto &l : this->kdl_tree.getSegments())
+        // {
+        //     std::cout << "segment: " << l.first << "\n";
+        // }
 
         auto end_links_res = this->GetEndLinks(robot_model);
 
@@ -57,6 +57,7 @@ namespace Burs
         {
             std::cout << "end link: " << end_links[i] << std::endl;
         }
+        std::cout << "\n";
         // exit(1);
 
         // auto kdl_chain_res = this->GetKDLChain(robot_model, kdl_tree, "panda_hand");
@@ -196,12 +197,13 @@ namespace Burs
                 std::string mesh_filename = mesh->filename;
                 std::string link_name = l.second->name;
                 // Do something with mesh_filename, which is the path to the .obj file
-                std::cout << "Link children: " << l.second->child_links.size() << " has mesh: " << mesh_filename << " mesh file name length: " << mesh_filename.size() << std::endl;
+                // std::cout << "Link children: " << l.second->child_links.size() << " has mesh: " << mesh_filename << " mesh file name length: " << mesh_filename.size() << std::endl;
                 // std::cout << "Link " << l.second->name << " has mesh: " << mesh_filename << std::endl;
                 my_map[link_name] = mesh_filename;
                 // std::cout << "Segment: " << my_map[link_name] << " File: " << mesh_filename << std::endl;
             }
         }
+        // exit(1);
 
         return my_map;
     }

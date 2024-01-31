@@ -14,8 +14,11 @@ namespace Burs
         int numModels = 0;
         // Initialization specific to RobotCollision
         // std::cout << "number of segments " << this->kdl_chain.getNrOfSegments() << std::endl;
+        std::cout << "URDF dir: " << urdf_dir << "\n";
         for (int i = 0; i < this->kdl_chain.getNrOfSegments(); ++i)
         {
+            const KDL::Segment &segment = kdl_chain.getSegment(i);
+            std::cout << "Segment name:     " << this->kdl_chain.getSegment(i).getName() << "\n";
             if (this->segmentIdToFile.find(i) != this->segmentIdToFile.end())
             {
                 // add relative path to urdf file
@@ -26,6 +29,7 @@ namespace Burs
                 this->mObjs.push_back(model_path);
 
                 std::shared_ptr<RtModels::RtModel> trpqpmodel = std::make_shared<RtModels::RtModel>(model_path);
+                std::cout << "Robot segment:    " << i << " \n  File:           " << this->segmentIdToFile[i] << " \n  Number of tris: " << trpqpmodel->pqpModel->num_tris << "\n";
                 this->segmentIdToModel.push_back(trpqpmodel);
                 numModels++;
             }
@@ -33,6 +37,7 @@ namespace Burs
             {
                 this->segmentIdToModel.push_back({});
             }
+            std::cout << "\n";
         }
         this->numberOfModels = numModels;
         // std::cout << "Initialized RobotCollision. Number of models: " << this->numberOfModels << std::endl;
