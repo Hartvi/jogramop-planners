@@ -160,19 +160,6 @@ namespace Burs
             auto [status, best_idx_t_b] = this->BurConnect(t_b, q_new, plan_parameters, ee_goal, q_best, best_dist);
             if (status == AlgorithmState::Reached)
             {
-                // std::cout << "t_a q_new: \n"
-                //           << q_new.transpose() << "\n";
-                // std::cout << "t_b q_best: \n"
-                //           << t_b->GetQ(best_idx_t_b).transpose() << "\n";
-                // if (t_b == t_start)
-                // {
-                //     std::cout << "reached when t_b == t_start\n";
-                // }
-                // else
-                // {
-                //     std::cout << "reached when t_b == t_goal\n";
-                //     // exit(1);
-                // }
                 int start_closest;
                 int goal_closest;
                 if (t_b == t_goal)
@@ -187,18 +174,12 @@ namespace Burs
                 }
                 // `q_new` is in `t_a`
                 // `t_b` extends to `q_new` => it has a node near `q_new`
-                // int a_closest = t_start->Nearest(q_new.data());
-                // int b_closest = t_goal->Nearest(q_new.data());
 
                 planning_result.distance_to_goal = 0.0;
                 planning_result.num_iterations = k;
                 planning_result.tree_size = t_start->GetNumberOfNodes() + t_goal->GetNumberOfNodes();
                 planning_result.success = true;
 
-                // std::cout << "start node: \n"
-                //           << t_start->GetQ(start_closest).transpose() << "\n";
-                // std::cout << "goal node: \n"
-                //           << t_goal->GetQ(goal_closest).transpose() << "\n";
                 auto path = this->Path(t_start, start_closest, t_goal, goal_closest);
                 // std::cout << "path ";
                 return path;
@@ -332,47 +313,47 @@ namespace Burs
         return {AlgorithmState::Trapped, previous_step};
     }
 
-    Bur
-    RbtPlanner::GetBur(const VectorXd &q_near, const MatrixXd &Q_e, double d_closest)
-    {
-        double d_small = 0.1 * d_closest;
-        MatrixXd endpoints = MatrixXd::Zero(this->q_dim, Q_e.cols());
+    // Bur
+    // RbtPlanner::GetBur(const VectorXd &q_near, const MatrixXd &Q_e, double d_closest)
+    // {
+    //     double d_small = 0.1 * d_closest;
+    //     MatrixXd endpoints = MatrixXd::Zero(this->q_dim, Q_e.cols());
 
-        for (int i = 0; i < Q_e.cols(); ++i)
-        {
-            double tk = 0;
+    //     for (int i = 0; i < Q_e.cols(); ++i)
+    //     {
+    //         double tk = 0;
 
-            // always start out from the center
-            VectorXd q_k(q_near);
-            double phi_result = d_closest;
+    //         // always start out from the center
+    //         VectorXd q_k(q_near);
+    //         double phi_result = d_closest;
 
-            const VectorXd q_e = Q_e.col(i);
+    //         const VectorXd q_e = Q_e.col(i);
 
-            // They said 4-5 iterations to reach 0.1*closest_distance
-            // So either:
-            //  1. iterate until 0.1*dc
-            //  2. 4-5 iterations
-            // for (unsigned int k = 0; k < 5; ++k)
-            while (phi_result > d_small)
-            {
-                // CHECK: this is indeed PI away from q_near
-                phi_result = d_closest - this->RhoR(q_near, q_k);
-                double delta_tk = this->GetDeltaTk(phi_result, tk, q_e, q_k);
-                tk = tk + delta_tk;
-                // has actually never reached > 1
-                // if (tk > 1.0) // some tolerance
-                // {
-                //     q_k = q_e;
-                //     // std::runtime_error("t_k was greater than 1. This shouldn't happen.");
-                //     break;
-                // }
-                q_k = q_near + tk * (q_e - q_near);
-            }
-            endpoints.col(i) = q_k;
-        }
-        Bur myBur(q_near, endpoints);
-        return myBur;
-    }
+    //         // They said 4-5 iterations to reach 0.1*closest_distance
+    //         // So either:
+    //         //  1. iterate until 0.1*dc
+    //         //  2. 4-5 iterations
+    //         // for (unsigned int k = 0; k < 5; ++k)
+    //         while (phi_result > d_small)
+    //         {
+    //             // CHECK: this is indeed PI away from q_near
+    //             phi_result = d_closest - this->RhoR(q_near, q_k);
+    //             double delta_tk = this->GetDeltaTk(phi_result, tk, q_e, q_k);
+    //             tk = tk + delta_tk;
+    //             // has actually never reached > 1
+    //             // if (tk > 1.0) // some tolerance
+    //             // {
+    //             //     q_k = q_e;
+    //             //     // std::runtime_error("t_k was greater than 1. This shouldn't happen.");
+    //             //     break;
+    //             // }
+    //             q_k = q_near + tk * (q_e - q_near);
+    //         }
+    //         endpoints.col(i) = q_k;
+    //     }
+    //     Bur myBur(q_near, endpoints);
+    //     return myBur;
+    // }
 
     // MAYBE LATER: SAVE THE INTERMEDIATE STEPS
     // std::vector<MatrixXd>

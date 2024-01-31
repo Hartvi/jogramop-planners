@@ -60,8 +60,8 @@ namespace Burs
 
         /// @brief Plan path using two opposing trees
         /// @return Matrix (q_dim, n), where n is the number of steps. OTHERWISE `VectorXd()` if planning fails
-        std::optional<std::vector<Eigen::VectorXd>>
-        RbtConnect(const VectorXd &q_start, const VectorXd &q_goal, const RbtParameters &plan_parameters);
+        // std::optional<std::vector<Eigen::VectorXd>>
+        // RbtConnect(const VectorXd &q_start, const VectorXd &q_goal, const RbtParameters &plan_parameters);
 
         // std::vector<Eigen::VectorXd>
         // Path(std::shared_ptr<BurTree> t_a, int a_closest, std::shared_ptr<BurTree> t_b, int b_closest);
@@ -69,11 +69,11 @@ namespace Burs
         std::pair<AlgorithmState, int>
         BurConnect(std::shared_ptr<BurTree> t, VectorXd &q, const RbtParameters &plan_parameters, const KDL::Vector &goal_ee, VectorXd &q_best, double &best_dist);
 
-        Bur
-        GetBur(const VectorXd &q_near, const MatrixXd &Q_e, double d_closest);
+        // Bur
+        // GetBur(const VectorXd &q_near, const MatrixXd &Q_e, double d_closest);
 
-        std::vector<MatrixXd>
-        GetSteppedEndpoints(const VectorXd &q_near, const MatrixXd &Q_e, double d_closest);
+        // std::vector<MatrixXd>
+        // GetSteppedEndpoints(const VectorXd &q_near, const MatrixXd &Q_e, double d_closest);
 
         // AlgorithmState
         // GreedyExtend(std::shared_ptr<BurTree> t_a, std::shared_ptr<BurTree> t_b, Eigen::VectorXd q_a, const RbtParameters &planner_parameters);

@@ -14,9 +14,11 @@
 #include "printing.h"
 #include "bur_tree.h"
 #include "base_planner.h"
-#include "test.h"
+// #include "test.h"
 #include "CParseArgs.h"
-#include "j_plus_rbt_planner.h"
+#include "j_rbt_planner.h"
+#include "ut.h"
+// #include "j_plus_rbt_planner.h"
 
 using namespace std;
 using namespace Burs;
@@ -158,7 +160,7 @@ int main(int argc, char **argv)
     {
 
         // BEGIN COMMON SETTINGS ------------------------------------------------------------------------------------------------------------
-        std::shared_ptr<JPlusRbtPlanner> jprbt = std::make_shared<JPlusRbtPlanner>(std::string(urdfFile));
+        std::shared_ptr<JRbtPlanner> jprbt = std::make_shared<JRbtPlanner>(std::string(urdfFile));
         // 1. Set obstacles in urdfenv
         // 2. Setup parameters
         // 3. Plan
@@ -170,16 +172,16 @@ int main(int argc, char **argv)
 
         std::vector<Grasp> grasps = Grasp::LoadGrasps(grasp_path);
         std::cout << "grasps: " << grasps.size() << std::endl;
-        // for (unsigned int i = 0; i < grasps.size(); ++i)
-        // {
-        //     std::cout << "Grasp:\n"
-        //               << grasps[i].ToFrame() << std::endl;
-        // }
+        for (unsigned int i = 0; i < grasps.size(); ++i)
+        {
+            std::cout << "Grasp:\n"
+                      << grasps[i].frame << std::endl;
+        }
 
         Eigen::VectorXd start_config = RobotBase::parseCSVToVectorXd(startConfigFile);
         std::cout << "start config " << start_config.transpose() << "\n";
 
-        auto grasp_frames = Grasp::GraspsToFrames(grasps);
+        // auto grasp_frames = Grasp::GraspsToFrames(grasps);
 
         PlanningResult planning_result;
 
@@ -190,7 +192,7 @@ int main(int argc, char **argv)
         double p_close_sqr = p_close_enough * p_close_enough;
         double goal_bias_radius_sqr = goal_bias_radius * goal_bias_radius;
 
-        JPlusRbtParameters params(max_iters, d_crit, delta_q, epsilon_q, num_spikes, p_close_sqr, probability_to_steer_to_target, grasp_frames, goal_bias_radius_sqr, goal_bias_probability, q_resolution);
+        JPlusRbtParameters params(max_iters, d_crit, delta_q, epsilon_q, num_spikes, p_close_sqr, probability_to_steer_to_target, grasps, goal_bias_radius_sqr, goal_bias_probability, q_resolution);
         params.seed = usedSeed;
         // END COMMON SETTINGS ------------------------------------------------------------------------------------------------------------
 
@@ -205,7 +207,7 @@ int main(int argc, char **argv)
 
             struct rusage t1, t2;
             getTime(&t1);
-            path = jprbt->JPlusRbt(start_config, params, planning_result);
+            path = jprbt->JRbt(start_config, params, planning_result);
             getTime(&t2);
             planning_result.time_taken = getTime(t1, t2);
 
@@ -222,7 +224,7 @@ int main(int argc, char **argv)
 
             struct rusage t1, t2;
             getTime(&t1);
-            path = jprbt->JPlusRbt(start_config, params, planning_result);
+            path = jprbt->JRbt(start_config, params, planning_result);
 
             getTime(&t2);
             planning_result.time_taken = getTime(t1, t2);
@@ -245,7 +247,7 @@ int main(int argc, char **argv)
             struct rusage t1,
                 t2;
             getTime(&t1);
-            path = jprbt->JPlusRbt(start_config, params, planning_result);
+            path = jprbt->JRRT(start_config, params, planning_result);
             getTime(&t2);
 
             planning_result.time_taken = getTime(t1, t2);
@@ -261,11 +263,11 @@ int main(int argc, char **argv)
             // JPlusRbtParameters params(max_iters, 1e10, delta_q, epsilon_q, num_spikes, p_close_enough, probability_to_steer_to_target, grasp_frames);
             // JPlusRbtParameters params(max_iters, 1e10, delta_q, epsilon_q, num_spikes, p_close_enough, probability_to_steer_to_target, grasp_frames, goal_bias_radius, goal_bias_probability);
             // only RRT switch:
-            params.d_crit = 1e10;
+            // params.d_crit = 1e10;
 
             struct rusage t1, t2;
             getTime(&t1);
-            path = jprbt->JPlusRbt(start_config, params, planning_result);
+            path = jprbt->JRRT(start_config, params, planning_result);
             getTime(&t2);
 
             planning_result.time_taken = getTime(t1, t2);

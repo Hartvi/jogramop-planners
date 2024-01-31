@@ -46,6 +46,21 @@ namespace Burs
         double
         MaxMovedDistance(const VectorXd &q1, const VectorXd &q2) const;
 
+        int
+        AddObstacle(std::string obstacle_file, Eigen::Matrix3d R, Eigen::Vector3d t);
+
+        void
+        SetObstacleRotation(int id, Eigen::Matrix3d R, Eigen::Vector3d t);
+
+        std::string
+        ToString(const Eigen::VectorXd &q_in, bool include_obstacles);
+
+        std::string
+        StringifyPath(std::vector<Eigen::VectorXd> path);
+
+        std::string
+        ConfigsToString(const std::vector<Eigen::VectorXd> &path);
+
     public:
         std::shared_ptr<URDFEnv> myEnv;
 

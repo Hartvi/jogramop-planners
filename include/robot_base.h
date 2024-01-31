@@ -115,6 +115,9 @@ namespace Burs
         KDL::Jacobian
         ForwardJac(const VectorXd &q_in);
 
+        KDL::JntArray
+        ForwardJPlus(const VectorXd q_in, const KDL::Twist &v_in);
+
         static Eigen::VectorXd
         parseCSVToVectorXd(const std::string &path);
 

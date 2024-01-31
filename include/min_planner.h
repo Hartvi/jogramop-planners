@@ -30,6 +30,9 @@ namespace Burs
 
         virtual ~MinPlanner() = default;
 
+        bool
+        InBounds(const VectorXd &q) const;
+
         /// @brief Get set of random configurations
         MatrixXd
         GetRandomQ(const int &num_spikes) const;
@@ -45,7 +48,7 @@ namespace Burs
         IsColliding(const VectorXd &q) const;
 
         double
-        GetClosestDistance(const VectorXd &q);
+        GetClosestDistance(const VectorXd &q) const;
 
         VectorXd
         Nearest(std::shared_ptr<BurTree> t, VectorXd &q);

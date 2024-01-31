@@ -23,7 +23,8 @@ namespace Burs
         int
         RRTStep(std::shared_ptr<BurTree> t, int node_idx, const VectorXd &rand_q, const Meters &epsilon_q) const;
 
-        std::optional<std::vector<Eigen::VectorXd>> RRTConnect(const VectorXd &q_start, const VectorXd &q_goal, const RRTParameters &plan_parameters, PlanningResult &planning_result);
+        std::optional<std::vector<Eigen::VectorXd>>
+        RRTConnect(const VectorXd &q_start, const VectorXd &q_goal, const RRTParameters &plan_parameters, PlanningResult &planning_result);
 
         // AlgorithmState
         // GreedyExtend(std::shared_ptr<BurTree> t_a, std::shared_ptr<BurTree> t_b, Eigen::VectorXd q_a, const RRTParameters &planner_parameters);

@@ -19,6 +19,20 @@ namespace Burs
     {
     }
 
+    bool
+    MinPlanner::InBounds(const VectorXd &q) const
+    {
+        for (unsigned int i = 0; i < q.size(); ++i)
+        {
+            // std::cout << "bounds (rows, cols): " << this->bounds.rows() << ", " << this->bounds.cols() << "\n";
+            if (this->bounds(i, 0) > q(i) || q(i) > this->bounds(i, 1))
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
     MatrixXd
     MinPlanner::GetRandomQ(const int &num_spikes) const
     {
@@ -48,7 +62,7 @@ namespace Burs
     }
 
     double
-    MinPlanner::GetClosestDistance(const VectorXd &q)
+    MinPlanner::GetClosestDistance(const VectorXd &q) const
     {
         this->base_env->SetPoses(q);
         return this->base_env->GetClosestDistance();
@@ -128,5 +142,4 @@ namespace Burs
 
         return final_path;
     }
-
 }

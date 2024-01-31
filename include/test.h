@@ -19,11 +19,11 @@
 #include <iomanip>
 #include <time.h>
 #include "grasps.h"
-#include "j_plus_rbt_planner.h"
+// #include "j_plus_rbt_planner.h"
 
 #include "rbt_parameters.h"
 #include "j_plus_rbt_parameters.h"
-#include "test_urdf.h"
+// #include "test_urdf.h"
 
 namespace test
 {

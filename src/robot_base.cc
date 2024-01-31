@@ -2,6 +2,7 @@
 #include <kdl/chainfksolverpos_recursive.hpp>
 #include <kdl/frames_io.hpp>
 #include <kdl/chainjnttojacsolver.hpp>
+#include <kdl/chainiksolvervel_pinv.hpp>
 
 #include <urdf_model/model.h>
 #include <urdf_parser/urdf_parser.h>
@@ -766,6 +767,24 @@ namespace Burs
             throw std::runtime_error("RobotBase::ForwardJac failed.");
         }
         return jac;
+    }
+
+    KDL::JntArray
+    RobotBase::ForwardJPlus(const VectorXd q_in, const KDL::Twist &v_in)
+    {
+        KDL::JntArray q_kdl;
+        q_kdl.data = q_in;
+
+        KDL::JntArray q_dot(q_in.size());
+
+        KDL::ChainIkSolverVel_pinv pinv_solver(this->kdl_chain);
+
+        int res = pinv_solver.CartToJnt(q_kdl, v_in, q_dot);
+        if (res < 0)
+        {
+            throw std::runtime_error("RobotBase::ForwardJPlus failed. error: " + std::string(pinv_solver.strError(res)));
+        }
+        return q_dot;
     }
 
     VectorXd
