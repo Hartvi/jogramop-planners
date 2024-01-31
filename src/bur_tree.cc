@@ -15,9 +15,10 @@ namespace Burs
         this->AddNode(-1, q_location);
     }
 
-    void
+    int
     BurTree::AddNode(int p, VectorXd q_location)
     {
+        int ret_idx = this->mNodes.size();
         this->mNodes.emplace_back(p, q_location);
         // have to build index to register the new node
         //        this->BuildIndex();
@@ -37,6 +38,7 @@ namespace Burs
             }
             mIndex->addPoints(add_point_matrix, 2.0);
         }
+        return ret_idx;
     }
 
     std::pair<int, double>

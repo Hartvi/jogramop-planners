@@ -19,11 +19,11 @@
 #include <iomanip>
 #include <time.h>
 #include "grasps.h"
-#include "j_plus_rbt_planner.h"
+// #include "j_plus_rbt_planner.h"
 
 #include "rbt_parameters.h"
 #include "j_plus_rbt_parameters.h"
-#include "test_urdf.h"
+// #include "test_urdf.h"
 
 namespace test
 {
@@ -228,8 +228,8 @@ namespace test
             std::cout << "Grasp:\n"
                       << grasps[i].ToFrame() << std::endl;
         }
-        auto params = RbtParameters(paramsFile);
-        std::cout << "Planning params: " << params.toString() << "\n";
+        // auto params = RbtParameters(paramsFile);
+        // std::cout << "Planning params: " << params.toString() << "\n";
         std::cout << "NOT USING MAIN_TEST\n";
         exit(1);
         // auto paramsjplusrbt = JPlusRbtParameters(paramsFile, std::string(graspFile));

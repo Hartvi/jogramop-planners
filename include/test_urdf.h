@@ -40,15 +40,15 @@ int test_urdf(std::string urdf_filename)
     // pqp_handler.GetForwardPoint(const int &ith_distal_point, const Eigen::VectorXd &q_in);
     // pqp_handler.GetRadius(pqp_handler.kdl_chain.getNrOfSegments(), zerojoints);
     // 2/3 Required functions
-    Burs::RadiusFuncParallel rf = pqp_handler.GetRadiusFunc();
-    Burs::ForwardKinematics fk = pqp_handler.GetForwardPointFunc();
+    // Burs::RadiusFuncParallel rf = pqp_handler.GetRadiusFunc();
+    // Burs::ForwardKinematics fk = pqp_handler.GetForwardPointFunc();
 
     for (int i = 0; i < pqp_handler.kdl_chain.getNrOfSegments() + 1; ++i)
     {
-        Eigen::VectorXd r = rf(zerojoints);
-        std::cout << "Joint: " << i << " Protective radius: " << r.transpose() << std::endl;
-        Eigen::Vector3d position = fk(i, zerojoints);
-        std::cout << "Joint: " << i << " 3d position: " << position.transpose() << std::endl;
+        // Eigen::VectorXd r = rf(zerojoints);
+        // std::cout << "Joint: " << i << " Protective radius: " << r.transpose() << std::endl;
+        // Eigen::Vector3d position = fk(i, zerojoints);
+        // std::cout << "Joint: " << i << " 3d position: " << position.transpose() << std::endl;
     }
 
     // printing::WriteModelsToFile(burenv.robot_models, "test_file.txt");

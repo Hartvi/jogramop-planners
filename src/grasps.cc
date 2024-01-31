@@ -10,6 +10,8 @@ namespace Burs
         // expecting row0, row1, row2, row3
         // row{i} = el1,el2,el3,el4
         this->data = Grasp::ConvertCSVToMatrix4d(grasp_data_csv);
+        this->frame = this->ToFrame();
+        this->dv = std::make_shared<VecDistPair>();
     }
 
     std::vector<KDL::Frame>

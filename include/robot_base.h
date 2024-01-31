@@ -37,6 +37,11 @@ namespace Burs
         std::map<int, std::string> segmentIdToFile;
         std::vector<std::vector<double>> minMaxBounds;
 
+        // TODO: cache like this?????
+        // it has to be ideally < 6 elements
+        std::map<std::vector<double>, std::vector<KDL::Frame>> fkResults;
+        std::map<std::vector<double>, KDL::Jacobian> jacResults;
+
         // std::shared_ptr<KDL::ChainFkSolverPos_recursive> fk_solver;
 
         RobotBase(std::string urdf_filename);
@@ -71,20 +76,20 @@ namespace Burs
         std::tuple<std::vector<Eigen::Matrix3d>, std::vector<Eigen::Vector3d>>
         ForwardQ(const Eigen::VectorXd &q_in);
 
-        Eigen::Vector3d
-        GetForwardPoint(const int &ith_distal_point, const Eigen::VectorXd &q_in);
+        // Eigen::Vector3d
+        // GetForwardPoint(const int &ith_distal_point, const Eigen::VectorXd &q_in);
 
         std::vector<Eigen::Vector3d>
         GetForwardPointParallel(const Eigen::VectorXd &q_in);
 
-        ForwardKinematics
-        GetForwardPointFunc();
+        // ForwardKinematics
+        // GetForwardPointFunc();
 
         ForwardKinematicsParallel
         GetForwardPointParallelFunc();
 
         // pqp_handler.kdl_chain.getNrOfSegments() gets the end-effector
-        double GetRadius(const int &ith_distal_point, const Eigen::VectorXd &q_in);
+        // double GetRadius(const int &ith_distal_point, const Eigen::VectorXd &q_in);
 
         RadiusFuncParallel
         GetRadiusFunc();
@@ -97,6 +102,21 @@ namespace Burs
 
         std::string
         ToString();
+
+        std::vector<KDL::Frame>
+        CachedForwardPass(const Eigen::VectorXd &q_in);
+
+        std::vector<KDL::Frame>
+        ForwardPass(const Eigen::VectorXd &q_in);
+
+        KDL::Jacobian
+        CachedJacobian(const VectorXd &q_in);
+
+        KDL::Jacobian
+        ForwardJac(const VectorXd &q_in);
+
+        KDL::JntArray
+        ForwardJPlus(const VectorXd q_in, const KDL::Twist &v_in);
 
         static Eigen::VectorXd
         parseCSVToVectorXd(const std::string &path);

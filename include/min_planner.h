@@ -30,17 +30,12 @@ namespace Burs
 
         virtual ~MinPlanner() = default;
 
+        bool
+        InBounds(const VectorXd &q) const;
+
         /// @brief Get set of random configurations
         MatrixXd
         GetRandomQ(const int &num_spikes) const;
-
-        void
-        GetEndpoints(MatrixXd &Qe, const VectorXd &q_near, double factor) const;
-
-        /// @brief normalize spine to some length
-        // q_{e_i} \leftarrow q_{near} + \delta \frac{q_{e_i} - q_{near}}{\| q_{e_i} - q_{near} \|}
-        VectorXd
-        GetEndpoint(const VectorXd &q_ei, const VectorXd &q_near, double factor) const;
 
         template <typename T>
         std::shared_ptr<T>
@@ -50,16 +45,22 @@ namespace Burs
         SetEnv(std::shared_ptr<BaseEnv> bur_env);
 
         bool
-        IsColliding(const VectorXd &q);
+        IsColliding(const VectorXd &q) const;
 
         double
-        GetClosestDistance(const VectorXd &q);
+        GetClosestDistance(const VectorXd &q) const;
 
         VectorXd
         Nearest(std::shared_ptr<BurTree> t, VectorXd &q);
 
         int
         NearestIndex(std::shared_ptr<BurTree> t, VectorXd &q);
+
+        std::vector<VectorXd>
+        Path(std::shared_ptr<BurTree> t_a, int a_closest, std::shared_ptr<BurTree> t_b, int b_closest);
+
+        std::vector<VectorXd>
+        ConstructPathFromTree(std::shared_ptr<BurTree> t_a, int final_node_id);
 
         std::shared_ptr<BaseEnv> base_env;
 
