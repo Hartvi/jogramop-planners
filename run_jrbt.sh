@@ -4,12 +4,12 @@
 -obstacle /home/hartvi/Documents/CVUT/diploma_thesis/burs_of_free_space/jogramop/scenarios/002/export/obstacles.obj \
 -start_config /home/hartvi/Documents/CVUT/diploma_thesis/burs_of_free_space/jogramop/scenarios/002/export/robot_start_conf.csv \
 -planner 1 \
--max_iters 10000 \
+-max_iters 100000 \
 -d_crit 0.11 \
 -delta_q 3.1415 \
 -epsilon_q 0.05 \
 -num_spikes 7 \
--p_close_enough 0.05 \
+-p_close_enough 1.10 \
 -prob_steer 0.1 \
 -target_prefix /home/hartvi/Documents/CVUT/diploma_thesis/burs_of_free_space/lel \
 -render 1 \
