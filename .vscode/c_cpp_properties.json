@@ -6,6 +6,7 @@
                 "${workspaceFolder}/**",
                 "${workspaceFolder}/include/",
                 "${workspaceFolder}/../**",
+                "${workspaceFolder}/../PQP/include/",
                 "/usr/include/SDL2",
                 "/usr/include/cairo",
                 "/usr/include/eigen3",

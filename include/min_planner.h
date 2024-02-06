@@ -45,16 +45,16 @@ namespace Burs
         SetEnv(std::shared_ptr<BaseEnv> bur_env);
 
         bool
-        IsColliding(const VectorXd &q) const;
+        IsColliding(const RS &state) const;
 
         double
-        GetClosestDistance(const VectorXd &q) const;
+        GetClosestDistance(const RS &state) const;
 
-        VectorXd
-        Nearest(std::shared_ptr<BurTree> t, VectorXd &q);
+        // VectorXd
+        // Nearest(std::shared_ptr<BurTree> t, VectorXd &q);
 
-        int
-        NearestIndex(std::shared_ptr<BurTree> t, VectorXd &q);
+        // int
+        // NearestIndex(std::shared_ptr<BurTree> t, VectorXd &q);
 
         std::vector<VectorXd>
         Path(std::shared_ptr<BurTree> t_a, int a_closest, std::shared_ptr<BurTree> t_b, int b_closest);
@@ -62,9 +62,15 @@ namespace Burs
         std::vector<VectorXd>
         ConstructPathFromTree(std::shared_ptr<BurTree> t_a, int final_node_id);
 
-        std::shared_ptr<BaseEnv> base_env;
+        RS
+        NewState(const VectorXd &q) const;
 
-    protected:
+        std::vector<RS>
+        NewStates(const MatrixXd &Q) const;
+
+    public:
+        std::shared_ptr<BaseEnv> env;
+
         int q_dim;
         // 2 columns: min column and max column
         MatrixXd bounds;
@@ -76,7 +82,7 @@ namespace Burs
     {
         static_assert(std::is_base_of<BaseEnv, T>::value, "T must be a derived class of MinEnv");
 
-        std::shared_ptr<T> ret_env = std::dynamic_pointer_cast<T>(base_env);
+        std::shared_ptr<T> ret_env = std::dynamic_pointer_cast<T>(env);
         if (ret_env != nullptr)
         {
             return ret_env;

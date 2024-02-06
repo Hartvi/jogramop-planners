@@ -7,7 +7,7 @@
 -max_iters 100000 \
 -d_crit 0.1 \
 -delta_q 3.0 \
--epsilon_q 0.08 \
+-epsilon_q 0.05 \
 -num_spikes 7 \
 -p_close_enough 0.015 \
 -prob_steer 0.2 \
@@ -23,5 +23,6 @@
 -ik_index 0 \
 -goal_bias_radius 0.15 \
 -goal_bias_prob 0.5 \
--q_resolution 0.05 \
--seed -1
+-q_resolution 0.1 \
+-seed -1 \
+-render_tree 200

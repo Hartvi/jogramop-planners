@@ -36,24 +36,24 @@ namespace Burs
             this->mean_target = mean_vector;
         }
 
-        std::shared_ptr<BurTree>
-        ConstructTreeFromTargets(std::vector<Grasp> &target_poses)
-        {
-            // TODO: add rotation
-            // Eigen::VectorXd root_node(/*load translation rotation vector*/);
-            Eigen::Vector3d root_node(target_poses[0].frame.p.x(), target_poses[0].frame.p.y(), target_poses[0].frame.p.z());
+        // std::shared_ptr<BurTree>
+        // ConstructTreeFromTargets(std::vector<Grasp> &target_poses)
+        // {
+        //     // TODO: add rotation
+        //     // Eigen::VectorXd root_node(/*load translation rotation vector*/);
+        //     Eigen::Vector3d root_node(target_poses[0].frame.p.x(), target_poses[0].frame.p.y(), target_poses[0].frame.p.z());
 
-            std::shared_ptr<BurTree> t = std::make_shared<BurTree>(root_node, root_node.size());
+        //     std::shared_ptr<BurTree> t = std::make_shared<BurTree>(root_node, root_node.size());
 
-            for (int i = 1; i < target_poses.size(); ++i)
-            {
-                Eigen::Vector3d new_node(target_poses[i].frame.p.x(), target_poses[i].frame.p.y(), target_poses[i].frame.p.z());
+        //     for (int i = 1; i < target_poses.size(); ++i)
+        //     {
+        //         Eigen::Vector3d new_node(target_poses[i].frame.p.x(), target_poses[i].frame.p.y(), target_poses[i].frame.p.z());
 
-                t->AddNode(i - 1, new_node);
-            }
-            // this->target_poses = t;
-            return t;
-        }
+        //         t->AddNode(i - 1, new_node);
+        //     }
+        //     // this->target_poses = t;
+        //     return t;
+        // }
 
         JPlusRbtParameters(int max_iters,
                            double d_crit,

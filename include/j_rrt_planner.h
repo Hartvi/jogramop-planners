@@ -4,7 +4,6 @@
 
 #include "rand_nums.h"
 #include "rbt_planner.h"
-#include "collision_env.h"
 #include "robot_base.h"
 // #include "bur_tree.h"
 #include "planning_result.h"

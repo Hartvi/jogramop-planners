@@ -11,7 +11,7 @@
 
 #include "robot_base.h"
 #include "robot_collision.h"
-#include "j_plus_rbt_planner.h"
+// #include "j_plus_rbt_planner.h"
 
 int test_urdf(std::string urdf_filename)
 {
@@ -27,15 +27,15 @@ int test_urdf(std::string urdf_filename)
     auto zerojoints = Eigen::VectorXd::Zero(num_joints);
     std::cout << "Randjoints: " << zerojoints << std::endl;
 
-    pqp_handler.ForwardQ(zerojoints);
+    // pqp_handler.ForwardQ(zerojoints);
     std::cout << "ForwardQ" << std::endl;
     pqp_handler.SelectedForwardQ(zerojoints);
     std::cout << "SelectedForwardQ" << std::endl;
 
     // burenv > pqp_urdf_handler > urdf_handler
-    Burs::URDFEnv burenv(urdf_filename);
+    // Burs::URDFEnv burenv(urdf_filename);
     // 1/3 This contains the ForwardRt
-    burenv.SetPoses(zerojoints);
+    // burenv.SetPoses(zerojoints);
 
     // pqp_handler.GetForwardPoint(const int &ith_distal_point, const Eigen::VectorXd &q_in);
     // pqp_handler.GetRadius(pqp_handler.kdl_chain.getNrOfSegments(), zerojoints);
@@ -53,13 +53,13 @@ int test_urdf(std::string urdf_filename)
 
     // printing::WriteModelsToFile(burenv.robot_models, "test_file.txt");
     std::fstream test_file("test_file.txt");
-    for (auto &model : burenv.robot_models)
-    {
-        // model->GetFilePath(); // string, path to the file
-        // model->getR(); // 3x3 double array
-        // model->getT(); // 3 double array
-        test_file << model->ToString() << std::endl;
-    }
+    // for (auto &model : burenv.robot_models)
+    // {
+    //     // model->GetFilePath(); // string, path to the file
+    //     // model->getR(); // 3x3 double array
+    //     // model->getT(); // 3 double array
+    //     test_file << model->ToString() << std::endl;
+    // }
 
     /* this should:
     - load the URDf model

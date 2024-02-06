@@ -86,6 +86,9 @@ int main(int argc, char **argv)
 
     int ik_index_in_target_configs;
     double q_resolution;
+
+    int render_tree;
+
     {
         CmdOptions o;
 
@@ -120,6 +123,8 @@ int main(int argc, char **argv)
         o.addOption(Option<int>("cz", &camZ, "camera z coordinate"));
 
         o.addOption(Option<int>("seed", &seed, -1, "random seed or time (if seed = -1)")); // default value is -1 -> seed is from time
+
+        o.addOption(Option<int>("render_tree", &render_tree, 0, "whether to render the tree")); // default value is 0
 
         if (!o.parse(argc, argv))
         {
@@ -164,7 +169,7 @@ int main(int argc, char **argv)
         // 1. Set obstacles in urdfenv
         // 2. Setup parameters
         // 3. Plan
-        auto env = jprbt->GetEnv<URDFEnv>();
+        auto &env = jprbt->env;
         env->AddObstacle(obstacleFile);
         env->SetGroundLevel(groundLevel, minColSegmentIdx);
 
@@ -189,10 +194,11 @@ int main(int argc, char **argv)
         std::vector<Eigen::VectorXd> final_path;
 
         // distance metric is euclidean squared
-        double p_close_sqr = p_close_enough * p_close_enough;
-        double goal_bias_radius_sqr = goal_bias_radius * goal_bias_radius;
+        // double p_close_sqr = p_close_enough * p_close_enough;
+        // double goal_bias_radius_sqr = goal_bias_radius * goal_bias_radius;
 
-        JPlusRbtParameters params(max_iters, d_crit, delta_q, epsilon_q, num_spikes, p_close_sqr, probability_to_steer_to_target, grasps, goal_bias_radius_sqr, goal_bias_probability, q_resolution);
+        JPlusRbtParameters params(max_iters, d_crit, delta_q, epsilon_q, num_spikes, p_close_enough, probability_to_steer_to_target, grasps, goal_bias_radius, goal_bias_probability, q_resolution);
+        params.visualize_tree = render_tree;
         params.seed = usedSeed;
         // END COMMON SETTINGS ------------------------------------------------------------------------------------------------------------
 
@@ -348,23 +354,60 @@ int main(int argc, char **argv)
             ofstream ofs(fname);
             ofs << jprbt->StringifyPath(final_path);
             ofs.close();
+
+            // std::ifstream ifs(fname);
+
+            // if (!ifs)
+            // {
+            //     std::cerr << "Failed to open file: " << fname << std::endl;
+            //     return 1; // or handle error in a way suitable for your application
+            // }
+
+            // std::string line;
+            // while (std::getline(ifs, line))
+            // {
+            //     std::cout << line << '\n';
+            // }
         }
+        // std::cout << "\nvisualization: \n"
+        //   << jprbt->StringifyPath(final_path) << "\n\n";
 
         if (renderVideo)
         {
+            // ROBOT:
             std::string vis_file_name = std::string(targetPrefixFile) + ".vis";
 
-            std::ofstream vis_file(vis_file_name);
+            // std::ofstream vis_file(vis_file_name);
 
-            if (vis_file.is_open())
-            {
-                vis_file << jprbt->StringifyPath(final_path);
-                vis_file.close();
-            }
+            // if (vis_file.is_open())
+            // {
+            //     vis_file << jprbt->StringifyPath(final_path);
+            //     vis_file.close();
+            // }
 
             std::string path_name = joinWithCurrentDirectory(vis_file_name);
+
             // needs `pip install bpy` for python 3.10, numpy
             std::string vis_args = path_name + " " + std::to_string(camX) + " " + std::to_string(camY) + " " + std::to_string(camZ) + " " + grasp_path;
+            // TREE:
+            std::cout << "RENDER TREE: " << render_tree << "\n";
+            if (render_tree)
+            {
+                std::string tree_file_name = std::string(targetPrefixFile) + ".tree";
+
+                std::ofstream tree_file(tree_file_name);
+                // std::cout << "tree csv: " << jprbt->tree_csv << "\n";
+
+                if (tree_file.is_open())
+                {
+                    tree_file << jprbt->tree_csv;
+                    tree_file.close();
+                }
+                std::string tree_path_name = joinWithCurrentDirectory(tree_file_name);
+                std::cout << "tree file " << tree_path_name << "\n";
+                vis_args = vis_args + " " + tree_path_name;
+            }
+
             std::string str_command = "python3.10 " + std::string(visualizationScriptFile) + " " + vis_args;
 
             const char *command = str_command.c_str();
@@ -380,8 +423,6 @@ int main(int argc, char **argv)
         // std::cout << "argc: ";
         // std::cout << argc;
         std::cout << "\n";
-
-        return 0;
     }
     return 0;
 }

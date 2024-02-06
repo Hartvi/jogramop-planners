@@ -9,6 +9,7 @@
 #include <Eigen/Dense>
 #include <memory>
 #include "bur_funcs.h"
+#include "robot_state.h"
 
 namespace Burs
 {
@@ -43,35 +44,46 @@ namespace Burs
         int parent_idx;
 
         /// @brief Node location in configuration space
-        VectorXd q;
+        // VectorXd q;
+        RS state;
 
-        RRTNode(int p, VectorXd q)
+        RRTNode(int p, RS state)
             : parent_idx(p),
-              q(q)
+              state(state)
         {
         }
-        RRTNode() : parent_idx(-1), q(VectorXd(0))
-        {
-        }
+        // RRTNode() : parent_idx(-1), state(VectorXd(0))
+        // {
+        // }
     };
 
     class BurTree
     {
     public:
-        BurTree();
-        BurTree(VectorXd q_location, int q_dim);
+        // BurTree();
+        BurTree(RS q_location, int q_dim);
+        // BurTree(VectorXd q_location, int q_dim);
+
+        // int
+        // AddNode(int p, VectorXd q_location);
 
         int
-        AddNode(int p, VectorXd q_location);
+        AddNode(int p, RS state);
 
         std::pair<int, double>
         NearestIdxAndDistSqr(double *new_point);
 
         int
+        Nearest(const int &idx);
+
+        int
         Nearest(double *new_point);
 
-        VectorXd
-        GetQ(int index);
+        int
+        Nearest(RS &state);
+
+        RS *
+        Get(int index);
 
         int
         GetParentIdx(int index);
@@ -82,24 +94,22 @@ namespace Burs
         ~BurTree();
 
         // friend std::ostream &operator<<(std::ostream &os, const BurTree &tree);
-        friend std::ostream &operator<<(std::ostream &os, const BurTree &tree)
-        {
-            for (const auto &node : tree.mNodes)
-            {
-                os << node.parent_idx;
-                for (int j = 0; j < node.q.size(); ++j)
-                {
-                    os << ", " << node.q[j];
-                }
-                os << std::endl;
-            }
-            return os;
-        }
+        // friend std::ostream &operator<<(std::ostream &os, const BurTree &tree)
+        // {
+        //     for (const auto &node : tree.mNodes)
+        //     {
+        //         os << node.parent_idx;
+        //         for (int j = 0; j < node.state.config.size(); ++j)
+        //         {
+        //             os << ", " << node.state.config[j];
+        //         }
+        //         os << std::endl;
+        //     }
+        //     return os;
+        // }
 
     public:
         std::vector<RRTNode> mNodes;
-        std::vector<std::vector<KDL::Frame>> mFrames;
-        std::vector<KDL::Jacobian> mJacs;
         int mQDim;
 
     private:
@@ -131,11 +141,12 @@ namespace Burs
             {
                 for (int k = 0; k < this->mQDim; ++k)
                 {
-                    this->mData[i][k] = this->mNodes[i].q[k];
+                    this->mData[i][k] = this->mNodes[i].state.config[k];
                 }
             }
         }
     };
+
 }
 
 #endif

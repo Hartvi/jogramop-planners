@@ -11,7 +11,7 @@ namespace Burs
         // row{i} = el1,el2,el3,el4
         this->data = Grasp::ConvertCSVToMatrix4d(grasp_data_csv);
         this->frame = this->ToFrame();
-        this->dv = std::make_shared<VecDistPair>();
+        // this->dv = std::make_shared<VecDistPair>();
     }
 
     std::vector<KDL::Frame>
