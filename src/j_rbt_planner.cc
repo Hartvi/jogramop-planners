@@ -105,16 +105,16 @@ namespace Burs
                     }
                 }
             }
-            for (unsigned int i = 0; i < endpoints.size(); ++i)
-            {
-                double maxdisttravelled = this->env->robot->MaxDistance(*near_state, endpoints[i]);
-                // std::cout << i << ": dist travelled: " << maxdisttravelled << "\n";
-                if (maxdisttravelled > distance_to_move)
-                {
-                    std::cout << "JRBT MOVED TOO MUCH: " << maxdisttravelled << " > " << distance_to_move << "\n";
-                    exit(1);
-                }
-            }
+            // for (unsigned int i = 0; i < endpoints.size(); ++i)
+            // {
+            //     double maxdisttravelled = this->env->robot->MaxDistance(*near_state, endpoints[i]);
+            //     // std::cout << i << ": dist travelled: " << maxdisttravelled << "\n";
+            //     if (maxdisttravelled > distance_to_move)
+            //     {
+            //         std::cout << "JRBT MOVED TOO MUCH: " << maxdisttravelled << " > " << distance_to_move << "\n";
+            //         exit(1);
+            //     }
+            // }
 
             if (!rrt_colliding)
             {
@@ -122,7 +122,7 @@ namespace Burs
                 {
                     std::cout << "TOO CLOSE AND ADDING\n";
                 }
-                std::cout << "closest dist: " << d_closest << "\n";
+                // std::cout << "closest dist: " << d_closest << "\n";
                 this->AddDenseBur(tree, nearest_idx, endpoints, planner_parameters);
             }
             // TRAVELLED DISTANCES ARE INDEED ALWAYS SMALLER THAN D_CLOSEST
