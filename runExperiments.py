@@ -12,30 +12,37 @@ def loadGrasps(filename):
     fi.close()
     return lines
 
-
+outputDir = "results"
 
 planners = {}
 #planners["rbt"] = "-planner 0 " #blind RTB: no goal bias, no goal-steer
-planners["jrbt"] = "-planner 1 " #burs rrt + j+ expand
 #planners["rrt"] = "-planner 2 -d_crit 100000 "  #rrt, no goal bias
-planners["jrrt"] = "-planner 3 -d_crit 100000 " #rrt, alternating random expansion + goal bias 
 
+#planners["jrbt"] = "-planner 1 " #burs rrt + j+ expand
+#planners["jrrt"] = "-planner 3 -d_crit 100000 " #rrt, alternating random expansion + goal bias 
 #planners["ikrbt"] = "-planner 4 "   #goal is IK solution, goes to only single goal
-#planners["ikrrt"] = "-planner 5 -d_cirt 100000 "  #goal is IK solution, goes to only single goal
+#planners["ikrrt"] = "-planner 5 -d_crit 100000 "  #goal is IK solution, goes to only single goal
 
 fout = open("all-cmds.sh", "wt")
     
-rrtSize = 70 * 1000
+rrtSize = 120 * 1000
 distanceToGoal = 0.05  #should be 0.05!!
 dcrit = 0.11
-goalBiasProbability = 0.9 #goal bias neer the goal, should be larger than goalBiasProbability2
-goalBiasProbability2 = 0.1
+goalBiasProbability = 0.7 #goal bias neer the goal, should be larger than goalBiasProbability2
+goalBiasProbability2 = 0.01
     
 #urdfFile = "jogramop/robots/franka_panda/mobile_panda.urdf"
-urdfFile = "jogramop/robots/franka_panda/mobile_panda_fingers.urdf"
+#urdfFile = "jogramop/robots/franka_panda/mobile_panda_fingers.urdf"
+urdfFile = "jogramop/robots/franka_panda/mobile_panda_fingersSmallMesh.urdf"
 seed = 1
 
-for scenario in range(1,2):
+for sprob in [0.01, 0.02, 0.05, 0.1, 0.2, 0.3 ]:
+    for gbr in [0.1, 0.2, 0.3, 0.5]:
+        for gbprob in [0.1, 0.2, 0.7, 0.9 ]:
+            planners["jrbt-steer{}-gbr{}-gprob{}".format(sprob,gbr,gbprob)] = " -planner 1 -goal_bias_radius {} -prob_steer {} -goal_bias_prob {} ".format(gbr,sprob,gbprob) 
+
+
+for scenario in range(1,5):
     scenarioDir = "jogramop/scenarios/{:03d}/export/".format(scenario)
     obstacleFile = "{}/obstacles.obj".format(scenarioDir)
     startFile = "{}/robot_start_conf.csv".format(scenarioDir)
@@ -45,13 +52,15 @@ for scenario in range(1,2):
     graspConfigurations = loadGrasps(ikFile)
     
     for planner in planners:
-        resultsDir = "results/{}/{}".format(scenario, planner)
+        resultsDir = "{}/{}/{}".format(outputDir, scenario, planner)
         os.system("mkdir -p {}".format(resultsDir))
 
         for iteration in range(100):
 
             for ikindex in range(len(graspConfigurations)):
                 if planner != "ikrrt" and planner != "ikrbt" and ikindex > 0:
+                    break
+                if ikindex > 0:
                     break
 
                 outFile = "{}/out-{:03d}-{:03d}".format(resultsDir,ikindex,iteration)
@@ -60,7 +69,7 @@ for scenario in range(1,2):
                     print("Result ", outFile, " finished ")
                     continue
 
-                cmd = "timeout 600s ./burs_of_free_space test "
+                cmd = "timeout 150s ./burs_of_free_space test "
                 cmd += " -grasp {} -urdf {} -obstacle {} -start_config {}".format(graspFile, urdfFile, obstacleFile, startFile)
                 cmd += " -delta_q 3.1415 -epsilon_q 0.05 -num_spikes 7  "
                 cmd += " -render 0 -vis_script scripts/animate_scene.py -cx -1 -cy 3 -cz 6 -groundLevel 0.00 -minColSegIdx 6 "
@@ -69,11 +78,11 @@ for scenario in range(1,2):
                 cmd += " -max_iters {} ".format(rrtSize)
                 cmd += " -p_close_enough {} ".format(distanceToGoal)
                 cmd += " -q_resolution 0.1 "
-                cmd += " -goal_bias_radius 0.35 "
+                cmd += " -goal_bias_radius 0.25 " #bylo 0.5
                 cmd += " -goal_bias_prob {} ".format(goalBiasProbability)
                 cmd += " -prob_steer {} ".format(goalBiasProbability2)
-                cmd += planners[ planner ]
                 cmd += " -seed {} ".format(seed)
+                cmd += planners[ planner ]  #when some cmdline option is repearing, the last one is accepted, so this line must be last in cmd
                 seed += 1
                 doBreak = True
                 if planner == "ikrrt" or planner == "ikrbt":
