@@ -526,6 +526,7 @@ namespace Burs
                 double dot_product = diff.dot(joint_axis);
 
                 // joint_axis has norm = 1 => NO NORMALIZATION NECESSARY
+                // std::cout << "joint axis: " << joint_axis.norm() << "\n";
                 Vector3d projection = diff - dot_product * joint_axis;
 
                 // Update the radius
@@ -659,10 +660,16 @@ namespace Burs
         auto [jac, r] = this->ForwardJacs(q_in);
         RS state(q_in, frames, jac, r);
 
+        // std::cout << "r: " << r.transpose() << "\n";
+
         // KDL::Jacobian jac = this->ForwardJac(q_in);
         // RS state(q_in, frames, jac);
-        // VectorXd r = this->GetRadii(state);
-        // state.radii = r;
+        // VectorXd r_orig = this->GetRadii(state);
+        // state.radii = r_orig;
+
+        // std::cout << "r_orig: " << r_orig.transpose() << "\n";
+        // exit(1);
+
         return state;
     }
 

@@ -15,17 +15,23 @@ namespace Burs
     class RRTParameters
     {
     public:
-        bool visualize_tree = false;
+        int visualize_tree = 0;
         int max_iters;
         double epsilon_q;
+        double q_resolution;
 
         RRTParameters(int max_iters, double epsilon_q)
-            : max_iters(max_iters), epsilon_q(epsilon_q)
+            : max_iters(max_iters), epsilon_q(epsilon_q), q_resolution(0)
+        {
+        }
+
+        RRTParameters(int max_iters, double epsilon_q, double q_resolution)
+            : max_iters(max_iters), epsilon_q(epsilon_q), q_resolution(q_resolution)
         {
         }
 
         RRTParameters()
-            : max_iters(0), epsilon_q(0) {}
+            : max_iters(0), epsilon_q(0), q_resolution(0) {}
 
         virtual ~RRTParameters() = default;
 

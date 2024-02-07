@@ -358,10 +358,28 @@ namespace Burs
                 // Skip the endpoint if it's out of bounds
                 continue;
             }
+
             // assert(!this->IsColliding(vec[i]));
+
+            // if (this->IsColliding(vec[i]))
+            // {
+            //     std::cout << "IS COLLIDING AT STEP " << i << " / " << (vec.size() - 1) << "\n";
+            //     std::cout << "distance travelled: " << this->env->robot->MaxDistance(vec[i], vec[0]) << "\n";
+            //     std::cout << "start to end distance: " << this->env->robot->MaxDistance(vec.back(), vec[0]) << "\n";
+            //     // std::cout << "diff: ";
+            //     // for (unsigned int l = 0; l < vec[i].frames.size(); ++l)
+            //     // {
+            //     //     std::cout << (vec[0].frames[l].p - vec.back().frames[l].p).Norm() << ", ";
+            //     // }
+            //     // std::cout << "config 0: \n " << vec[0].config.transpose() << "\n";
+            //     // std::cout << "config last: \n " << vec.back().config.transpose() << "\n";
+            //     exit(1);
+            // }
+
             // std::cout << " vecs: " << t->Get(prev_id)->config.transpose() << ", " << vec[i].config.transpose();
             // std::cout << " diff: " << (t->Get(prev_id)->config - vec[i].config).norm() << "\n";
-            assert(!t->Get(prev_id)->config.isApprox(vec[i].config, 0.001));
+            // The below seems to have gone
+            // assert(!t->Get(prev_id)->config.isApprox(vec[i].config, 0.001));
             prev_id = t->AddNode(prev_id, vec[i]);
         }
         return prev_id;
@@ -370,16 +388,24 @@ namespace Burs
     std::vector<RS>
     RbtPlanner::Densify(const RS &src, const RS &tgt, const RbtParameters &plan_params) const
     {
+        double maxdist = this->env->robot->MaxDistance(src, tgt);
+        // std::cout << "Densify: src and tgt dist: " << maxdist << "\n";
         // less than 2x upper distance between neighbouring positions
         double upper_dist = plan_params.q_resolution * 0.5;
 
         std::vector<RS> configs = {src, tgt};
+        return configs;
 
         for (int i = 0; i + 1 < configs.size();)
         {
             VectorXd middle_config = (configs[i].config + configs[i + 1].config) * 0.5;
             RS ns = this->NewState(middle_config);
             double tmp_dist = this->env->robot->MaxDistance(configs[i], ns);
+
+            if (maxdist < tmp_dist)
+            {
+                std::cout << "halfway distance higher than final distance: " << maxdist << " < " << tmp_dist << "\n";
+            }
             // double tmp_dist = this->MaxMovedDistance(configs[i], middle_config);
 
             if (tmp_dist > upper_dist)

@@ -105,9 +105,24 @@ namespace Burs
                     }
                 }
             }
+            for (unsigned int i = 0; i < endpoints.size(); ++i)
+            {
+                double maxdisttravelled = this->env->robot->MaxDistance(*near_state, endpoints[i]);
+                // std::cout << i << ": dist travelled: " << maxdisttravelled << "\n";
+                if (maxdisttravelled > distance_to_move)
+                {
+                    std::cout << "JRBT MOVED TOO MUCH: " << maxdisttravelled << " > " << distance_to_move << "\n";
+                    exit(1);
+                }
+            }
 
             if (!rrt_colliding)
             {
+                if (too_close)
+                {
+                    std::cout << "TOO CLOSE AND ADDING\n";
+                }
+                std::cout << "closest dist: " << d_closest << "\n";
                 this->AddDenseBur(tree, nearest_idx, endpoints, planner_parameters);
             }
             // TRAVELLED DISTANCES ARE INDEED ALWAYS SMALLER THAN D_CLOSEST
@@ -266,11 +281,11 @@ namespace Burs
             // Iterate max `closest_dist` to `target_config`
             std::vector<RS> bur_endpoints = this->GetEndpoints(*best_state, target_states, distance_to_move);
             // std::vector<double> distances(bur_endpoints.size());
-            for (unsigned int i = 0; i < bur_endpoints.size(); ++i)
-            {
-                double tmpdist = this->env->robot->MaxDistance(*best_state, bur_endpoints[i]);
-                std::cout << "max dist " << i << " in extend: " << tmpdist << "\n";
-            }
+            // for (unsigned int i = 0; i < bur_endpoints.size(); ++i)
+            // {
+            //     double tmpdist = this->env->robot->MaxDistance(*best_state, bur_endpoints[i]);
+            //     std::cout << "max dist " << i << " in extend: " << tmpdist << "\n";
+            // }
 
             // If closest obstacle was too close => check collisions for the RRT step
             if (too_close)

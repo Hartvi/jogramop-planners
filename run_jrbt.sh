@@ -4,7 +4,7 @@
 -obstacle /home/hartvi/Documents/CVUT/diploma_thesis/burs_of_free_space/jogramop/scenarios/004/export/obstacles.obj \
 -start_config /home/hartvi/Documents/CVUT/diploma_thesis/burs_of_free_space/jogramop/scenarios/004/export/robot_start_conf.csv \
 -planner 1 \
--max_iters 50000 \
+-max_iters 5000 \
 -d_crit 0.10 \
 -delta_q 3.1415 \
 -epsilon_q 0.05 \

@@ -21,18 +21,17 @@ namespace Burs
         double delta_q;
         // double epsilon_q;
         int num_spikes;
-        double q_resolution;
         int seed;
 
         RbtParameters(int max_iters, double d_crit, double delta_q, double epsilon_q, int num_spikes, double q_resolution)
-            : RRTParameters(max_iters, epsilon_q),
-              d_crit(d_crit), delta_q(delta_q), num_spikes(num_spikes), q_resolution(q_resolution)
+            : RRTParameters(max_iters, epsilon_q, q_resolution),
+              d_crit(d_crit), delta_q(delta_q), num_spikes(num_spikes)
         {
         }
 
         RbtParameters()
-            : RRTParameters(0, 0),
-              d_crit(0), delta_q(0), num_spikes(0), q_resolution(0) {}
+            : RRTParameters(0, 0, 0),
+              d_crit(0), delta_q(0), num_spikes(0) {}
 
         std::string
         toString() const override

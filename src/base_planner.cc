@@ -113,12 +113,20 @@ namespace Burs
             //  1. iterate until 0.1*dc
             //  2. 4-5 iterations
             // for (unsigned int k = 0; k < 5; ++k)
-            while (phi_result > d_small)
+            for (unsigned int k = 0; k < 5 && phi_result > d_small; ++k)
+            // for (unsigned int k = 0; phi_result > d_small; ++k)
+            // while (phi_result > d_small)
             {
                 // CHECK: this is indeed PI away from q_near
 
                 double delta_tk = this->GetDeltaTk(phi_result, tk, end_state, state_k);
+
                 tk = tk + delta_tk;
+                if (tk >= 1.0)
+                {
+                    std::cout << "MOVED TOO MUCH IN ENDPOINT CALC\n";
+                    break;
+                }
                 // has actually never reached > 1
                 // if (tk > 1.0) // some tolerance
                 // {
@@ -131,6 +139,7 @@ namespace Burs
                 state_k = this->QToStates(q_k)[0];
                 // state_k = this->env->robot->FullFK(q_k);
                 phi_result = d_max - this->env->robot->MaxDistance(state_near, state_k);
+                // std::cout << "dist travelled at step " << k << ": " << (d_max - phi_result) << "\n";
                 // phi_result = d_max - this->MaxMovedDistance(q_near, q_k);
             }
             new_states.push_back(state_k);

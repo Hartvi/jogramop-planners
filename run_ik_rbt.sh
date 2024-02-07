@@ -23,6 +23,6 @@
 -ik_index 0 \
 -goal_bias_radius 0.15 \
 -goal_bias_prob 0.5 \
--q_resolution 0.1 \
+-q_resolution 0.05 \
 -seed -1 \
 -render_tree 0
