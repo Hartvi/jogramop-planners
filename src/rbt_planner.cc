@@ -251,7 +251,7 @@ namespace Burs
                 delta_s = (endpoint.config - nearest_state.config).norm();
                 // delta_s = (q_t - q_n).norm();
 
-                std::vector<RS> configs = this->Densify(endpoint, nearest_state, plan_parameters);
+                std::vector<RS> configs = this->Densify(nearest_state, endpoint, plan_parameters);
 
                 for (unsigned int i = 1; i < configs.size(); ++i)
                 {
@@ -327,6 +327,13 @@ namespace Burs
             auto &endpoint = endpoints[i];
             // std::cout << "end " << i << " : " << this->GetEEPose(endpoint).p << "\n";
             auto max_epsilon_separated_points = this->Densify(near_state, endpoint, plan_params);
+            // for (unsigned int k = 0; k < max_epsilon_separated_points.size(); ++k)
+            // {
+            //     if (this->IsColliding(max_epsilon_separated_points[k]))
+            //     {
+            //         std::cout << "IS COLLIDING\n";
+            //     }
+            // }
             int prev_idx = idx_near; // idx of q_near
 
             int last_idx = this->AddPointsExceptFirst(tree, prev_idx, max_epsilon_separated_points);
@@ -351,6 +358,10 @@ namespace Burs
                 // Skip the endpoint if it's out of bounds
                 continue;
             }
+            // assert(!this->IsColliding(vec[i]));
+            // std::cout << " vecs: " << t->Get(prev_id)->config.transpose() << ", " << vec[i].config.transpose();
+            // std::cout << " diff: " << (t->Get(prev_id)->config - vec[i].config).norm() << "\n";
+            assert(!t->Get(prev_id)->config.isApprox(vec[i].config, 0.001));
             prev_id = t->AddNode(prev_id, vec[i]);
         }
         return prev_id;

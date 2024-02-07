@@ -31,6 +31,7 @@ namespace Burs
         // RS(const VectorXd &config, const std::vector<KDL::Frame> &frames, const std::vector<KDL::Jacobian> &jacs);
         RS() = default;
         RS(const VectorXd &config, const std::vector<KDL::Frame> &frames, const KDL::Jacobian &jac, const VectorXd &radii);
+        RS(const VectorXd &config, const std::vector<KDL::Frame> &frames, const KDL::Jacobian &jac);
 
         // Copy constructor
         // RS(const RS &other)

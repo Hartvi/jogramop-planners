@@ -13,7 +13,15 @@ namespace Burs
         : config(config), frames(frames), jac(jac), radii(radii)
     {
         // std::cout << "config: " << this->config << "\n";
-        assert(this->config.size() > 1);
+        // assert(this->config.size() > 1);
+        assert(config.size() > 1);
+    }
+
+    RS::RS(const VectorXd &config, const std::vector<KDL::Frame> &frames, const KDL::Jacobian &jac)
+        : config(config), frames(frames), jac(jac)
+    {
+        // std::cout << "config: " << this->config << "\n";
+        // assert(this->config.size() > 1);
         assert(config.size() > 1);
     }
 

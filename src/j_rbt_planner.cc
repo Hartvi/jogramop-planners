@@ -73,12 +73,12 @@ namespace Burs
             getTime(&tt2);
             totalNNtime += getTime(tt1, tt2);
 
-            RS near_state = *tree->Get(nearest_idx);
+            RS *near_state = tree->Get(nearest_idx);
             // VectorXd q_near = tree->GetQ(nearest_idx);
 
             getTime(&tt1);
             // Slow => maybe in the future use FCL and somehow compile it because it had a ton of compilation errors and version mismatches
-            double d_closest = this->GetClosestDistance(near_state);
+            double d_closest = this->GetClosestDistance(*near_state);
             getTime(&tt2);
             totalGetClosestDistTime += getTime(tt1, tt2);
 
@@ -87,11 +87,12 @@ namespace Burs
             unsigned int num_extensions = too_close ? 1 : planner_parameters.num_spikes;
             double distance_to_move = too_close ? planner_parameters.epsilon_q : d_closest;
 
-            std::vector<RS> endpoints = too_close ? this->GetEndpoints(near_state, {Qe_states[0]}, distance_to_move)
-                                                  : this->GetEndpoints(near_state, Qe_states, distance_to_move);
+            std::vector<RS> endpoints = too_close ? this->GetEndpoints(*near_state, {Qe_states[0]}, distance_to_move)
+                                                  : this->GetEndpoints(*near_state, Qe_states, distance_to_move);
             // std::vector<RS> endpoints = this->GetEndpoints(near_state, Qe_states, d_closest);
             // If closest obstacle was too close => check collisions for the RRT step
 
+            bool rrt_colliding = false;
             if (too_close)
             {
                 for (unsigned int i = 0; i < endpoints.size(); ++i)
@@ -99,12 +100,16 @@ namespace Burs
                     if (this->IsColliding(endpoints[i]))
                     {
                         std::cout << "JRBT COLLIDED IN RRT RANDOM STEP\n";
-                        continue;
+                        // continue;
+                        rrt_colliding = true;
                     }
                 }
             }
 
-            this->AddDenseBur(tree, nearest_idx, endpoints, planner_parameters);
+            if (!rrt_colliding)
+            {
+                this->AddDenseBur(tree, nearest_idx, endpoints, planner_parameters);
+            }
             // TRAVELLED DISTANCES ARE INDEED ALWAYS SMALLER THAN D_CLOSEST
 
             if (this->rng->getRandomReal() < planner_parameters.probability_to_steer_to_target)
@@ -215,16 +220,19 @@ namespace Burs
             // int idx_near = tree->Nearest(q_near.data());
             delta_p = best_grasp.best_dist;
             double best_dist = best_grasp.best_dist;
-            std::cout << "best dist: " << best_dist << "\n";
-            std::cout << "close enough: " << planner_parameters.p_close_enough << " delta_p: " << delta_p << " \n";
+            // std::cout << "best dist: " << best_dist << "\n";
+            // std::cout << "close enough: " << planner_parameters.p_close_enough << " delta_p: " << delta_p << " \n";
 
             // Get closest obstacle distance
+            // std::cout << "best state: " << this->env->robot->GetEEFrame(*best_state).p << "\n";
             closest_dist = this->GetClosestDistance(*best_state);
 
             // SWITCH TO RRT IF OBSTACLE TOO CLOSE
+            // bool too_close = false;
             bool too_close = closest_dist < planner_parameters.d_crit;
             unsigned int num_extensions = too_close ? 1 : planner_parameters.num_spikes;
             double distance_to_move = too_close ? planner_parameters.epsilon_q : closest_dist;
+            std::cout << "closest dist: " << closest_dist << " dist to move: " << distance_to_move << "\n";
 
             // closest_dist = this->GetClosestDistance(q_near);
 
@@ -251,8 +259,18 @@ namespace Burs
             }
 
             std::vector<RS> target_states = this->NewStates(target_configs);
+            // DEBUG:
+            auto eeframe = this->env->robot->GetEEFrame(target_states[0]);
+
+            // END DEBUG
             // Iterate max `closest_dist` to `target_config`
             std::vector<RS> bur_endpoints = this->GetEndpoints(*best_state, target_states, distance_to_move);
+            // std::vector<double> distances(bur_endpoints.size());
+            for (unsigned int i = 0; i < bur_endpoints.size(); ++i)
+            {
+                double tmpdist = this->env->robot->MaxDistance(*best_state, bur_endpoints[i]);
+                std::cout << "max dist " << i << " in extend: " << tmpdist << "\n";
+            }
 
             // If closest obstacle was too close => check collisions for the RRT step
             if (too_close)
@@ -262,7 +280,8 @@ namespace Burs
                     if (this->IsColliding(bur_endpoints[i]))
                     {
                         std::cout << "JRBT COLLIDED IN RRT EXTEND\n";
-                        break;
+                        // break;
+                        return AlgorithmState::Trapped;
                     }
                 }
             }
@@ -272,7 +291,7 @@ namespace Burs
             // Updates best config for each grasp
             this->AddDenseBur(tree, idx_near, bur_endpoints, planner_parameters);
 
-        } while (delta_p > planner_parameters.p_close_enough);
+        } while (delta_p > planner_parameters.p_close_enough && closest_dist > planner_parameters.d_crit);
 
         // std::cout << "delta_p: " << delta_p << "\n";
         if (delta_p <= planner_parameters.p_close_enough)

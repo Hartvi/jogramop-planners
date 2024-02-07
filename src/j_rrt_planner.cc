@@ -156,6 +156,16 @@ namespace Burs
         twist.vel = delta_p * max_dist;
 
         // TODO ROTATION
+        // src rot: R1
+        // tgt rot: R2
+        // difference: subtract R1 then add R2
+        // calculation: R2 * R1^T
+        // KDL::Rotation inv_src_rot = src.M.Inverse();
+        // double x, y, z;
+        // KDL::Rotation diff_rot = tgt.M * inv_src_rot;
+        // diff_rot.GetRPY(x, y, z);
+
+        // twist.rot = 0.1 * KDL::Vector(x, y, z);
 
         return twist;
     }

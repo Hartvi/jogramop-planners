@@ -99,8 +99,8 @@ namespace Burs
         std::pair<KDL::Jacobian, VectorXd>
         ForwardJacs(const VectorXd &q_in);
 
-        // VectorXd
-        // GetRadii(const RS &state);
+        VectorXd
+        GetRadii(const RS &state);
 
         // void
         // AddRadii(RS &state);
