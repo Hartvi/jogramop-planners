@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+
 
 import glob, sys, re
 import matplotlib.pyplot as plt
@@ -15,6 +15,9 @@ prefix = sys.argv[2]
 
 DTG = 0.122
 
+maxReportedTime = 4
+
+
 def getSRCurve(values, distances):
     if len(values) == 0 or len(distances) == 0:
         return []
@@ -29,12 +32,21 @@ def getSRCurve(values, distances):
     srCurve = []  #each value is [value, sucess ratio]
     while value <= maxValue:
         finishedRuns = [ values[i] for i in range(len(values)) if distances[i] <= DTG and values[i] <= value ]
-        
-        srCurve.append([ value, 100*len(finishedRuns) / len(values) ] )
+        if maxReportedTime > 0 and value <= maxReportedTime:
+            srCurve.append([ value, 100*len(finishedRuns) / len(values) ] )
         value += delta
 
     return srCurve
 
+def areaUnderCurve(srCurve, maxXvalue):
+    area = 0
+    for i in range(len(srCurve)-1):
+        if srCurve[i][0] < maxXvalue:
+            area += abs(srCurve[i][0]-srCurve[i-1][0]) * (srCurve[i][1] + srCurve[i-1][1])/2
+    if srCurve[-1][0] < maxXvalue:
+        area += abs(maxXvalue-srCurve[-1][0]) * (srCurve[-1][1])
+
+    return area        
 
 
 results = {}
@@ -92,8 +104,8 @@ for scenario in results:
 
         srCurve = getSRCurve( times, distances )
 
-        xvals = [ item[0] for item in srCurve ]
-        yvals = [ item[1] for item in srCurve ]
+        xvals = [ item[0] for item in srCurve if item[0] < maxReportedTime ]
+        yvals = [ item[1] for item in srCurve if item[0] < maxReportedTime ]
 
         if len(srCurve) != 0:
             srCurves.append([planner, srCurve])
@@ -106,7 +118,10 @@ for scenario in results:
     def val(x):
         return x[1][-1][1]
 
-    srCurves.sort( key=val, reverse=True)
+    def val2(x):
+        return areaUnderCurve(x[1], maxReportedTime)
+
+    srCurves.sort( key=val2, reverse=True)
     plt.clf()
 
     plt.xlabel("time [s]")
@@ -128,6 +143,7 @@ for scenario in results:
 
 
 for scenario in results:
+    break
     plt.clf()
     plt.xlabel("ikindex [-]")
     plt.ylabel("sr")

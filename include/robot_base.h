@@ -19,9 +19,12 @@
 #include <Eigen/Dense>
 
 #include "bur_funcs.h"
+#include "robot_state.h"
 
 namespace Burs
 {
+    using namespace Eigen;
+
     class RobotBase
     {
     public:
@@ -42,8 +45,7 @@ namespace Burs
         std::map<std::vector<double>, std::vector<KDL::Frame>> fkResults;
         std::map<std::vector<double>, KDL::Jacobian> jacResults;
 
-        // std::shared_ptr<KDL::ChainFkSolverPos_recursive> fk_solver;
-
+        // BEGIN BASE
         RobotBase(std::string urdf_filename);
 
         std::optional<urdf::ModelInterfaceSharedPtr>
@@ -73,44 +75,17 @@ namespace Burs
         KDL::ChainFkSolverPos_recursive
         GetFKSolver(KDL::Chain kdl_chain);
 
-        std::tuple<std::vector<Eigen::Matrix3d>, std::vector<Eigen::Vector3d>>
-        ForwardQ(const Eigen::VectorXd &q_in);
-
-        // Eigen::Vector3d
-        // GetForwardPoint(const int &ith_distal_point, const Eigen::VectorXd &q_in);
-
-        std::vector<Eigen::Vector3d>
-        GetForwardPointParallel(const Eigen::VectorXd &q_in);
-
-        // ForwardKinematics
-        // GetForwardPointFunc();
-
-        ForwardKinematicsParallel
-        GetForwardPointParallelFunc();
-
-        // pqp_handler.kdl_chain.getNrOfSegments() gets the end-effector
-        // double GetRadius(const int &ith_distal_point, const Eigen::VectorXd &q_in);
-
-        RadiusFuncParallel
-        GetRadiusFunc();
-
-        Eigen::VectorXd
-        GetRadii(const Eigen::VectorXd &q_in);
-
         std::vector<std::vector<double>>
         GetMinMaxBounds();
 
         std::string
         ToString();
 
-        std::vector<KDL::Frame>
-        CachedForwardPass(const Eigen::VectorXd &q_in);
+        // std::tuple<std::vector<Eigen::Matrix3d>, std::vector<Eigen::Vector3d>>
+        // ForwardQ(const Eigen::VectorXd &q_in);
 
         std::vector<KDL::Frame>
         ForwardPass(const Eigen::VectorXd &q_in);
-
-        KDL::Jacobian
-        CachedJacobian(const VectorXd &q_in);
 
         KDL::Jacobian
         ForwardJac(const VectorXd &q_in);
@@ -118,11 +93,27 @@ namespace Burs
         KDL::JntArray
         ForwardJPlus(const VectorXd q_in, const KDL::Twist &v_in);
 
+        KDL::JntArray
+        ForwardJPlus(const RS &state, const KDL::Twist &v_in);
+
+        std::pair<KDL::Jacobian, VectorXd>
+        ForwardJacs(const VectorXd &q_in);
+
+        // VectorXd
+        // GetRadii(const RS &state);
+
+        // void
+        // AddRadii(RS &state);
+
+        RS
+        FullFK(const VectorXd &q_in);
+
         static Eigen::VectorXd
         parseCSVToVectorXd(const std::string &path);
 
         static std::vector<Eigen::VectorXd>
         parseCSVToVectors(const std::string &path);
+        // END BASE
     };
 }
 #endif

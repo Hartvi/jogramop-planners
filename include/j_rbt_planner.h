@@ -3,7 +3,6 @@
 
 #include "rand_nums.h"
 #include "j_rrt_planner.h"
-#include "collision_env.h"
 #include "robot_base.h"
 #include "bur_tree.h"
 #include "j_plus_rbt_parameters.h"

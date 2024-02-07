@@ -15,6 +15,7 @@ namespace Burs
     class RRTParameters
     {
     public:
+        bool visualize_tree = false;
         int max_iters;
         double epsilon_q;
 

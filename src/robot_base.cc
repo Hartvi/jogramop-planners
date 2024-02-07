@@ -75,36 +75,6 @@ namespace Burs
         this->segmentIdToFile = this->GetSegmentIdToFile();
 
         this->minMaxBounds = this->GetMinMaxBounds();
-
-        // this->fk_solver = std::make_shared<KDL::ChainFkSolverPos_recursive>(kdl_chain);
-        // this->fk_solver = this->GetFKSolver(this->kdl_chain);
-
-        // KDL::ChainFkSolverPos_recursive fk_solver = GetFKSolver(this->kdl_chain);
-
-        // // Create random joint angle vector
-        // std::default_random_engine generator;
-        // std::uniform_real_distribution<double> distribution(-0, 0);
-        // KDL::JntArray joint_positions(kdl_chain.getNrOfJoints());
-
-        // for (unsigned int i = 0; i < joint_positions.data.size(); ++i)
-        // {
-        //     joint_positions(i) = distribution(generator);
-        // }
-
-        // // Compute forward kinematics
-        // KDL::Frame end_effector_pose;
-        // fk_solver.JntToCart(joint_positions, end_effector_pose);
-
-        // // Print the positions of each robot segment
-        // for (unsigned int i = 0; i < kdl_chain.getNrOfSegments(); ++i)
-        // {
-        //     KDL::Frame segment_pose;
-        //     fk_solver.JntToCart(joint_positions, segment_pose, i + 1);
-        //     // std::cout << "Segment " << i << ": " << segment_pose << std::endl;
-        //     std::cout << "\nSegment " << i << ": \nPosition: \n"
-        //               << segment_pose.p << "\nRotation: \n"
-        //               << segment_pose.M << std::endl;
-        // }
     }
 
     std::vector<std::vector<double>>
@@ -261,11 +231,6 @@ namespace Burs
     std::string
     RobotBase::GetLinkName(const KDL::Chain &kdl_chain, unsigned int i)
     {
-        // for (unsigned int i = 0; i < kdl_chain.getNrOfSegments(); ++i)
-        // {
-        //     std::string segment_name = kdl_chain.getSegment(i).getName();
-        //     std::cout << "Segment " << i << ": " << segment_name << " File: " << my_map[segment_name] << std::endl;
-        // }
         return kdl_chain.getSegment(i).getName();
     }
 
@@ -276,10 +241,7 @@ namespace Burs
         for (unsigned int i = 0; i < kdl_chain.getNrOfSegments(); ++i)
         {
             std::string segment_name = kdl_chain.getSegment(i).getName();
-            // std::cout << "Segment name: " << segment_name << std::endl;
-            // std::cout << "Segment name length: " << segment_name.size() << std::endl;
             id_to_model_name[i] = segment_name;
-            // std::cout << "Id: " << i << " Segment: " << segment_name << std::endl;
         }
         return id_to_model_name;
     }
@@ -296,8 +258,6 @@ namespace Burs
             if (this->segmentNameToFile.find(entry.second) != this->segmentNameToFile.end())
             {
                 segmentIdToFile[key] = this->segmentNameToFile[entry.second];
-                // std::cout << "Segment " << key << ": "
-                //           << " File: " << this->segmentNameToFile[entry.second] << std::endl;
             }
         }
 
@@ -311,403 +271,10 @@ namespace Burs
         return fk_solver;
     }
 
-    std::tuple<std::vector<Matrix3d>, std::vector<Vector3d>>
-    RobotBase::ForwardQ(const VectorXd &q_in)
-    {
-        auto fk_res = this->CachedForwardPass(q_in);
-
-        unsigned int nrSegments = this->kdl_chain.getNrOfSegments();
-
-        std::vector<Matrix3d> rotations(nrSegments);
-        std::vector<Vector3d> positions(nrSegments);
-
-        for (unsigned int i = 0; i < nrSegments; ++i)
-        {
-            // Convert KDL rotation to Eigen matrix
-            Matrix3d rotation;
-            auto segment_pose = fk_res[i];
-            for (int j = 0; j < 3; ++j)
-            {
-                for (int k = 0; k < 3; ++k)
-                {
-                    rotation(j, k) = segment_pose.M(j, k);
-                }
-            }
-            rotations[i] = rotation;
-
-            // Convert KDL position to Eigen vector
-            Vector3d position(segment_pose.p.x(), segment_pose.p.y(), segment_pose.p.z());
-
-            positions[i] = position;
-        }
-
-        return std::make_tuple(rotations, positions);
-
-        // // old stuff:
-        // KDL::ChainFkSolverPos_recursive fk_solver(this->kdl_chain);
-
-        // // Convert Eigen vector to KDL joint array
-        // unsigned int num_joints = this->kdl_chain.getNrOfJoints();
-
-        // assert(num_joints == q_in.size());
-
-        // KDL::JntArray joint_positions(num_joints);
-        // for (unsigned int i = 0; i < joint_positions.data.size(); ++i)
-        // {
-        //     joint_positions(i) = q_in(i);
-        // }
-
-        // // Prepare the output vectors for rotations and positions
-        // std::vector<Matrix3d> rotations;
-        // std::vector<Vector3d> positions;
-
-        // // Compute forward kinematics for all segments
-        // for (unsigned int i = 0; i < this->kdl_chain.getNrOfSegments(); ++i)
-        // {
-        //     KDL::Frame segment_pose;
-        //     if (fk_solver.JntToCart(joint_positions, segment_pose, i + 1) >= 0)
-        //     {
-        //         // Convert KDL rotation to Eigen matrix
-        //         Matrix3d rotation;
-        //         for (int j = 0; j < 3; ++j)
-        //         {
-        //             for (int k = 0; k < 3; ++k)
-        //             {
-        //                 rotation(j, k) = segment_pose.M(j, k);
-        //             }
-        //         }
-        //         rotations.push_back(rotation);
-
-        //         // Convert KDL position to Eigen vector
-        //         Vector3d position(segment_pose.p.x(), segment_pose.p.y(), segment_pose.p.z());
-        //         // std::cout << "Segment " << i << ": " << position.transpose() << std::endl;
-        //         positions.push_back(position);
-        //     }
-        //     else
-        //     {
-        //         // Handle the error case if FK solver failed
-        //         // Depending on how you want to handle errors, you might throw an exception
-        //         // or handle it in some other way
-        //         // std::cout << "segment pose: " << segment_pose << std::endl;
-        //         throw std::runtime_error("Forward kinematics solver failed at segment " + std::to_string(i));
-        //     }
-        // }
-
-        // // Return the tuple of rotations and positions
-        // return std::make_tuple(rotations, positions);
-    }
-
-    std::vector<Vector3d>
-    RobotBase::GetForwardPointParallel(const VectorXd &q_in)
-    {
-        auto fk_res = this->CachedForwardPass(q_in);
-        unsigned int nrSegments = this->kdl_chain.getNrOfSegments();
-
-        std::vector<Vector3d> segment_positions(nrSegments);
-
-        // typedef enum { RotAxis,RotX,RotY,RotZ,TransAxis,TransX,TransY,TransZ,None} JointType;
-        for (unsigned int i = 0; i < nrSegments; ++i)
-        {
-            auto segment_pose = fk_res[i].p;
-            // Convert KDL position to Eigen vector
-            Vector3d position(segment_pose.x(), segment_pose.y(), segment_pose.z());
-            segment_positions[i] = position;
-        }
-
-        return segment_positions;
-
-        // old code:
-        // KDL::ChainFkSolverPos_recursive fk_solver(this->kdl_chain);
-        // // Convert Eigen vector to KDL joint array
-        // size_t num_joints = this->kdl_chain.getNrOfJoints();
-
-        // assert(q_in.size() == num_joints);
-
-        // KDL::JntArray joint_positions(num_joints);
-
-        // // theoretically don't need the joint angles after (i+1)
-        // for (unsigned int i = 0; i < num_joints; ++i)
-        // {
-        //     joint_positions(i) = q_in(i);
-        // }
-
-        // std::vector<KDL::Frame> segment_poses(this->kdl_chain.getNrOfSegments());
-        // std::vector<Vector3d> segment_positions(this->kdl_chain.getNrOfSegments());
-        // if (fk_solver.JntToCart(joint_positions, segment_poses) >= 0)
-        // {
-
-        //     // typedef enum { RotAxis,RotX,RotY,RotZ,TransAxis,TransX,TransY,TransZ,None} JointType;
-        //     for (unsigned int i = 0; i < this->kdl_chain.getNrOfSegments(); ++i)
-        //     {
-        //         if (this->kdl_chain.getSegment(i).getJoint().getType() == KDL::Joint::JointType::None)
-        //         {
-        //             // std::cout << "segment: " << i << "none joint\n";
-        //             continue;
-        //         }
-        //         auto segment_pose = segment_poses[i];
-        //         // Convert KDL position to Eigen vector
-        //         Vector3d position(segment_pose.p.x(), segment_pose.p.y(), segment_pose.p.z());
-        //         segment_positions[i] = position;
-        //         // std::cout << "Forward point " << ith_distal_point << ": " << position.transpose() << std::endl;
-        //     }
-        //     // return position;
-        // }
-        // else
-        // {
-        //     // Handle the error case if FK solver failed
-        //     // Depending on how you want to handle errors, you might throw an exception
-        //     // or handle it in some other way
-        //     // std::cout << "segment pose: " << segment_pose << std::endl;
-        //     throw std::runtime_error("Forward kinematics solver failed in GetForwardPointParallel");
-        // }
-        // return segment_positions;
-    }
-
-    ForwardKinematicsParallel
-    RobotBase::GetForwardPointParallelFunc()
-    {
-        ForwardKinematicsParallel fpf = [this](const VectorXd &configuration) -> std::vector<Vector3d>
-        {
-            return this->GetForwardPointParallel(configuration);
-        };
-        return fpf;
-    }
-
-    VectorXd
-    RobotBase::GetRadii(const VectorXd &q_in)
-    {
-        auto fk_res = this->CachedForwardPass(q_in);
-        VectorXd radii(q_in.size());
-        unsigned int nrSegments = this->kdl_chain.getNrOfSegments();
-
-        unsigned int j = 0;
-        for (unsigned int i = 0; i < nrSegments - 1; ++i)
-        {
-            auto segment_pose = fk_res[i];
-            Vector3d position(segment_pose.p.x(), segment_pose.p.y(), segment_pose.p.z());
-
-            // Local axis: https://docs.ros.org/en/indigo/api/orocos_kdl/html/classKDL_1_1Joint.html#a57c97b32765b0caeb84b303d66a96a1b
-            auto joint = this->kdl_chain.getSegment(i).getJoint();
-            KDL::Vector joint_axis_local = joint.JointAxis();
-
-            // typedef enum { RotAxis,RotX,RotY,RotZ,TransAxis,TransX,TransY,TransZ,None} JointType;
-            // std::cout << "Joint: " << joint.getTypeName() << " Axis: " << joint.JointAxis() << std::endl;
-
-            if (joint.getType() == KDL::Joint::JointType::None)
-            {
-                continue;
-            }
-
-            /*
-            The expression \sum^n_{i=1} r_i |y_i − q_i| is a conservative upper bound on the displacement of any point on the manipulator
-              when the configuration changes from q = (q_1 . . . q_n)T to y = (y_1 . . . y_n)^T .
-
-            In short: it is the first order derivative of the mapping from configuration value q_i to euclidean space
-
-            Ergo: translational joints: d(distance)/dq = 1
-            rotational joints: d(phi*r)/dphi = r - the radius
-            */
-
-            double radius = 0.0;
-            switch (joint.getType())
-            {
-            case KDL::Joint::JointType::TransAxis:
-            case KDL::Joint::JointType::TransX:
-            case KDL::Joint::JointType::TransY:
-            case KDL::Joint::JointType::TransZ:
-            {
-                radius = 1;
-                break;
-            }
-            default:
-            {
-                break;
-            }
-            }
-
-            for (unsigned int k = i + 1; k < nrSegments; ++k)
-            {
-                KDL::Frame next_segment_pose = fk_res[k];
-                KDL::Vector next_segment_kdl = next_segment_pose.p;
-                Vector3d next_segment(next_segment_kdl.x(), next_segment_kdl.y(), next_segment_kdl.z());
-
-                // Transform the local joint axis to the world reference frame
-                KDL::Vector joint_axis_world = segment_pose.M * joint_axis_local;
-                // std::cout << "GetRadius axis: " << joint_axis_world << std::endl;
-                Vector3d joint_axis(joint_axis_world.x(), joint_axis_world.y(), joint_axis_world.z());
-
-                Vector3d diff = next_segment - position;
-                // Project the end effector onto the plane defined by the joint axis
-                double dot_product = diff.dot(joint_axis);
-
-                // joint_axis has norm = 1 => NO NORMALIZATION NECESSARY
-                Vector3d projection = diff - dot_product * joint_axis;
-
-                // Update the radius
-                // std::cout << "Radius distance " << ith_distal_point << ": " << projection.norm() << std::endl;
-                double tmp_radius = projection.norm();
-                if (tmp_radius > radius)
-                {
-                    radius = tmp_radius;
-                }
-            }
-
-            radii(j) = radius;
-            ++j;
-        }
-        return radii;
-
-        // unsigned int num_segments = this->kdl_chain.getNrOfSegments();
-        // unsigned int num_joints = this->kdl_chain.getNrOfJoints();
-        // // std::cout << "Number of joints: " << num_joints << "  Number of segments: " << num_segments << std::endl;
-
-        // VectorXd radii(q_in.size());
-
-        // KDL::ChainFkSolverPos_recursive fk_solver(this->kdl_chain);
-
-        // assert(q_in.size() == num_joints);
-
-        // KDL::JntArray joint_positions(num_joints);
-
-        // for (unsigned int i = 0; i < num_joints; ++i)
-        // {
-        //     joint_positions(i) = q_in(i);
-        // }
-
-        // // Why does it fail when i use segment_poses instead of just a single pose
-        // // CAUSE: it returns -1 for all errors, regardless of what you did wrong
-        // // Solution: https://github.com/orocos/orocos_kinematics_dynamics/blob/master/orocos_kdl/src/chainfksolverpos_recursive.cpp
-
-        // std::vector<KDL::Frame> segment_poses(num_segments);
-
-        // if (fk_solver.JntToCart(joint_positions, segment_poses) >= 0)
-        // {
-        //     unsigned int j = 0;
-        //     for (unsigned int i = 0; i < segment_poses.size() - 1; ++i)
-        //     {
-        //         auto segment_pose = segment_poses[i];
-        //         Vector3d position(segment_pose.p.x(), segment_pose.p.y(), segment_pose.p.z());
-
-        //         // Local axis: https://docs.ros.org/en/indigo/api/orocos_kdl/html/classKDL_1_1Joint.html#a57c97b32765b0caeb84b303d66a96a1b
-        //         auto joint = this->kdl_chain.getSegment(i).getJoint();
-        //         KDL::Vector joint_axis_local = joint.JointAxis();
-
-        //         // typedef enum { RotAxis,RotX,RotY,RotZ,TransAxis,TransX,TransY,TransZ,None} JointType;
-        //         // std::cout << "Joint: " << joint.getTypeName() << " Axis: " << joint.JointAxis() << std::endl;
-
-        //         if (joint.getType() == KDL::Joint::JointType::None)
-        //         {
-        //             continue;
-        //         }
-
-        //         /*
-        //         The expression \sum^n_{i=1} r_i |y_i − q_i| is a conservative upper bound on the displacement of any point on the manipulator
-        //           when the configuration changes from q = (q_1 . . . q_n)T to y = (y_1 . . . y_n)^T .
-
-        //         In short: it is the first order derivative of the mapping from configuration value q_i to euclidean space
-
-        //         Ergo: translational joints: d(distance)/dq = 1
-        //         rotational joints: d(phi*r)/dphi = r - the radius
-        //         */
-
-        //         double radius = 0.0;
-        //         switch (joint.getType())
-        //         {
-        //         case KDL::Joint::JointType::TransAxis:
-        //         case KDL::Joint::JointType::TransX:
-        //         case KDL::Joint::JointType::TransY:
-        //         case KDL::Joint::JointType::TransZ:
-        //         {
-        //             radius = 1;
-        //             break;
-        //         }
-        //         default:
-        //         {
-        //             break;
-        //         }
-        //         }
-
-        //         for (unsigned int k = i + 1; k < segment_poses.size(); ++k)
-        //         {
-        //             KDL::Frame next_segment_pose = segment_poses[k];
-        //             KDL::Vector next_segment_kdl = next_segment_pose.p;
-        //             Vector3d next_segment(next_segment_kdl.x(), next_segment_kdl.y(), next_segment_kdl.z());
-
-        //             // Transform the local joint axis to the world reference frame
-        //             KDL::Vector joint_axis_world = segment_pose.M * joint_axis_local;
-        //             // std::cout << "GetRadius axis: " << joint_axis_world << std::endl;
-        //             Vector3d joint_axis(joint_axis_world.x(), joint_axis_world.y(), joint_axis_world.z());
-
-        //             Vector3d diff = next_segment - position;
-        //             // Project the end effector onto the plane defined by the joint axis
-        //             double dot_product = diff.dot(joint_axis);
-
-        //             // joint_axis has norm = 1 => NO NORMALIZATION NECESSARY
-        //             Vector3d projection = diff - dot_product * joint_axis;
-
-        //             // Update the radius
-        //             // std::cout << "Radius distance " << ith_distal_point << ": " << projection.norm() << std::endl;
-        //             double tmp_radius = projection.norm();
-        //             if (tmp_radius > radius)
-        //             {
-        //                 radius = tmp_radius;
-        //             }
-        //         }
-
-        //         radii(j) = radius;
-        //         ++j;
-        //     }
-        // }
-        // else
-        // {
-        //     throw std::runtime_error("Forward kinematics solver failed in GetRadii");
-        // }
-        // return radii;
-    }
-
-    RadiusFuncParallel
-    RobotBase::GetRadiusFunc()
-    {
-        RadiusFuncParallel rf = [this](const VectorXd &configuration) -> VectorXd
-        {
-            // return this->GetRadius(ith_distal_point, configuration);
-            return this->GetRadii(configuration);
-        };
-        return rf;
-    }
-
     std::string
     RobotBase::ToString()
     {
         return this->urdf_file.string();
-    }
-
-    std::vector<KDL::Frame>
-    RobotBase::CachedForwardPass(const VectorXd &q_in)
-    {
-        // IF CACHED:
-        std::vector<double> vec(q_in.data(), q_in.data() + q_in.size());
-
-        /* ERROR: caching causes hash conflict and the robot to JUMP BETWEEN FAR CONFIGS !!! */
-
-        // Find the key in the map
-        auto it = this->fkResults.find(vec);
-        if (it != this->fkResults.end())
-        {
-            // Key found, return the associated value
-            // std::cout << "cached: " << this->fkResults.size() << "\n";
-            auto res = it->second;
-            if (this->fkResults.size() > 100)
-            {
-                this->fkResults.clear();
-            }
-            return res;
-        }
-
-        // IF SEEING FOR FIRST TIME:
-        auto p_out = this->ForwardPass(q_in);
-        this->fkResults[vec] = p_out;
-        return p_out;
     }
 
     std::vector<KDL::Frame>
@@ -727,40 +294,12 @@ namespace Burs
     }
 
     KDL::Jacobian
-    RobotBase::CachedJacobian(const VectorXd &q_in)
-    {
-        // IF CACHED:
-        std::vector<double> vec(q_in.data(), q_in.data() + q_in.size());
-
-        /* ERROR: caching causes hash conflict and the robot to JUMP BETWEEN FAR CONFIGS !!! */
-
-        // Find the key in the map
-        auto it = this->jacResults.find(vec);
-        if (it != this->jacResults.end())
-        {
-            // Key found, return the associated value
-            // std::cout << "cached: " << this->fkResults.size() << "\n";
-            auto res = it->second;
-            if (this->fkResults.size() > 100)
-            {
-                this->fkResults.clear();
-            }
-            return res;
-        }
-
-        // IF SEEING FOR FIRST TIME:
-        auto j_out = this->ForwardJac(q_in);
-        this->jacResults[vec] = j_out;
-        return j_out;
-    }
-
-    KDL::Jacobian
     RobotBase::ForwardJac(const VectorXd &q_in)
     {
         KDL::JntArray q_kdl;
         q_kdl.data = q_in;
 
-        KDL::Jacobian jac;
+        KDL::Jacobian jac(this->kdl_chain.getNrOfJoints());
 
         KDL::ChainJntToJacSolver jac_solver(this->kdl_chain);
 
@@ -787,6 +326,149 @@ namespace Burs
             throw std::runtime_error("RobotBase::ForwardJPlus failed. error: " + std::string(pinv_solver.strError(res)));
         }
         return q_dot;
+    }
+
+    KDL::JntArray
+    RobotBase::ForwardJPlus(const RS &state, const KDL::Twist &v_in)
+    {
+        VectorXd q_in = state.config;
+        // std::cout << "TODO: reuse jacobian for multiple target calculation later on\n";
+        KDL::JntArray q_kdl;
+        q_kdl.data = q_in;
+
+        KDL::JntArray q_dot(q_in.size());
+
+        KDL::ChainIkSolverVel_pinv pinv_solver(this->kdl_chain);
+
+        int res = pinv_solver.CartToJnt(q_kdl, v_in, q_dot);
+        if (res < 0)
+        {
+            throw std::runtime_error("RobotBase::ForwardJPlus failed. error: " + std::string(pinv_solver.strError(res)));
+        }
+        return q_dot;
+    }
+
+    std::pair<KDL::Jacobian, VectorXd>
+    RobotBase::ForwardJacs(const VectorXd &q_in)
+    {
+        VectorXd r(q_in.size());
+        r.array() = 0;
+        // std::cout << "TODO: COPY JACOBIAN FUNCTION FROM KDL REPO AND REWRITE IT TO RETURN THE VECTOR OF ALL JACOBIANS\n";
+        KDL::JntArray q_kdl(q_in.size());
+        q_kdl.data = q_in;
+        KDL::Jacobian jac(q_in.size());
+
+        // KDL::ChainJntToJacSolver s(this->kdl_chain);
+
+        // int res = 0;
+        // for (unsigned int i = 0; i < this->kdl_chain.getNrOfSegments(); ++i)
+        // {
+        //     res = s.JntToJac(q_kdl, jac, i + 1);
+        //     if (res < 0)
+        //     {
+        //         std::cout << "failed jnt to jac: " << (i + 1) << "\n";
+        //         // exit(1);
+        //     }
+        //     // std::cout << "jac " << i << ": \n"
+        //     //           << jac.data << "\n";
+        //     for (unsigned int l = 0; l < q_in.size(); ++l)
+        //     {
+        //         double tmp_r = jac.data.col(l).head<3>().norm();
+        //         if (tmp_r > r(l))
+        //         {
+        //             r(l) = tmp_r;
+        //         }
+        //     }
+        //     // std::cout << "best r: " << r.transpose() << "\n\n";
+        // }
+        // std::cout << "best r: " << r.transpose() << "\n\n";
+        // r.array() = 0;
+        // exit(1);
+
+        //     if (locked_joints_.size() != chain.getNrOfJoints()) return (error = E_NOT_UP_TO_DATE);
+        // unsigned int segmentNr;
+        // if (seg_nr < 0)
+        //     segmentNr = chain.getNrOfSegments();
+        // else
+        //     segmentNr = seg_nr;
+
+        // Initialize Jacobian to zero since only segmentNr columns are computed
+        KDL::SetToZero(jac);
+
+        // if (q_in.rows() != chain.getNrOfJoints() || jac.columns() != chain.getNrOfJoints())
+        //     return (error = E_SIZE_MISMATCH);
+        // else if (segmentNr > chain.getNrOfSegments())
+        //     return (error = E_OUT_OF_RANGE);
+
+        KDL::Twist t_tmp;
+        KDL::Frame T_tmp;
+        T_tmp = KDL::Frame::Identity();
+        KDL::SetToZero(t_tmp);
+        int j = 0;
+        int k = 0;
+        KDL::Frame total;
+        for (unsigned int i = 0; i < this->kdl_chain.getNrOfSegments(); i++)
+        {
+            // Calculate new Frame_base_ee
+            if (this->kdl_chain.getSegment(i).getJoint().getType() != KDL::Joint::JointType::None)
+            {
+                // pose of the new end-point expressed in the base
+                total = T_tmp * this->kdl_chain.getSegment(i).pose(q_in(j));
+                // changing base of new segment's twist to base frame if it is not locked
+                // t_tmp = T_tmp.M*chain.getSegment(i).twist(1.0);
+                // if (!locked_joints_[j])
+                t_tmp = T_tmp.M * this->kdl_chain.getSegment(i).twist(q_in(j), 1.0);
+            }
+            else
+            {
+                total = T_tmp * this->kdl_chain.getSegment(i).pose(0.0);
+            }
+
+            // Changing Refpoint of all columns to new ee
+            changeRefPoint(jac, total.p - T_tmp.p, jac);
+
+            // Only increase jointnr if the segment has a joint
+            if (this->kdl_chain.getSegment(i).getJoint().getType() != KDL::Joint::JointType::None)
+            {
+                // Only put the twist inside if it is not locked
+                // if (!locked_joints_[j])
+                jac.setColumn(k++, t_tmp);
+                j++;
+            }
+
+            // std::cout << "inside jac " << i << " jnt: " << k << " :\n"
+            //           << jac.data << "\n";
+            for (unsigned int l = 0; l < k; ++l)
+            {
+                double tmp_r = jac.data.col(l).head<3>().norm();
+                if (tmp_r > r(l))
+                {
+                    r(l) = tmp_r;
+                }
+            }
+            // std::cout << "best r: " << r.transpose() << "\n";
+
+            T_tmp = total;
+        }
+        // std::cout << "best r: " << r.transpose() << "\n";
+        // std::cout << "my jac:\n"
+        //           << jac.data << "\n";
+        // exit(1);
+        // return (error = E_NOERROR);
+        return {jac, r};
+    }
+
+    RS
+    RobotBase::FullFK(const VectorXd &q_in)
+    {
+        // Frame of every segment
+        std::vector<KDL::Frame> frames = this->ForwardPass(q_in);
+        // Jacobian of every segment
+        auto [jac, r] = this->ForwardJacs(q_in);
+        // std::vector<KDL::Jacobian> jacs = this->ForwardJacs(q_in);
+        RS state(q_in, frames, jac, r);
+        // this->AddRadii(state);
+        return state;
     }
 
     VectorXd

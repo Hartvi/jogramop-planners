@@ -7,21 +7,42 @@
 
 namespace Burs
 {
-
     using namespace Eigen;
 
     void
-    BaseEnv::SetPoses(VectorXd q)
+    BaseEnv::SetPoses(const RS &state)
     {
-        auto [rotations, translations] = this->forwardRt(q);
-
-        for (int i = 0; i < rotations.size(); ++i)
+        // std::cout << "num models: " << this->robot_models.size() << "\n";
+        unsigned int k = 0;
+        for (int i = 0; i < state.frames.size(); ++i)
         {
-            this->robot_models[i]->SetRotation(rotations[i]);
-            this->robot_models[i]->SetTranslation(translations[i]);
+            if (this->validTransforms[i])
+            {
+                auto [R, t] = this->robot->KDLFrameToEigen(state.frames[i]);
+
+                // std::cout << "rot: \n"
+                //           << R << "\n";
+                // std::cout << "tr: \n"
+                //           << t.transpose() << "\n";
+                // std::cout << "k: " << k << "\n";
+                // std::cout << "model: " << *this->robot_models[k] << "\n";
+                this->robot_models[k]->SetRotation(R);
+                this->robot_models[k]->SetTranslation(t);
+                ++k;
+            }
             // std::cout << "Setting robot position to " << translations[i].transpose() << std::endl;
         }
         this->poses_are_set = true;
+
+        // auto [rotations, translations] = this->forwardRt(q);
+
+        // for (int i = 0; i < rotations.size(); ++i)
+        // {
+        //     this->robot_models[i]->SetRotation(rotations[i]);
+        //     this->robot_models[i]->SetTranslation(translations[i]);
+        //     // std::cout << "Setting robot position to " << translations[i].transpose() << std::endl;
+        // }
+        // this->poses_are_set = true;
     }
 
     // void BaseEnv::SetObstaclePose(Matrix3d R, Vector3d t)
@@ -110,11 +131,11 @@ namespace Burs
         this->robot_models.push_back(m);
     }
 
-    void
-    BaseEnv::SetForwardRt(Burs::ForwardRt forwardRt)
-    {
-        this->forwardRt = forwardRt;
-    }
+    // void
+    // BaseEnv::SetForwardRt(Burs::ForwardRt forwardRt)
+    // {
+    //     this->forwardRt = forwardRt;
+    // }
 
     /*If you want to add other robots, make an environment for them and add the other robot as an obstacle to this one.*/
     int
@@ -143,6 +164,39 @@ namespace Burs
     {
         this->groundLevel = groundLevel;
         this->minimumColSegmentIdx = minimumColSegmentIdx;
+    }
+
+    BaseEnv::BaseEnv(std::string urdf_filename)
+    {
+        this->robot = std::make_shared<RobotCollision>(urdf_filename);
+
+        std::vector<std::shared_ptr<RtModels::RtModel>> mm = this->robot->GetModels();
+
+        // std::cout << "BaseEnv: Number of objects: " << mm.size() << std::endl;
+
+        for (auto &m : this->robot->GetModels())
+        {
+            this->AddRobotModel(m);
+        }
+        this->validTransforms = this->robot->GetValidTransforms();
+    }
+
+    std::string
+    BaseEnv::ToString()
+    {
+        std::stringstream ss;
+        auto robot_str = this->robot->ToString();
+        ss << "robot" << std::endl
+           << robot_str << std::endl;
+        auto obstacles = this->obstacle_models;
+        for (unsigned int i = 0; i < obstacles.size(); ++i)
+        {
+            ss << "obstacle" << std::endl;
+            auto obstacle = obstacles[i];
+            obstacle->ToString();
+        }
+
+        return ss.str();
     }
 
 }

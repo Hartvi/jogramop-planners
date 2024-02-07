@@ -5,16 +5,14 @@
 #include <filesystem>
 
 #include "bur_funcs.h"
-#include "base_env.h"
+// #include "base_env.h"
 #include "robot_base.h"
 #include "rt_model.h"
 
 namespace Burs
 {
-
     using namespace Eigen;
 
-    //
     class RobotCollision : public RobotBase
     {
     public:
@@ -34,14 +32,46 @@ namespace Burs
         // Constructor
         RobotCollision(std::string urdf_filename);
 
-        // ForwardQ returns N rotations and translation, but we have M <= N objects, select only transforms relevant to existing meshes
-        std::tuple<std::vector<Matrix3d>, std::vector<Vector3d>>
-        SelectedForwardQ(const VectorXd &q_in);
+        std::vector<bool>
+        GetValidTransforms();
 
-        ForwardRt GetSelectedForwardRtFunc();
+        // ForwardQ returns N rotations and translation, but we have M <= N objects, select only transforms relevant to existing meshes
+        // std::tuple<std::vector<Matrix3d>, std::vector<Vector3d>>
+        // SelectedForwardQ(const RS &q_in);
+
+        // ForwardRtKDL
+        // GetSelectedForwardRtFunc();
 
         std::vector<std::shared_ptr<RtModels::RtModel>>
         GetModels();
+
+        // std::vector<Eigen::Vector3d>
+        // GetForwardPointParallel(const RS &state);
+
+        // ForwardKinematicsParallelKDL
+        // GetForwardPointParallelFunc();
+
+        // RadiusFuncParallelKDL
+        // GetRadiusFunc();
+
+        // double
+        // DistanceToGoal(const KDL::Frame &goal, const KDL::Frame &current) const;
+
+        // double
+        // GetDistToGoal(const VectorXd &q, const KDL::Frame &goal_pos) const;
+        double
+        EEDistance(const RS &state1, const RS &state2) const;
+
+        KDL::Frame
+        GetEEFrame(const RS &state) const;
+
+        // double
+        // MaxMovedDistance(const VectorXd &q1, const VectorXd &q2) const;
+        double
+        MaxDistance(const RS &state1, const RS &state2) const;
+
+        std::pair<Matrix3d, Vector3d>
+        KDLFrameToEigen(const KDL::Frame &f);
     };
 
     /* Accept the three functions from outside. Link the URDF to the bur-planning algorithm. */

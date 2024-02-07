@@ -49,36 +49,36 @@ namespace Burs
         return m;
     }
 
-    VectorXd
-    MinPlanner::Nearest(std::shared_ptr<BurTree> t, VectorXd &q)
-    {
-        return t->GetQ(t->Nearest(q.data()));
-    }
+    // VectorXd
+    // MinPlanner::Nearest(std::shared_ptr<BurTree> t, VectorXd &q)
+    // {
+    //     return t->GetQ(t->Nearest(q.data()));
+    // }
 
-    int
-    MinPlanner::NearestIndex(std::shared_ptr<BurTree> t, VectorXd &q)
-    {
-        return t->Nearest(q.data());
-    }
+    // int
+    // MinPlanner::NearestIndex(std::shared_ptr<BurTree> t, VectorXd &q)
+    // {
+    //     return t->Nearest(q.data());
+    // }
 
     double
-    MinPlanner::GetClosestDistance(const VectorXd &q) const
+    MinPlanner::GetClosestDistance(const RS &state) const
     {
-        this->base_env->SetPoses(q);
-        return this->base_env->GetClosestDistance();
+        this->env->SetPoses(state);
+        return this->env->GetClosestDistance();
     }
 
     void
-    MinPlanner::SetEnv(std::shared_ptr<BaseEnv> base_env)
+    MinPlanner::SetEnv(std::shared_ptr<BaseEnv> env)
     {
-        this->base_env = base_env;
+        this->env = env;
     }
 
     bool
-    MinPlanner::IsColliding(const VectorXd &q) const
+    MinPlanner::IsColliding(const RS &state) const
     {
-        this->base_env->SetPoses(q);
-        return this->base_env->IsColliding();
+        this->env->SetPoses(state);
+        return this->env->IsColliding();
     }
 
     std::vector<VectorXd>
@@ -90,7 +90,7 @@ namespace Burs
         int node_id_a = final_node_id;
         do
         {
-            res_a.push_back(q_tree->GetQ(node_id_a));
+            res_a.push_back(q_tree->Get(node_id_a)->config);
             node_id_a = q_tree->GetParentIdx(node_id_a);
         } while (node_id_a != -1);
 
@@ -130,16 +130,34 @@ namespace Burs
         int k = 0;
         for (int i = 0; i < res_a.size(); ++i)
         {
-            final_path[k] = t_a->GetQ(res_a[i]);
+            final_path[k] = t_a->Get(res_a[i])->config;
             ++k;
         }
 
         for (int i = 0; i < res_b.size(); ++i)
         {
-            final_path[k] = t_b->GetQ(res_b[i]);
+            final_path[k] = t_b->Get(res_b[i])->config;
             ++k;
         }
 
         return final_path;
+    }
+
+    RS
+    MinPlanner::NewState(const VectorXd &q) const
+    {
+        return this->env->robot->FullFK(q);
+    }
+
+    std::vector<RS>
+    MinPlanner::NewStates(const MatrixXd &Q) const
+    {
+        std::vector<RS> states;
+        states.reserve(Q.cols());
+        for (unsigned int i = 0; i < Q.cols(); ++i)
+        {
+            states.push_back(this->NewState(Q.col(i)));
+        }
+        return states;
     }
 }

@@ -5,21 +5,21 @@ namespace Burs
 {
     using namespace Eigen;
 
-    BurTree::BurTree()
-    {
-        // ye
-    }
+    // BurTree::BurTree()
+    // {
+    //     // ye
+    // }
 
-    BurTree::BurTree(VectorXd q_location, int q_dim) : mQDim(q_dim)
+    BurTree::BurTree(RS state, int q_dim) : mQDim(q_dim)
     {
-        this->AddNode(-1, q_location);
+        this->AddNode(-1, state);
     }
 
     int
-    BurTree::AddNode(int p, VectorXd q_location)
+    BurTree::AddNode(int p, RS state)
     {
         int ret_idx = this->mNodes.size();
-        this->mNodes.emplace_back(p, q_location);
+        this->mNodes.emplace_back(p, state);
         // have to build index to register the new node
         //        this->BuildIndex();
 
@@ -30,14 +30,15 @@ namespace Burs
         }
         else
         {
-            const int dimension = q_location.size();
+            const int dimension = this->mQDim;
             flann::Matrix<double> add_point_matrix(new double[1 * dimension], 1, dimension);
-            for (int i = 0; i < (int)q_location.size(); i++)
+            for (int i = 0; i < this->mQDim; i++)
             {
-                add_point_matrix[0][i] = (float)q_location[i];
+                add_point_matrix[0][i] = state.config[i];
             }
             mIndex->addPoints(add_point_matrix, 2.0);
         }
+        // delete[] pointData; // Clean up the allocated memory
         return ret_idx;
     }
 
@@ -61,6 +62,18 @@ namespace Burs
     }
 
     int
+    BurTree::Nearest(const int &idx)
+    {
+        return this->Nearest(this->mNodes[idx].state.config.data());
+    }
+
+    int
+    BurTree::Nearest(RS &state)
+    {
+        return this->Nearest(state.config.data());
+    }
+
+    int
     BurTree::Nearest(double *new_point)
     {
         flann::Matrix<double> query(new_point, 1, this->mQDim); // Single row matrix for the new point
@@ -78,10 +91,10 @@ namespace Burs
         return closestIndex; // Return the index of the Nearest node
     }
 
-    VectorXd
-    BurTree::GetQ(int index)
+    RS *
+    BurTree::Get(int index)
     {
-        return this->mNodes[index].q;
+        return &this->mNodes[index].state;
     }
 
     int

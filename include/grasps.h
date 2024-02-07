@@ -7,7 +7,8 @@
 #include <kdl/frames.hpp>
 #include <Eigen/Dense>
 #include <memory>
-#include "vec_dist_pair.h"
+// #include "vec_dist_pair.h"
+#include "robot_state.h"
 
 namespace Burs
 {
@@ -40,10 +41,14 @@ namespace Burs
         KDL::Frame frame;
 
     public:
-        std::shared_ptr<VecDistPair> dv;
+        double best_dist;
+        int best_state = -1;
+        // RS *best_state;
+        // std::reference_wrapper<RS> best_state;
+        // std::shared_ptr<VecDistPair> dv;
 
         /// Frame of best configuration
-        KDL::Frame best_frame;
+        // KDL::Frame best_frame;
     };
 
 }

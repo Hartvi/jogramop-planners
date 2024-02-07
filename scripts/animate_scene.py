@@ -13,6 +13,49 @@ scene = bpy.context.scene
 collection = bpy.context.collection
 
 
+def float_to_colour(val):
+    increment = 0.25  # 1/8
+    float_increment = (val/increment)
+    int_increment = int(round(float_increment))
+    modulus_val = val - int_increment*increment
+    if int_increment == 0:
+        return (0, 0, modulus_val, 1)
+    elif int_increment == 1:
+        return (0, modulus_val, modulus_val, 1)
+    elif int_increment == 2:
+        return (0, modulus_val, 1, 1)
+    elif int_increment == 3:
+        return (modulus_val, modulus_val, 1, 1)
+    else:
+        return (modulus_val, 0, 0, 1)
+
+
+
+def load_csv_floats(csv_file):
+    ret = list()
+    with open(csv_file, "r") as f:
+        lines = f.read().split("\n")
+        for line in lines:
+            numbers = line.split(",")
+            while "" in numbers:
+                numbers.remove("")
+            values = list(map(float, numbers))
+            ret.append(values)
+    return ret
+
+
+def vis_points(point_positions):
+    n = len(point_positions)
+    for i in range(n):
+        position = tuple(point_positions[i])
+        fraction = float(i) / float(n)
+        col = float_to_colour(fraction)
+        current_object = create_point(position, col, 0.015)
+        # print("position: ", position)
+        newest_object = bpy.context.object
+        newest_object.keyframe_insert(data_path="location", frame=0)
+
+
 def cylinder_between(x1, y1, z1, x2, y2, z2, r, mat=None, reuse_cyl=None):
     """
     https://blender.stackexchange.com/questions/5898/how-can-i-create-a-cylinder-linking-two-points-with-python
@@ -143,11 +186,18 @@ class ObjectMode:
     robot=0
     obstacle=1
 
-def render_env(path_to_file, extra_points_file=None):
+def render_env(path_to_file, extra_points_file=None, tree_points_file=None):
 
     start_scene()
-    
-    # bbb = create_point((3,0,0), (1, 0, 1, 1), size=0.1)
+
+    if tree_points_file:
+        try:
+            tree_points = load_csv_floats(tree_points_file)
+            vis_points(tree_points)
+            print("VIS TREE")
+        except:
+            print("NO TREE FILE", tree_points_file)
+    # exit(1)
 
     if extra_points_file:
         with open(extra_points_file, "r") as f:
@@ -157,12 +207,8 @@ def render_env(path_to_file, extra_points_file=None):
                 numbers = lines[k].split(",")
                 
                 try:
-                    # print("NUMBERS:", numbers)
                     values = list(map(float, numbers))
                     for i in range(16):
-                        # print("i: ", i)
-                        # print("y,x: ", i//4, i%4)
-                        # print("value: ", values[i])
                         T[i//4, i%4] = values[i]
                         
                     # rotation: Rotation = Rotation.from_matrix(T)
@@ -180,11 +226,8 @@ def render_env(path_to_file, extra_points_file=None):
                     print("invalid data:", numbers)
                     pass
 
-                # print("T:\n", T)
+                # k += 1
 
-                # exit(1)
-                k += 1
-    # exit(1)
     with open(path_to_file, "r") as f:
         lines = f.read().split("\n")
         k = 0
@@ -330,13 +373,20 @@ def render_animation(frame_start, frame_end, frame_step):
 
 if __name__ == "__main__":
     test_path = "/home/hartvi/Documents/CVUT/diploma_thesis/burs_of_free_space/build/test_file.txt"
+    grasps_file = None   
+    tree_file = None
     if len(sys.argv) > 1:
         test_path = sys.argv[1]
+        print("try file",test_path)
         camX = float(sys.argv[2])
         camY = float(sys.argv[3])
         camZ = float(sys.argv[4])
         if len(sys.argv) > 5:
             # grasps
             grasps_file = sys.argv[5]
-            print("grasps_file", grasps_file)
-    render_env(test_path, grasps_file)
+            print("visualizing grasps", grasps_file)
+        if len(sys.argv) > 6:
+            tree_file = sys.argv[6]
+            print("visualizing tree from", tree_file)
+
+    render_env(test_path, grasps_file, tree_file)

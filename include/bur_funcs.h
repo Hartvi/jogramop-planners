@@ -11,17 +11,24 @@
 #include <cxxabi.h>
 #include <Eigen/Dense>
 
+#include "robot_base.h"
+
 #define rad_to_deg (180.0 / M_PI)
 
 namespace Burs
 {
 
     using namespace Eigen;
-    using ForwardKinematics = std::function<Vector3d(const int &ith_distal_point, const VectorXd &configuration)>;
-    using ForwardKinematicsParallel = std::function<std::vector<Vector3d>(const VectorXd &configuration)>;
-    using ForwardRt = std::function<std::tuple<std::vector<Matrix3d>, std::vector<Vector3d>>(VectorXd q)>;
-    using RadiusFunc = std::function<double(const int &ith_distal_point, const VectorXd &q_k)>;
-    using RadiusFuncParallel = std::function<Eigen::VectorXd(const VectorXd &q_k)>;
+    // using ForwardKinematics = std::function<Vector3d(const int &ith_distal_point, const VectorXd &configuration)>;
+    // using ForwardKinematicsParallel = std::function<std::vector<Vector3d>(const VectorXd &configuration)>;
+    // using ForwardRt = std::function<std::tuple<std::vector<Matrix3d>, std::vector<Vector3d>>(VectorXd q)>;
+
+    // using RadiusFunc = std::function<double(const int &ith_distal_point, const VectorXd &q_k)>;
+    // using RadiusFuncParallel = std::function<Eigen::VectorXd(const VectorXd &q_k)>;
+
+    // using ForwardRtKDL = std::function<std::tuple<std::vector<Matrix3d>, std::vector<Vector3d>>(const RS &state)>;
+    // using ForwardKinematicsParallelKDL = std::function<std::vector<Vector3d>(const RS &state)>;
+    // using RadiusFuncParallelKDL = std::function<Eigen::VectorXd(const RS &state)>;
 
     typedef double Meters;
     typedef double Qunit;

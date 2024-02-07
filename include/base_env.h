@@ -8,6 +8,8 @@
 #include <Eigen/Dense>
 #include "rt_model.h"
 #include "bur_funcs.h"
+#include "robot_state.h"
+#include "robot_collision.h"
 
 namespace Burs
 {
@@ -16,6 +18,23 @@ namespace Burs
     class BaseEnv
     {
     public:
+        std::shared_ptr<RobotCollision> robot;
+
+        double groundLevel = -1e10;
+        int minimumColSegmentIdx = 999;
+
+        std::vector<std::shared_ptr<RtModels::RtModel>> obstacle_models;
+        std::vector<std::shared_ptr<RtModels::RtModel>> robot_models;
+        std::vector<std::string> obstacle_map;
+
+        bool poses_are_set = false;
+        // Full robot state might include transforms of virtual segments
+        std::vector<bool> validTransforms;
+        // Burs::ForwardRt forwardRt;
+
+    public:
+        BaseEnv(std::string urdf_filename);
+
         virtual ~BaseEnv() = default;
 
         /* What I need from outside:
@@ -26,13 +45,13 @@ namespace Burs
         */
 
         void
-        SetPoses(VectorXd q);
+        SetPoses(const RS &state);
 
         void
         AddRobotModel(std::shared_ptr<RtModels::RtModel> m);
 
-        void
-        SetForwardRt(Burs::ForwardRt forwardRt);
+        // void
+        // SetForwardRt(Burs::ForwardRt forwardRt);
 
         /// @brief Check closest distance between robot parts and obstacles, NEED TO SET ROTATIONS AND TRANSLATIONS BEFOREHAND
         double
@@ -51,15 +70,10 @@ namespace Burs
         void
         SetGroundLevel(double groundLevel, int minimumColSegmentIdx);
 
-        double groundLevel = -1e10;
-        int minimumColSegmentIdx = 999;
-
-        std::vector<std::shared_ptr<RtModels::RtModel>> obstacle_models;
-        std::vector<std::shared_ptr<RtModels::RtModel>> robot_models;
-        std::vector<std::string> obstacle_map;
-
-        bool poses_are_set = false;
-        Burs::ForwardRt forwardRt;
+        /*TODO: Check how the jogramop environment keeps track of the object names. Maybe pass an int as obstacle ID when creating it.*/
+        // void SetObstaclePose(){}
+        std::string
+        ToString();
     };
 }
 

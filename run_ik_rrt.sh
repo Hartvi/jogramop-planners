@@ -5,7 +5,7 @@
 -start_config /home/hartvi/Documents/CVUT/diploma_thesis/burs_of_free_space/jogramop/scenarios/002/export/robot_start_conf.csv \
 -planner 5 \
 -max_iters 10000 \
--d_crit 0.05 \
+-d_crit 0.10 \
 -delta_q 3.0 \
 -epsilon_q 0.05 \
 -num_spikes 7 \
@@ -14,7 +14,7 @@
 -target_prefix /home/hartvi/Documents/CVUT/diploma_thesis/burs_of_free_space/lel \
 -render 0 \
 -vis_script /home/hartvi/Documents/CVUT/diploma_thesis/burs_of_free_space/scripts/animate_scene.py \
--cx 3 \
+-cx -3 \
 -cy 1 \
 -cz 7 \
 -groundLevel 0.00 \
@@ -24,4 +24,5 @@
 -goal_bias_radius 0.15 \
 -goal_bias_prob 0.5 \
 -q_resolution 0.5 \
--seed -1
+-seed -1 \
+-render_tree 200
