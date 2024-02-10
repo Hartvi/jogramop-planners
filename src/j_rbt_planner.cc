@@ -22,6 +22,160 @@ namespace Burs
     }
 
     std::optional<std::vector<VectorXd>>
+    JRbtPlanner::JRbtS(const VectorXd &q_start, JPlusRbtParameters &planner_parameters, PlanningResult &plan_result)
+    {
+        std::cout << "RUNNING JRBT\n";
+        if (planner_parameters.target_poses.size() < 1)
+        {
+            throw std::runtime_error("Target poses has length 0!");
+        }
+        RS start_state = this->NewState(q_start);
+
+        // Random numbers
+        this->rng = std::make_shared<RandomNumberGenerator>(planner_parameters.seed, planner_parameters.target_poses.size() - 1);
+
+        auto tree = std::make_shared<BurTree>(start_state, q_start.size());
+
+        // To prevent uninitialized vectors in planner_parameters
+        this->InitGraspClosestConfigs(planner_parameters, tree, 0);
+        int preheat_iters = planner_parameters.max_iters * planner_parameters.preheat_ratio;
+        std::cout << "preheat iters: " << preheat_iters << "\n";
+
+        this->PreheatTree(tree, 0, preheat_iters, planner_parameters);
+        // exit(1);
+
+        double totalNNtime = 0;
+        // double totalAddTime = 0;
+        double totalRunTime = 0;
+        // double totalCollisionTime = 0;
+        double totalGetClosestDistTime = 0;
+        double totalCollideAndAddTime = 0;
+        struct rusage gt1, gt2;
+        getTime(&gt1);
+
+        for (unsigned int k = 0; k < planner_parameters.max_iters - preheat_iters; ++k)
+        {
+            // LOGGING
+            if (k % 1000 == 0)
+            {
+                getTime(&gt2);
+                totalRunTime = getTime(gt1, gt2);
+                auto &best_pose = planner_parameters.target_poses[this->GetBestGrasp(planner_parameters)];
+                std::cout << "iter: " << k << "/" << planner_parameters.max_iters << ", tree.size: " << tree->GetNumberOfNodes() << ", distToGoal: " << best_pose.best_dist << ", ";
+                std::cout << ", p_close_enough: " << planner_parameters.p_close_enough << ", totalNNtime: " << totalNNtime << ", totalCollideAndAddTime: " << totalCollideAndAddTime
+                          << ", totalGetClosestDistTime: " << totalGetClosestDistTime << ", totalRunTime: " << totalRunTime << "\n";
+                std::cout.flush();
+            }
+            // END LOGGING
+
+            MatrixXd Qe = this->GetRandomQ(planner_parameters.num_spikes);
+            std::vector<RS> Qe_states = this->NewStates(Qe);
+
+            struct rusage tt1, tt2;
+            getTime(&tt1);
+            // Random column
+            int nearest_idx = tree->Nearest(Qe.col(0).data());
+            getTime(&tt2);
+            totalNNtime += getTime(tt1, tt2);
+
+            RS *near_state = tree->Get(nearest_idx);
+            // VectorXd q_near = tree->GetQ(nearest_idx);
+
+            getTime(&tt1);
+            // Slow => maybe in the future use FCL and somehow compile it because it had a ton of compilation errors and version mismatches
+            auto [d_closest, closest_dists] = this->GetClosestDistances(*near_state);
+            getTime(&tt2);
+            totalGetClosestDistTime += getTime(tt1, tt2);
+
+            // SWITCH TO RRT IF OBSTACLE TOO CLOSE
+            bool too_close = d_closest < planner_parameters.d_crit;
+            unsigned int num_extensions = too_close ? 1 : planner_parameters.num_spikes;
+            double distance_to_move = too_close ? planner_parameters.epsilon_q : std::min(d_closest, planner_parameters.delta_q);
+
+            std::vector<RS> endpoints = too_close ? this->GetEndpoints(*near_state, {Qe_states[0]}, distance_to_move)
+                                                  : this->GetEndpoints(*near_state, Qe_states, distance_to_move);
+            // std::vector<RS> endpoints = this->GetEndpoints(near_state, Qe_states, d_closest);
+            // If closest obstacle was too close => check collisions for the RRT step
+
+            bool rrt_colliding = false;
+            if (too_close)
+            {
+                for (unsigned int i = 0; i < endpoints.size(); ++i)
+                {
+                    if (this->IsColliding(endpoints[i]))
+                    {
+                        std::cout << "JRBT COLLIDED IN RRT RANDOM STEP\n";
+                        // continue;
+                        rrt_colliding = true;
+                    }
+                }
+            }
+
+            if (!rrt_colliding)
+            {
+                if (too_close)
+                {
+                    std::cout << "TOO CLOSE AND ADDING\n";
+                }
+                // std::cout << "closest dist: " << d_closest << "\n";
+                this->AddDenseBur(tree, nearest_idx, endpoints, planner_parameters);
+            }
+            // TRAVELLED DISTANCES ARE INDEED ALWAYS SMALLER THAN D_CLOSEST
+
+            if (this->rng->getRandomReal() < planner_parameters.probability_to_steer_to_target)
+            {
+                // Steer until hit the target or obstacle or joint limits
+                AlgorithmState state = this->ExtendToGoalRbt(tree, planner_parameters);
+
+                if (state == AlgorithmState::Reached)
+                {
+                    // Get grasp with minimal distance
+                    unsigned int best_grasp_idx = this->GetBestGrasp(planner_parameters);
+                    Grasp best_grasp = planner_parameters.target_poses[best_grasp_idx];
+                    // Get idx in tree that leads to the best config
+                    int best_idx = tree->Nearest(best_grasp.best_state);
+                    // int best_idx = tree->Nearest(best_grasp.dv->v.data());
+                    // Take measurements
+                    plan_result.distance_to_goal = best_grasp.best_dist;
+                    plan_result.num_iterations = k;
+                    plan_result.tree_size = tree->GetNumberOfNodes();
+                    plan_result.success = true;
+
+                    // Return best path
+                    auto path = this->ConstructPathFromTree(tree, best_idx);
+                    if (planner_parameters.visualize_tree > 0)
+                    {
+                        this->tree_csv = this->TreePoints(tree, planner_parameters.visualize_tree);
+                    }
+                    return path;
+                }
+            }
+        }
+
+        // Get grasp with minimal distance
+        unsigned int best_grasp_idx = this->GetBestGrasp(planner_parameters);
+        Grasp best_grasp = planner_parameters.target_poses[best_grasp_idx];
+
+        // Get idx in tree that leads to the best config
+        int best_idx = tree->Nearest(best_grasp.best_state);
+        // int best_idx = tree->Nearest(best_grasp.dv->v.data());
+        // Take measurements
+        plan_result.distance_to_goal = best_grasp.best_dist;
+        // plan_result.distance_to_goal = best_grasp.dv->d;
+        plan_result.num_iterations = planner_parameters.max_iters;
+        plan_result.tree_size = tree->GetNumberOfNodes();
+        plan_result.success = best_grasp.best_dist < planner_parameters.p_close_enough;
+
+        // Return best path
+        auto path = this->ConstructPathFromTree(tree, best_idx);
+        if (planner_parameters.visualize_tree)
+        {
+            this->tree_csv = this->TreePoints(tree, planner_parameters.visualize_tree);
+        }
+        return path;
+    }
+
+    std::optional<std::vector<VectorXd>>
     JRbtPlanner::JRbt(const VectorXd &q_start, JPlusRbtParameters &planner_parameters, PlanningResult &plan_result)
     {
         std::cout << "RUNNING JRBT\n";
@@ -38,6 +192,11 @@ namespace Burs
 
         // To prevent uninitialized vectors in planner_parameters
         this->InitGraspClosestConfigs(planner_parameters, tree, 0);
+        int preheat_iters = planner_parameters.max_iters * planner_parameters.preheat_ratio;
+        std::cout << "preheat iters: " << preheat_iters << "\n";
+
+        this->PreheatTree(tree, 0, preheat_iters, planner_parameters);
+        // exit(1);
 
         double totalNNtime = 0;
         // double totalAddTime = 0;
@@ -48,7 +207,7 @@ namespace Burs
         struct rusage gt1, gt2;
         getTime(&gt1);
 
-        for (unsigned int k = 0; k < planner_parameters.max_iters; ++k)
+        for (unsigned int k = 0; k < planner_parameters.max_iters - preheat_iters; ++k)
         {
             // LOGGING
             if (k % 1000 == 0)
@@ -85,7 +244,7 @@ namespace Burs
             // SWITCH TO RRT IF OBSTACLE TOO CLOSE
             bool too_close = d_closest < planner_parameters.d_crit;
             unsigned int num_extensions = too_close ? 1 : planner_parameters.num_spikes;
-            double distance_to_move = too_close ? planner_parameters.epsilon_q : d_closest;
+            double distance_to_move = too_close ? planner_parameters.epsilon_q : std::min(d_closest, planner_parameters.delta_q);
 
             std::vector<RS> endpoints = too_close ? this->GetEndpoints(*near_state, {Qe_states[0]}, distance_to_move)
                                                   : this->GetEndpoints(*near_state, Qe_states, distance_to_move);
@@ -169,7 +328,7 @@ namespace Burs
         // plan_result.distance_to_goal = best_grasp.dv->d;
         plan_result.num_iterations = planner_parameters.max_iters;
         plan_result.tree_size = tree->GetNumberOfNodes();
-        plan_result.success = false;
+        plan_result.success = best_grasp.best_dist < planner_parameters.p_close_enough;
 
         // Return best path
         auto path = this->ConstructPathFromTree(tree, best_idx);

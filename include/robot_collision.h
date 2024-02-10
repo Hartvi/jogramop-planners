@@ -29,11 +29,16 @@ namespace Burs
         std::string urdf_filename;
         std::vector<std::string> mObjs;
 
+        std::vector<int> segmentToJntCausality;
+
         // Constructor
         RobotCollision(std::string urdf_filename);
 
         std::vector<bool>
         GetValidTransforms();
+
+        std::vector<int>
+        MovableJoints() const;
 
         // ForwardQ returns N rotations and translation, but we have M <= N objects, select only transforms relevant to existing meshes
         // std::tuple<std::vector<Matrix3d>, std::vector<Vector3d>>

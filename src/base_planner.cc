@@ -76,6 +76,92 @@ namespace Burs
         return rand_states;
     }
 
+    // std::vector<RS>
+    // BasePlanner::GetEndpoints(const RS &state_near, const std::vector<RS> &rand_states, std::vector<double> d_maxes, double freeze_dist) const
+    // {
+
+    //     double d_small = 0.1 * d_max;
+
+    //     std::vector<RS> new_states;
+    //     new_states.reserve(rand_states.size());
+    //     // MatrixXd endpoints = MatrixXd::Zero(this->q_dim, rand_Q.cols());
+
+    //     // std::cout << "start q: " << q_near.transpose() << "\n";
+    //     for (int i = 0; i < rand_states.size(); ++i)
+    //     {
+    //         // std::cout << "getendpoints rand state: " << rand_states[i].config.transpose() << "\n";
+    //         // // If this won't move further that it is allowed
+    //         double maxPossibleDist = this->env->robot->MaxDistance(state_near, rand_states[i]);
+    //         if (maxPossibleDist < d_max)
+    //         {
+    //             new_states.push_back(rand_states[i]);
+    //             continue;
+    //         }
+
+    //         double tk = 0;
+
+    //         // always start out from the center
+    //         RS state_k = state_near;
+    //         double phi_result = d_max;
+    //         // VectorXd q_k(q_near);
+
+    //         const RS &end_state = rand_states[i];
+    //         // const VectorXd q_e = rand_Q.col(i);
+
+    //         // They said 4-5 iterations to reach 0.1*closest_distance
+    //         // So either:
+    //         //  1. iterate until 0.1*dc
+    //         //  2. 4-5 iterations
+    //         // for (unsigned int k = 0; k < 5; ++k)
+    //         for (unsigned int k = 0; k < 5 && phi_result > d_small; ++k)
+    //         // for (unsigned int k = 0; phi_result > d_small; ++k)
+    //         // while (phi_result > d_small)
+    //         {
+    //             // CHECK: this is indeed PI away from q_near
+
+    //             double delta_tk = this->GetDeltaTk(phi_result, tk, end_state, state_k);
+
+    //             tk = tk + delta_tk;
+    //             if (tk >= 1.0)
+    //             {
+    //                 std::cout << "MOVED TOO MUCH IN ENDPOINT CALC\n";
+    //                 break;
+    //             }
+    //             // has actually never reached > 1
+    //             // if (tk > 1.0) // some tolerance
+    //             // {
+    //             //     q_k = q_e;
+    //             //     // std::runtime_error("t_k was greater than 1. This shouldn't happen.");
+    //             //     break;
+    //             // }
+    //             // q_k = q_near + tk * (q_e - q_near);
+    //             VectorXd q_k = state_near.config + tk * (end_state.config - state_near.config);
+    //             state_k = this->QToStates(q_k)[0];
+    //             // state_k = this->env->robot->FullFK(q_k);
+    //             phi_result = d_max - this->env->robot->MaxDistance(state_near, state_k);
+    //             // std::cout << "dist travelled at step " << k << ": " << (d_max - phi_result) << "\n";
+    //             // phi_result = d_max - this->MaxMovedDistance(q_near, q_k);
+    //         }
+    //         new_states.push_back(state_k);
+    //         // endpoints.col(i) = q_k;
+    //         // double max_moved_dist = this->MaxMovedDistance(q_near, q_k);
+    //         // std::cout << "q_k: " << q_k.transpose() << "\n";
+    //         // std::cout << "maxmoved dist: " << max_moved_dist << " epsilon: " << d_max << "\n";
+    //         // if (max_moved_dist > d_max)
+    //         // {
+    //         //     std::cout << "MOVED MORE THAN SHOULD HAVE: " << max_moved_dist << " > " << d_max << "\n";
+    //         //     // exit(1);
+    //         // }
+    //     }
+    //     // return endpoints;
+    //     // for (auto &s : new_states)
+    //     // {
+    //     //     std::cout << "s: " << s.config.transpose() << "\n";
+    //     // }
+    //     // assert(new_states.size() < 2);
+    //     return new_states;
+    // }
+
     std::vector<RS>
     BasePlanner::GetEndpoints(const RS &state_near, const std::vector<RS> &rand_states, double d_max) const
     {
@@ -144,7 +230,7 @@ namespace Burs
             }
             new_states.push_back(state_k);
             // endpoints.col(i) = q_k;
-            // double max_moved_dist = this->MaxMovedDistance(q_near, q_k);
+            // double max_moved_dist = this->env->robot->MaxMovedDistance(state_near, state_k);
             // std::cout << "q_k: " << q_k.transpose() << "\n";
             // std::cout << "maxmoved dist: " << max_moved_dist << " epsilon: " << d_max << "\n";
             // if (max_moved_dist > d_max)
@@ -161,83 +247,6 @@ namespace Burs
         // assert(new_states.size() < 2);
         return new_states;
     }
-
-    // VectorXd
-    // BasePlanner::GetEndpoints(const VectorXd &q_ei, const VectorXd &q_near, double factor) const
-    // {
-    //     double max_dist = this->MaxMovedDistance(q_near, q_ei);
-
-    //     if (max_dist < factor)
-    //     {
-    //         return q_ei;
-    //     }
-
-    //     double stepScale = 0.1; // Start with a small fraction of the step
-    //     double maxScale = 1.0;  // Maximum scale is the full step
-    //     VectorXd q_new = q_near;
-    //     double newDist;
-
-    //     VectorXd q_new = q_near + factor / max_dist * (q_ei - q_near);
-    //     auto newdist = this->MaxMovedDistance(q_new, q_near);
-    //     while (newdist > factor)
-    //     {
-    //         newdist
-    //     }
-
-    //     while (stepScale <= maxScale)
-    //     {
-    //         q_new = q_near + stepScale * (q_ei - q_near);
-    //         newDist = this->MaxMovedDistance(q_new, q_near);
-
-    //         if (newDist >= factor)
-    //         {
-    //             // If the distance is larger than factor, reduce the step
-    //             maxScale = stepScale - 0.01; // Reduce the upper bound
-    //             stepScale = 0.1;             // Reset to a smaller step
-    //         }
-    //         else
-    //         {
-    //             // Incrementally increase the step
-    //             stepScale += 0.01;
-    //         }
-    //     }
-    //     return q_new;
-    // }
-
-    // VectorXd
-    // BasePlanner::GetEndpoints(const VectorXd &q_ei, const VectorXd &q_near, double factor) const
-    // {
-    //     // 'factor' is in meters:
-    //     // 1. do forward kinematics on current node q_near => fk1
-    //     // 2. do forward kinematics on target node q_ei => fk2
-    //     // 3. if (fk1 - fk2).norm() < factor: return q_ei
-    //     //    else get the ratio so the new config is < factor distance away
-    //     // auto robot = this->GetEnv<URDFEnv>()->robot;
-
-    //     double max_dist = this->MaxMovedDistance(q_near, q_ei);
-
-    //     if (max_dist < factor)
-    //     {
-    //         return q_ei;
-    //     }
-    //     // /\ THE ABOVE WORKS FINE
-
-    //     std::cout << "max moved dist: " << max_dist << " factor: " << factor << " ratio: " << (factor / max_dist) << "\n";
-    //     // dist > factor => scale down => factor/dist < 1
-    //     // => (factor/dist) [m/m] unitless
-    //     // q_new [config] = q_near [config] + [m / m * config = config]
-    //     VectorXd q_new = q_near + factor / max_dist * (q_ei - q_near);
-
-    //     auto newdist = this->MaxMovedDistance(q_new, q_near);
-    //     std::cout << "new moved distance: " << newdist << "\n";
-
-    //     // THIS IS ALMOST ALWAY TRUE
-    //     if (newdist > factor)
-    //     {
-    //         exit(1);
-    //     }
-    //     return q_new;
-    // }
 
     int
     BasePlanner::AddObstacle(std::string obstacle_file, Eigen::Matrix3d R, Eigen::Vector3d t)

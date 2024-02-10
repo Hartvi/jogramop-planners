@@ -85,6 +85,60 @@ namespace Burs
         return false;
     }
 
+    std::pair<double, std::vector<double>>
+    BaseEnv::GetClosestDistances() const
+    {
+        if (!this->poses_are_set)
+        {
+            throw std::runtime_error("Poses are not set. Set them before getting closest distance.\n"); // Corrected to throw the exception
+        }
+
+        PQP_DistanceResult res;
+
+        std::vector<double> segment_distances(this->robot_models.size());
+        double min_total_dist = std::numeric_limits<double>::max(); // Use max double value for initial comparison
+
+        for (size_t i = 0; i < this->robot_models.size(); ++i) // Use size_t for indexing to match the size type
+        {
+            std::shared_ptr<RtModels::RtModel> current_robot_part = this->robot_models[i];
+            double min_seg_dist = std::numeric_limits<double>::max(); // Initialize to max double value
+
+            // Check distance to the ground if applicable
+            if (i >= this->minimumColSegmentIdx)
+            {
+                double current_part_z = current_robot_part->getT()[2];
+                double tmpDist = current_part_z - this->groundLevel;
+                if (tmpDist < min_seg_dist)
+                {
+                    min_seg_dist = tmpDist;
+                }
+            }
+
+            // Check distance to each obstacle
+            for (size_t k = 0; k < this->obstacle_models.size(); ++k) // Use size_t for indexing
+            {
+                auto obs = this->obstacle_models[k];
+                current_robot_part->CheckDistance(&res, 1e-3, 1e-3, obs.get());
+
+                if (res.distance < min_seg_dist)
+                {
+                    min_seg_dist = res.distance;
+                }
+            }
+
+            // Update the overall minimum distance if this segment's minimum is lower
+            if (min_seg_dist < min_total_dist)
+            {
+                min_total_dist = min_seg_dist;
+            }
+
+            segment_distances[i] = min_seg_dist;
+        }
+
+        // Return both the overall minimum distance and the vector of per-segment minimum distances
+        return {min_total_dist, segment_distances};
+    }
+
     double
     BaseEnv::GetClosestDistance() const
     {

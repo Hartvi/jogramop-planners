@@ -1,5 +1,6 @@
 #include "ut.h"
 #include "j_rrt_planner.h"
+#include "bur_tree3d.h"
 
 namespace Burs
 {
@@ -160,6 +161,7 @@ namespace Burs
         // tgt rot: R2
         // difference: subtract R1 then add R2
         // calculation: R2 * R1^T
+
         // KDL::Rotation inv_src_rot = src.M.Inverse();
         // double x, y, z;
         // KDL::Rotation diff_rot = tgt.M * inv_src_rot;
@@ -229,6 +231,99 @@ namespace Burs
         } while (delta_p > planner_parameters.p_close_enough);
 
         return AlgorithmState::Reached;
+    }
+
+    void
+    JRRTPlanner::PreheatTree(std::shared_ptr<BurTree> t, const int &init_idx, const int &heat_iters, JPlusRbtParameters &plan_params)
+    {
+        /*
+        PREHEATING:
+        - create target 3D points in a dome structure
+        - extend towards them as far as possible
+        */
+        double target_dist = plan_params.mean_target.norm();
+        std::cout << "PREHEAT TARGET DIST: " << target_dist << "\n";
+        int target_pos_num = heat_iters;
+        // Random workspace positions
+        // [-1, 1] interval
+        // MatrixXd rand_p = MatrixXd::Random(3, target_pos_num);
+        // MatrixXd rand_p = MatrixXd::Random(3, target_pos_num);
+        // Z above ground
+        // rand_p.row(2).array() += 0.9;
+        // rand_p.row(2).array() *= 0.5;
+        // rand_p.array() *= 100;
+        // double matmin = rand_p.cwiseAbs().minCoeff();
+        // Set minimal distance to ~distance to target
+        // rand_p.array() *= (target_dist / std::max(matmin, 1e-4));
+        // rand_p.array() *= (target_dist / std::max(matmin, 1e-4));
+        // std::cout << "randp: " << rand_p.col(50) << "\n";
+        // Initialize a 3x6 MatrixXd
+        Eigen::MatrixXd rand_p(3, 6);
+
+        // Manually set the values as per your requirement
+        rand_p << 10, 0, 0, -10, 0, 0,
+            0, 10, 0, 0, -10, 0,
+            0, 0, 10, 0, 0, -10;
+
+        RS *init_state = t->Get(init_idx);
+
+        BurTree3D t3d(*init_state);
+
+        VectorXd no_base_mask(init_state->config.size());
+        for (int i = 0; i < no_base_mask.size(); ++i)
+        {
+            no_base_mask(i) = i < 2 ? 0.0 : 1.0;
+        }
+
+        for (unsigned int i = 0; i < heat_iters; ++i)
+        {
+            // int current_pos_idx = i % 6;
+            // KDL::Vector rand_tgt(rand_p(0, current_pos_idx), rand_p(1, current_pos_idx), rand_p(2, current_pos_idx));
+            VectorXd randvec = MatrixXd::Random(3, 1);
+            randvec.row(0).array() *= 10;
+            randvec.row(1).array() *= 10;
+            // randvec.row(2).array() *= 0.1;
+            KDL::Vector rand_tgt(randvec(0), randvec(1), randvec(2));
+
+            for (unsigned int k = 0; k < 10; ++k)
+            {
+                // extend towards random goal as far as possible
+                int nearest_3d = t3d.Nearest(rand_tgt.data);
+                RS near_state = *t3d.Get(nearest_3d);
+                // std::cout << "old state: " << near_state.frames.back().p << "\n";
+                int nearest_q = t->Nearest(near_state);
+
+                KDL::Twist twist;
+                auto delta_p = rand_tgt - this->env->robot->GetEEFrame(near_state).p;
+                delta_p.Normalize();
+                twist.vel = delta_p;
+                // std::cout << "direction: " << twist.vel << "\n";
+                twist.rot = KDL::Vector::Zero();
+
+                KDL::JntArray q_dot = this->env->robot->ForwardJPlus(near_state, twist);
+                VectorXd delta_q = q_dot.data;
+                int new_state_idx = 0;
+
+                near_state = this->NewState((near_state.config + delta_q).cwiseProduct(no_base_mask));
+
+                new_state_idx = this->RRTStep(t, nearest_q, near_state, plan_params.epsilon_q);
+                if (new_state_idx >= 0)
+                {
+                    ++i;
+                    // std::cout << "step size: " << (near_state->frames.back().p - new_state.frames.back().p).Norm() << " max dist: " << this->env->robot->MaxDistance(*near_state, new_state) << "\n";
+                    nearest_3d = t3d.AddNode(nearest_3d, near_state);
+                    // int new_idx = t->AddNode(nearest_q, new_state);
+                    this->SetGraspClosestConfigs(plan_params, t, new_state_idx);
+                    // std::cout << "new state: " << near_state.frames.back().p << "\n";
+                    // std::cout << "tree: " << t3d.GetNumberOfNodes() << "\n";
+                    // std::cout << "new state colliding: " << this->IsColliding(new_state) << " inbounds: " << this->InBounds(new_state.config) << "\n";
+                }
+                else
+                {
+                    break;
+                }
+            }
+        }
     }
 
 }

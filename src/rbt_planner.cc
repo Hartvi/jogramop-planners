@@ -388,13 +388,13 @@ namespace Burs
     std::vector<RS>
     RbtPlanner::Densify(const RS &src, const RS &tgt, const RbtParameters &plan_params) const
     {
-        double maxdist = this->env->robot->MaxDistance(src, tgt);
-        // std::cout << "Densify: src and tgt dist: " << maxdist << "\n";
         // less than 2x upper distance between neighbouring positions
         double upper_dist = plan_params.q_resolution * 0.5;
 
         std::vector<RS> configs = {src, tgt};
         return configs;
+        double maxdist = this->env->robot->MaxDistance(src, tgt);
+        // std::cout << "Densify: src and tgt dist: " << maxdist << "\n";
 
         for (int i = 0; i + 1 < configs.size();)
         {

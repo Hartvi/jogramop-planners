@@ -26,15 +26,6 @@ namespace Burs
 
         virtual ~BasePlanner() = default;
 
-        // double
-        // DistanceToGoal(const KDL::Frame &goal, const KDL::Frame &current) const;
-
-        // double
-        // GetDistToGoal(const VectorXd &q, const KDL::Frame &goal_pos) const;
-
-        // KDL::Frame
-        // GetEEPose(const VectorXd &q) const;
-
         double
         GetDeltaTk(double phi_tk, double tk, const RS &end_state, const RS &k_state) const;
 
@@ -44,12 +35,10 @@ namespace Burs
         std::vector<RS>
         QToStates(const MatrixXd &Q) const;
 
-        // MatrixXd
-        // GetEndpoints(const VectorXd &q_near, const MatrixXd &Q_e, double d_max) const;
-        // std::vector<RS>
-        // GetEndpoints(const RS &state_near, const MatrixXd &Q_e, double d_max) const;
         std::vector<RS>
-        GetEndpoints(const RS &state_near, const std::vector<RS> &rand_states, double d_max) const;
+        GetEndpointsWInterstates(const RS &state_near, const std::vector<RS> &rand_states, double d_max) const;
+
+        std::vector<RS> GetEndpoints(const RS &state_near, const std::vector<RS> &rand_states, double d_max) const;
 
         // EXAMPLE USAGE OF BASIC FUNCTIONS
         void

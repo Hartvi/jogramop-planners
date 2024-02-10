@@ -39,6 +39,15 @@ namespace Burs
             std::cout << "\n";
         }
         this->numberOfModels = numModels;
+
+        auto movablejoints = this->MovableJoints();
+        this->segmentToJntCausality = movablejoints;
+        // std::cout << "MOVABLE JOINT MAPPING\n";
+        // for (unsigned int i = 0; i < movablejoints.size(); ++i)
+        // {
+        //     std::cout << "segment " << i << ": " << movablejoints[i] << "\n";
+        // }
+        // exit(1);
         // std::cout << "Initialized RobotCollision. Number of models: " << this->numberOfModels << std::endl;
     }
 
@@ -58,6 +67,55 @@ namespace Burs
         }
         std::cout << "num valid models: " << k << "\n";
         return b;
+    }
+
+    std::vector<int>
+    RobotCollision::MovableJoints() const
+    {
+        // each segment denotes joint ids that affect the segment
+        // segment 1 => joints 0,1,2 affect it => 2
+        std::vector<int> segmentToJointCausality;
+        // lastInactiveSegment is the id of the segment that had the distance too close
+        // It is only from the set of segments that have models:
+        int joint = 0;
+        /*
+        lastInactiveSegment: 4/8
+        i:0
+         nothing
+        i:1
+         joint+=1
+        i:2
+         joint+=1
+         segments+=1
+        i:3
+         joint+=1
+         segments+=1
+        i:4
+         joint+=1
+         segments+=1
+        i:5
+         joint+=1
+         segments+=1
+        */
+        for (unsigned int i = 0; i < this->segmentIdToModel.size(); ++i)
+        {
+            if (this->kdl_chain.getSegment(i).getJoint().getType() != KDL::Joint::JointType::None)
+            {
+                ++joint;
+            }
+            // std::cout << "segment " << this->kdl_chain.getSegment(i).getName() << " joints: " << joint << " type: " << this->kdl_chain.getSegment(i).getJoint().getTypeName() << " has model: ";
+            if (this->segmentIdToModel[i])
+            {
+                segmentToJointCausality.push_back(joint);
+                // std::cout << "true\n";
+            }
+            else
+            {
+
+                // std::cout << "false\n";
+            }
+        }
+        return segmentToJointCausality;
     }
 
     // // ForwardQ returns N rotations and translation, but we have M <= N objects, select only transforms relevant to existing meshes
@@ -120,8 +178,7 @@ namespace Burs
     //     return srt;
     // }
 
-    std::vector<std::shared_ptr<RtModels::RtModel>>
-    RobotCollision::GetModels()
+    std::vector<std::shared_ptr<RtModels::RtModel>> RobotCollision::GetModels()
     {
         std::vector<std::shared_ptr<RtModels::RtModel>> models(this->numberOfModels);
         int k = 0;

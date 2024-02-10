@@ -61,6 +61,13 @@ namespace Burs
     //     return t->Nearest(q.data());
     // }
 
+    std::pair<double, std::vector<double>>
+    MinPlanner::GetClosestDistances(const RS &state) const
+    {
+        this->env->SetPoses(state);
+        return this->env->GetClosestDistances();
+    }
+
     double
     MinPlanner::GetClosestDistance(const RS &state) const
     {
@@ -78,6 +85,13 @@ namespace Burs
     MinPlanner::IsColliding(const RS &state) const
     {
         this->env->SetPoses(state);
+        for (unsigned int i = 4; i < state.frames.size(); ++i)
+        {
+            if (state.frames[i].p.z() < 0.04)
+            {
+                return true;
+            }
+        }
         return this->env->IsColliding();
     }
 

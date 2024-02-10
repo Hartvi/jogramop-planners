@@ -31,6 +31,9 @@ namespace Burs
 
         AlgorithmState
         ExtendToGoalRRT(std::shared_ptr<BurTree> t_a, JPlusRbtParameters &planner_parameters) const;
+
+        void
+        PreheatTree(std::shared_ptr<BurTree> t, const int &init_idx, const int &heat_iters, JPlusRbtParameters &plan_params);
     };
 }
 

@@ -21,7 +21,7 @@ namespace Burs
         // std::cout << "parent node: " << t->GetQ(node_idx).transpose() << "\n";
         RS new_state = this->GetEndpoints(*t->Get(node_idx), {rand_state}, epsilon_q)[0];
 
-        if (!this->IsColliding(new_state))
+        if (!this->IsColliding(new_state) && this->InBounds(new_state.config))
         {
             // The result is the INDEX of the new node => 0 to N-1
             return t->AddNode(node_idx, new_state);

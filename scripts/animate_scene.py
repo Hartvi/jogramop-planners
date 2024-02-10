@@ -14,6 +14,19 @@ collection = bpy.context.collection
 
 
 def float_to_colour(val):
+    fill_speed = 1.0/3.0
+    if val < fill_speed:
+        return (0, 0, val/fill_speed, 1)
+    elif val < fill_speed*2:
+        colval = (val - fill_speed) / fill_speed
+        return (0, colval, 1 - colval, 1)
+    else:
+        colval = (val - 2*fill_speed) / fill_speed
+        return (colval, 1-colval, 0, 1)
+    # fill_speed = 1.0/3.0
+    # fill_speed = 1.0/3.0
+    # return (min())
+
     increment = 0.25  # 1/8
     float_increment = (val/increment)
     int_increment = int(round(float_increment))
@@ -27,7 +40,7 @@ def float_to_colour(val):
     elif int_increment == 3:
         return (modulus_val, modulus_val, 1, 1)
     else:
-        return (modulus_val, 0, 0, 1)
+        return (modulus_val, 1, 1, 1)
 
 
 
@@ -46,10 +59,12 @@ def load_csv_floats(csv_file):
 
 def vis_points(point_positions):
     n = len(point_positions)
+    max_val = float(n-1)
     for i in range(n):
         position = tuple(point_positions[i])
-        fraction = float(i) / float(n)
+        fraction = float(i) / max_val
         col = float_to_colour(fraction)
+        # print('fraction:', fraction, "colour:", col)
         current_object = create_point(position, col, 0.015)
         # print("position: ", position)
         newest_object = bpy.context.object
