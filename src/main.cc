@@ -165,7 +165,6 @@ int main(int argc, char **argv)
     std::string arg1 = std::string(argv[1]);
     if (arg1 == "test")
     {
-
         // BEGIN COMMON SETTINGS ------------------------------------------------------------------------------------------------------------
         std::shared_ptr<JRbtPlanner> jprbt = std::make_shared<JRbtPlanner>(std::string(urdfFile));
         // 1. Set obstacles in urdfenv
@@ -444,6 +443,121 @@ int main(int argc, char **argv)
         // std::cout << "argc: ";
         // std::cout << argc;
         std::cout << "\n";
+    }
+    else if (arg1 == "rotation")
+    {
+        // BEGIN COMMON SETTINGS ------------------------------------------------------------------------------------------------------------
+        std::shared_ptr<JRbtPlanner> jprbt = std::make_shared<JRbtPlanner>(std::string(urdfFile));
+        // 1. Set obstacles in urdfenv
+        // 2. Setup parameters
+        // 3. Plan
+        auto &env = jprbt->env;
+        env->SetGroundLevel(groundLevel, minColSegmentIdx);
+
+        std::string grasp_path(graspFile);
+
+        std::vector<Grasp> grasps = Grasp::LoadGrasps(grasp_path);
+
+        Eigen::VectorXd start_config = RobotBase::parseCSVToVectorXd(startConfigFile);
+        std::cout << "start config " << start_config.transpose() << "\n";
+
+        // auto grasp_frames = Grasp::GraspsToFrames(grasps);
+
+        PlanningResult planning_result;
+
+        std::optional<std::vector<Eigen::VectorXd>> path;
+        std::vector<Eigen::VectorXd> final_path;
+
+        // distance metric is euclidean squared
+        // double p_close_sqr = p_close_enough * p_close_enough;
+        // double goal_bias_radius_sqr = goal_bias_radius * goal_bias_radius;
+
+        JPlusRbtParameters params(max_iters, d_crit, delta_q, epsilon_q, num_spikes, p_close_enough, probability_to_steer_to_target, grasps, goal_bias_radius, goal_bias_probability, q_resolution);
+        params.visualize_tree = render_tree;
+        params.seed = usedSeed;
+        params.preheat_ratio = preheat_ratio;
+        // END COMMON SETTINGS ------------------------------------------------------------------------------------------------------------
+
+        std::cout << "ROTATION TESTING\n";
+        // extended with steer towards
+
+        // JPlusRbtParameters params(max_iters, d_crit, delta_q, epsilon_q, num_spikes, p_close_enough, probability_to_steer_to_target, grasp_frames);
+        // JPlusRbtParameters params(max_iters, d_crit, delta_q, epsilon_q, num_spikes, p_close_enough, probability_to_steer_to_target, grasp_frames, goal_bias_radius, goal_bias_probability);
+
+        struct rusage t1, t2;
+        getTime(&t1);
+        path = jprbt->RotTest(start_config, params, planning_result);
+
+        getTime(&t2);
+        planning_result.time_taken = getTime(t1, t2);
+        final_path = path.value();
+
+        char fname[2000];
+        {
+            snprintf(fname, sizeof(fname), "%s.txt", targetPrefixFile);
+            ofstream ofs(fname);
+            ofs << planning_result.toCSVString() << "\n";
+            ofs.close();
+        }
+        {
+            snprintf(fname, sizeof(fname), "%s.try", targetPrefixFile);
+            ofstream ofs(fname);
+            ofs << jprbt->ConfigsToString(final_path) << "\n";
+            ofs.close();
+        }
+        {
+            snprintf(fname, sizeof(fname), "%s.vis", targetPrefixFile);
+            ofstream ofs(fname);
+            ofs << jprbt->StringifyPath(final_path);
+            ofs.close();
+        }
+
+        if (renderVideo)
+        {
+            // ROBOT:
+            std::string vis_file_name = std::string(targetPrefixFile) + ".vis";
+
+            // std::ofstream vis_file(vis_file_name);
+
+            // if (vis_file.is_open())
+            // {
+            //     vis_file << jprbt->StringifyPath(final_path);
+            //     vis_file.close();
+            // }
+
+            std::string path_name = joinWithCurrentDirectory(vis_file_name);
+
+            // needs `pip install bpy` for python 3.10, numpy
+            std::string vis_args = path_name + " " + std::to_string(camX) + " " + std::to_string(camY) + " " + std::to_string(camZ) + " " + grasp_path;
+            // TREE:
+            std::cout << "RENDER TREE: " << render_tree << "\n";
+            if (render_tree)
+            {
+                std::string tree_file_name = std::string(targetPrefixFile) + ".tree";
+
+                std::ofstream tree_file(tree_file_name);
+                // std::cout << "tree csv: " << jprbt->tree_csv << "\n";
+
+                if (tree_file.is_open())
+                {
+                    tree_file << jprbt->tree_csv;
+                    tree_file.close();
+                }
+                std::string tree_path_name = joinWithCurrentDirectory(tree_file_name);
+                std::cout << "tree file " << tree_path_name << "\n";
+                vis_args = vis_args + " " + tree_path_name;
+            }
+
+            std::string str_command = "python3.10 " + std::string(visualizationScriptFile) + " " + vis_args;
+
+            const char *command = str_command.c_str();
+            int result = system(command);
+
+            if (result != 0)
+            {
+                std::cout << "Calling `" << command << "` failed" << std::endl;
+            }
+        }
     }
     return 0;
 }

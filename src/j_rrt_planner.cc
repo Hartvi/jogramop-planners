@@ -172,6 +172,81 @@ namespace Burs
         return twist;
     }
 
+    KDL::Vector
+    JRRTPlanner::GetRotVec(const KDL::Frame &tgt, const KDL::Frame &src) const
+    {
+        // TODO ROTATION
+        // src rot: R1
+        // tgt rot: R2
+        // difference: subtract R1 then add R2
+        // calculation: R2 * R1^T
+
+        KDL::Rotation inv_src_rot = src.M.Inverse();
+        double x, y, z;
+        KDL::Rotation diff_rot = tgt.M * inv_src_rot;
+        diff_rot.GetRPY(x, y, z);
+
+        return KDL::Vector(x, y, z);
+    }
+
+    KDL::Rotation
+    JRRTPlanner::GetClosestSymmetricGrasp(const KDL::Rotation &rotMatGrasp, const KDL::Rotation &rotMatEE) const
+    {
+        // Extract the Y-axis (second column) from both rotation matrices
+        KDL::Vector yGrasp = KDL::Vector(rotMatGrasp(0, 1), rotMatGrasp(1, 1), rotMatGrasp(2, 1));
+        KDL::Vector yEE = KDL::Vector(rotMatEE(0, 1), rotMatEE(1, 1), rotMatEE(2, 1));
+
+        // Initialize the closest grasp rotation matrix to the input grasp rotation matrix
+        KDL::Rotation closestGrasp = rotMatGrasp;
+
+        // Check if the dot product of the Y-axes is negative, indicating opposing directions
+        if ((yGrasp(0) * yEE(0) + yGrasp(1) * yEE(1) + yGrasp(2) * yEE(2)) < 0)
+        {
+            // Need to flip both the X (first column) and Y-axis (second column)
+            closestGrasp(0, 0) = -closestGrasp(0, 0); // Flip X-axis
+            closestGrasp(1, 0) = -closestGrasp(1, 0); // Flip X-axis
+            closestGrasp(2, 0) = -closestGrasp(2, 0); // Flip X-axis
+            closestGrasp(0, 1) = -closestGrasp(0, 1); // Flip Y-axis
+            closestGrasp(1, 1) = -closestGrasp(1, 1); // Flip Y-axis
+            closestGrasp(2, 1) = -closestGrasp(2, 1); // Flip Y-axis
+        }
+
+        return closestGrasp;
+    }
+
+    Eigen::Matrix3d
+    JRRTPlanner::ProjectApproachDirection(const Eigen::Matrix3d &rotMatGrasp, const Eigen::Matrix3d &rotMatEE) const
+    {
+        // Extract the Z-axis (approach vector) of the EE and the Y-axis of the grasp
+        Eigen::Vector3d zEE = rotMatEE.col(2);
+        Eigen::Vector3d yGrasp = rotMatGrasp.col(1);
+
+        // Project the EE's Z-axis onto the grasp's approach plane
+        Eigen::Vector3d zProjected = zEE - (zEE.dot(yGrasp) * yGrasp);
+        double norm = zProjected.norm();
+
+        // Check if the projected vector's norm is 0 (i.e., if it's orthogonal to the grasp's approach plane)
+        if (norm == 0)
+        {
+            // If orthogonal, return the original grasp rotation matrix
+            return rotMatGrasp;
+        }
+
+        // Normalize the projected Z-axis
+        Eigen::Vector3d zNew = zProjected / norm;
+
+        // Compute the new X-axis as the cross product of Y-axis of grasp and the new Z-axis
+        Eigen::Vector3d xNew = yGrasp.cross(zNew);
+
+        // Assemble the new grasp rotation matrix from the new X, original Y, and new Z axes
+        Eigen::Matrix3d newGraspRotMat;
+        newGraspRotMat.col(0) = xNew;
+        newGraspRotMat.col(1) = yGrasp;
+        newGraspRotMat.col(2) = zNew;
+
+        return newGraspRotMat;
+    }
+
     AlgorithmState
     JRRTPlanner::ExtendToGoalRRT(std::shared_ptr<BurTree> t_a, JPlusRbtParameters &planner_parameters) const
     {
@@ -326,4 +401,80 @@ namespace Burs
         }
     }
 
+    std::optional<std::vector<VectorXd>>
+    JRRTPlanner::RotTest(VectorXd q_start, JPlusRbtParameters &planner_parameters, PlanningResult &plan_result)
+    {
+        if (planner_parameters.target_poses.size() < 1)
+        {
+            throw std::runtime_error("Target poses has length 0!");
+        }
+
+        VectorXd first_state = this->GetRandomQ(1);
+        RS start_state = this->NewState(first_state);
+        // RS start_state = this->NewState(q_start);
+
+        this->rng = std::make_shared<RandomNumberGenerator>(planner_parameters.seed, planner_parameters.target_poses.size() - 1);
+
+        auto tree = std::make_shared<BurTree>(start_state, q_start.size());
+
+        this->InitGraspClosestConfigs(planner_parameters, tree, 0);
+
+        int last_idx = 0;
+        for (unsigned int k = 0; k < planner_parameters.max_iters; ++k)
+        {
+            std::cout << "iter: " << k << "\n";
+            int bestgraspid = this->GetBestGrasp(planner_parameters);
+            // this->env->robot->KDLFrameToEigen();
+
+            Grasp best_grasp = planner_parameters.target_poses[bestgraspid];
+            KDL::Frame grasp_frame = best_grasp.frame;
+            RS *best_state = tree->Get(last_idx);
+            std::cout << "grasp before: " << grasp_frame << "\n";
+            grasp_frame.M = this->GetClosestSymmetricGrasp(grasp_frame.M, best_state->frames.back().M);
+            std::cout << "grasp after: " << grasp_frame << "\n";
+
+            // exit(1);
+
+            KDL::Vector twist_vec = this->GetRotVec(best_grasp.frame, best_state->frames.back());
+            KDL::Twist twist;
+            twist.rot = twist_vec;
+            twist.vel = KDL::Vector::Zero();
+
+            KDL::JntArray q_dot = this->env->robot->ForwardJPlus(*best_state, twist);
+            VectorXd delta_q = q_dot.data;
+
+            RS new_state = this->NewState(best_state->config + delta_q);
+            int step_result = this->RRTStep(tree, last_idx, new_state, planner_parameters.epsilon_q);
+
+            if (step_result >= 0)
+            {
+                // Check distance to goal
+                RS new_state = *tree->Get(step_result);
+                this->SetGraspClosestConfigs(planner_parameters, tree, step_result);
+                last_idx = step_result;
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        // Get grasp with minimal distance
+        unsigned int best_grasp_idx = this->GetBestGrasp(planner_parameters);
+        Grasp best_grasp = planner_parameters.target_poses[best_grasp_idx];
+        // Take measurements
+        plan_result.distance_to_goal = best_grasp.best_dist;
+        plan_result.num_iterations = planner_parameters.max_iters;
+        plan_result.tree_size = tree->GetNumberOfNodes();
+        plan_result.success = false;
+
+        // Return best path
+        auto path = this->ConstructPathFromTree(tree, last_idx);
+        if (planner_parameters.visualize_tree)
+        {
+            this->tree_csv = this->TreePoints(tree, 100);
+        }
+        std::cout << "TEST PATH LENGTH: " << path.size() << "\n";
+        return path;
+    }
 }

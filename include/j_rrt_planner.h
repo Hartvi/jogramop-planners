@@ -29,11 +29,23 @@ namespace Burs
         KDL::Twist
         GetTwist(const KDL::Frame &tgt, const KDL::Frame &src, const double &max_dist) const;
 
+        KDL::Vector
+        GetRotVec(const KDL::Frame &tgt, const KDL::Frame &src) const;
+
+        KDL::Rotation
+        GetClosestSymmetricGrasp(const KDL::Rotation &rotMatGrasp, const KDL::Rotation &rotMatEE) const;
+
+        Eigen::Matrix3d
+        ProjectApproachDirection(const Eigen::Matrix3d &rotMatGrasp, const Eigen::Matrix3d &rotMatEE) const;
+
         AlgorithmState
         ExtendToGoalRRT(std::shared_ptr<BurTree> t_a, JPlusRbtParameters &planner_parameters) const;
 
         void
         PreheatTree(std::shared_ptr<BurTree> t, const int &init_idx, const int &heat_iters, JPlusRbtParameters &plan_params);
+
+        std::optional<std::vector<VectorXd>>
+        RotTest(VectorXd q_start, JPlusRbtParameters &planner_parameters, PlanningResult &plan_result);
     };
 }
 
