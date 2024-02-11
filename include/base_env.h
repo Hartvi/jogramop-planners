@@ -53,7 +53,7 @@ namespace Burs
         // void
         // SetForwardRt(Burs::ForwardRt forwardRt);
 
-        std::pair<double, std::vector<double>>
+        std::pair<int, std::vector<double>>
         GetClosestDistances() const;
 
         /// @brief Check closest distance between robot parts and obstacles, NEED TO SET ROTATIONS AND TRANSLATIONS BEFOREHAND

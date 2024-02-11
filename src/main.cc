@@ -333,6 +333,24 @@ int main(int argc, char **argv)
 
             break;
         }
+        case 6:
+        {
+            std::cout << "PLANNING J+RBTS\n";
+            // extended with steer towards
+
+            // JPlusRbtParameters params(max_iters, d_crit, delta_q, epsilon_q, num_spikes, p_close_enough, probability_to_steer_to_target, grasp_frames);
+            // JPlusRbtParameters params(max_iters, d_crit, delta_q, epsilon_q, num_spikes, p_close_enough, probability_to_steer_to_target, grasp_frames, goal_bias_radius, goal_bias_probability);
+
+            struct rusage t1, t2;
+            getTime(&t1);
+            path = jprbt->JRbtS(start_config, params, planning_result);
+
+            getTime(&t2);
+            planning_result.time_taken = getTime(t1, t2);
+            final_path = path.value();
+
+            break;
+        }
         default:
         {
             break;

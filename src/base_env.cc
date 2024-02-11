@@ -85,7 +85,7 @@ namespace Burs
         return false;
     }
 
-    std::pair<double, std::vector<double>>
+    std::pair<int, std::vector<double>>
     BaseEnv::GetClosestDistances() const
     {
         if (!this->poses_are_set)
@@ -97,6 +97,7 @@ namespace Burs
 
         std::vector<double> segment_distances(this->robot_models.size());
         double min_total_dist = std::numeric_limits<double>::max(); // Use max double value for initial comparison
+        int min_idx = -1;
 
         for (size_t i = 0; i < this->robot_models.size(); ++i) // Use size_t for indexing to match the size type
         {
@@ -130,13 +131,14 @@ namespace Burs
             if (min_seg_dist < min_total_dist)
             {
                 min_total_dist = min_seg_dist;
+                min_idx = i;
             }
 
             segment_distances[i] = min_seg_dist;
         }
 
         // Return both the overall minimum distance and the vector of per-segment minimum distances
-        return {min_total_dist, segment_distances};
+        return {min_idx, segment_distances};
     }
 
     double

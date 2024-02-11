@@ -40,6 +40,7 @@ namespace Burs
         }
         this->numberOfModels = numModels;
 
+        // std::cout << "num models: " << this->numberOfModels << "\n";
         auto movablejoints = this->MovableJoints();
         this->segmentToJntCausality = movablejoints;
         // std::cout << "MOVABLE JOINT MAPPING\n";
@@ -69,11 +70,14 @@ namespace Burs
         return b;
     }
 
-    std::vector<int>
+    std::vector<VectorXd>
     RobotCollision::MovableJoints() const
     {
+        // TODO create a mask for each case so that when I generate random samples I can zero out joints that aren't supposed to be moved
         // each segment denotes joint ids that affect the segment
         // segment 1 => joints 0,1,2 affect it => 2
+        // this->numberOfModels
+        std::vector<VectorXd> segmentToJointVector(this->numberOfModels, VectorXd::Ones(this->kdl_chain.getNrOfJoints()));
         std::vector<int> segmentToJointCausality;
         // lastInactiveSegment is the id of the segment that had the distance too close
         // It is only from the set of segments that have models:
@@ -97,6 +101,7 @@ namespace Burs
          joint+=1
          segments+=1
         */
+        int k = 0;
         for (unsigned int i = 0; i < this->segmentIdToModel.size(); ++i)
         {
             if (this->kdl_chain.getSegment(i).getJoint().getType() != KDL::Joint::JointType::None)
@@ -106,7 +111,16 @@ namespace Burs
             // std::cout << "segment " << this->kdl_chain.getSegment(i).getName() << " joints: " << joint << " type: " << this->kdl_chain.getSegment(i).getJoint().getTypeName() << " has model: ";
             if (this->segmentIdToModel[i])
             {
+                for (int l = k; l < segmentToJointVector.size(); ++l)
+                {
+                    for (int m = 0; m < joint; ++m)
+                    {
+                        segmentToJointVector[l](m) = 0.0;
+                    }
+                }
                 segmentToJointCausality.push_back(joint);
+                ++k;
+
                 // std::cout << "true\n";
             }
             else
@@ -115,7 +129,12 @@ namespace Burs
                 // std::cout << "false\n";
             }
         }
-        return segmentToJointCausality;
+        // for (unsigned int i = 0; i < this->numberOfModels; ++i)
+        // {
+        //     std::cout << segmentToJointVector[i].transpose() << "\n";
+        // }
+        // exit(1);
+        return segmentToJointVector;
     }
 
     // // ForwardQ returns N rotations and translation, but we have M <= N objects, select only transforms relevant to existing meshes
