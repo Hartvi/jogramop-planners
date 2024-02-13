@@ -20,6 +20,7 @@ namespace Burs
     {
         int ret_idx = this->mNodes.size();
         this->mNodes.emplace_back(p, state);
+        // this->mNodes[p].child_ids.push_back(ret_idx);
         // have to build index to register the new node
         //        this->BuildIndex();
 

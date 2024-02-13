@@ -27,7 +27,7 @@ namespace Burs
         JRRT(VectorXd q_start, JPlusRbtParameters &planner_parameters, PlanningResult &plan_result);
 
         KDL::Twist
-        GetTwist(const KDL::Frame &tgt, const KDL::Frame &src, const double &max_dist) const;
+        GetTwist(const KDL::Frame &tgt, const KDL::Frame &src, const double &max_dist, const bool &use_rot) const;
 
         KDL::Vector
         GetRotVec(const KDL::Frame &tgt, const KDL::Frame &src) const;
@@ -42,10 +42,22 @@ namespace Burs
         ExtendToGoalRRT(std::shared_ptr<BurTree> t_a, JPlusRbtParameters &planner_parameters) const;
 
         void
+        PreheatNTrees(std::shared_ptr<BurTree> tree, VectorXd q_start, JPlusRbtParameters &plan_params);
+
+        void
         PreheatTree(std::shared_ptr<BurTree> t, const int &init_idx, const int &heat_iters, JPlusRbtParameters &plan_params);
 
         std::optional<std::vector<VectorXd>>
         RotTest(VectorXd q_start, JPlusRbtParameters &planner_parameters, PlanningResult &plan_result);
+
+        void
+        CopyTree(std::shared_ptr<BurTree> src, std::shared_ptr<BurTree> tgt);
+
+        std::shared_ptr<BurTree>
+        JRRTPreheat(VectorXd q_start, int iters, JPlusRbtParameters &planner_parameters);
+
+        AlgorithmState
+        JumpToGoal(std::shared_ptr<BurTree> t_a, JPlusRbtParameters &planner_parameters);
     };
 }
 

@@ -14,6 +14,8 @@ namespace Burs
     class JPlusRbtParameters : public RbtParameters
     {
     public:
+        bool use_platform = true;
+        bool use_rotation;
         double preheat_ratio;
         double p_close_enough;
         double probability_to_steer_to_target;
@@ -55,6 +57,7 @@ namespace Burs
         //     // this->target_poses = t;
         //     return t;
         // }
+        JPlusRbtParameters() = default;
 
         JPlusRbtParameters(int max_iters,
                            double d_crit,

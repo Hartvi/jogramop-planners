@@ -5,6 +5,17 @@
 
 namespace Burs
 {
+    using namespace Eigen;
+
+    Grasp::Grasp(Vector3d pos)
+    {
+        this->data = Matrix4d::Zero();
+        this->data(0, 3) = pos(0);
+        this->data(1, 3) = pos(1);
+        this->data(2, 3) = pos(2);
+        this->frame = this->ToFrame();
+    }
+
     Grasp::Grasp(std::string grasp_data_csv)
     {
         // expecting row0, row1, row2, row3

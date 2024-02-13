@@ -42,6 +42,7 @@ namespace Burs
     public:
         /// @brief Index of the node in the array
         int parent_idx;
+        // std::vector<int> child_ids;
 
         /// @brief Node location in configuration space
         // VectorXd q;

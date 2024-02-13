@@ -391,32 +391,78 @@ namespace Burs
         // less than 2x upper distance between neighbouring positions
         double upper_dist = plan_params.q_resolution * 0.5;
 
-        std::vector<RS> configs = {src, tgt};
-        return configs;
+        std::vector<RS> configs = {};
+        // return configs;
         double maxdist = this->env->robot->MaxDistance(src, tgt);
         // std::cout << "Densify: src and tgt dist: " << maxdist << "\n";
+        VectorXd delta_vec = tgt.config - src.config;
 
-        for (int i = 0; i + 1 < configs.size();)
+        bool failed_distance = false;
+        int num_splits = maxdist / plan_params.q_resolution;
+        // configs.reserve(num_splits + 1);
+
+        configs.push_back(src);
+        for (int i = 1; i < num_splits; ++i)
         {
-            VectorXd middle_config = (configs[i].config + configs[i + 1].config) * 0.5;
-            RS ns = this->NewState(middle_config);
-            double tmp_dist = this->env->robot->MaxDistance(configs[i], ns);
+            VectorXd new_config(this->q_dim);
+            for (int j = 0; j < this->q_dim; ++j)
+            {
+                new_config(j) = src.config(j) + ((double)i) * delta_vec(j) / (double)num_splits;
+            }
+            RS ns = this->NewState(new_config);
+            double tmp_dist = this->env->robot->MaxDistance(src, ns);
 
             if (maxdist < tmp_dist)
             {
-                std::cout << "halfway distance higher than final distance: " << maxdist << " < " << tmp_dist << "\n";
-            }
-            // double tmp_dist = this->MaxMovedDistance(configs[i], middle_config);
-
-            if (tmp_dist > upper_dist)
-            {
-                configs.insert(configs.begin() + i + 1, ns);
+                // std::cout << "halfway distance higher than final distance: " << tmp_dist << " > " << maxdist << "\n";
+                // // exit(1);
+                // std::cout << "ns: \n"
+                //           << ns.config.transpose() << "\n";
+                failed_distance = true;
             }
             else
             {
-                ++i;
+                // std::cout << "successfully added\n";
+                configs.push_back(ns);
             }
         }
+        // std::cout << "\n";
+        configs.push_back(tgt);
+        // for (int i = 0; i + 1 < configs.size();)
+        // {
+        //     VectorXd middle_config = (configs[i].config + configs[i + 1].config) * 0.5;
+        //     RS ns = this->NewState(middle_config);
+        //     double tmp_dist = this->env->robot->MaxDistance(configs[i], ns);
+
+        //     if (maxdist < tmp_dist)
+        //     {
+        //         std::cout << "halfway distance higher than final distance: " << maxdist << " < " << tmp_dist << "\n";
+        //         // exit(1);
+        //         failed_distance = true;
+        //     }
+        //     // double tmp_dist = this->MaxMovedDistance(configs[i], middle_config);
+
+        //     if (tmp_dist > upper_dist)
+        //     {
+        //         configs.insert(configs.begin() + i + 1, ns);
+        //     }
+        //     else
+        //     {
+        //         ++i;
+        //     }
+        // }
+
+        // if (failed_distance)
+        //     exit(1);
+        // if (failed_distance)
+        // {
+        //     std::cout << "start: \n"
+        //               << src.config.transpose() << "\n";
+        //     std::cout << "end: \n"
+        //               << tgt.config.transpose() << "\n";
+        //     std::cout << "num interpoints: " << configs.size() << "\n";
+        //     exit(1);
+        // }
         return configs;
     }
 

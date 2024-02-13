@@ -226,6 +226,7 @@ namespace Burs
                 // state_k = this->env->robot->FullFK(q_k);
                 phi_result = d_max - this->env->robot->MaxDistance(state_near, state_k);
                 // std::cout << "dist travelled at step " << k << ": " << (d_max - phi_result) << "\n";
+                // std::cout << q_k.transpose() << "\n";
                 // phi_result = d_max - this->MaxMovedDistance(q_near, q_k);
             }
             new_states.push_back(state_k);
