@@ -3,14 +3,14 @@
 -urdf /home/hartvi/Documents/CVUT/diploma_thesis/burs_of_free_space/jogramop/robots/franka_panda/mobile_panda_fingersSmallMesh.urdf \
 -obstacle /home/hartvi/Documents/CVUT/diploma_thesis/burs_of_free_space/jogramop/scenarios/001/export/obstacles.obj \
 -start_config /home/hartvi/Documents/CVUT/diploma_thesis/burs_of_free_space/jogramop/scenarios/001/export/robot_start_conf.csv \
--planner 6 \
+-planner 1 \
 -max_iters 50000 \
 -d_crit 0.05 \
 -delta_q 0.5 \
 -epsilon_q 0.25 \
 -num_spikes 4 \
 -p_close_enough 0.07 \
--prob_steer 0.1 \
+-prob_steer 0.05 \
 -target_prefix /home/hartvi/Documents/CVUT/diploma_thesis/burs_of_free_space/lel \
 -render 0 \
 -vis_script /home/hartvi/Documents/CVUT/diploma_thesis/burs_of_free_space/scripts/animate_scene.py \
@@ -26,4 +26,5 @@
 -q_resolution 0.1 \
 -seed -1 \
 -render_tree 5000 \
--preheat_ratio 0.3
+-preheat_ratio 0.3 \
+-preheat_type 1

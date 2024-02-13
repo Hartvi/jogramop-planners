@@ -35,14 +35,20 @@ namespace Burs
         this->rng = std::make_shared<RandomNumberGenerator>(planner_parameters.seed, planner_parameters.target_poses.size() - 1);
 
         auto tree = std::make_shared<BurTree>(start_state, q_start.size());
-        // this->PreheatNTrees(tree, q_start, planner_parameters);
+        if (planner_parameters.preheat_type == 0)
+        {
+            this->PreheatNTrees(tree, q_start, planner_parameters);
+        }
 
         // To prevent uninitialized vectors in planner_parameters
         this->InitGraspClosestConfigs(planner_parameters, tree, 0);
         int preheat_iters = planner_parameters.max_iters * planner_parameters.preheat_ratio;
         std::cout << "preheat iters: " << preheat_iters << "\n";
 
-        this->PreheatTree(tree, 0, preheat_iters, planner_parameters);
+        if (planner_parameters.preheat_type == 1)
+        {
+            this->PreheatTree(tree, 0, preheat_iters, planner_parameters);
+        }
         // exit(1);
 
         double totalNNtime = 0;
@@ -242,7 +248,10 @@ namespace Burs
         RS start_state = this->NewState(q_start);
 
         auto tree = std::make_shared<BurTree>(start_state, q_start.size());
-        // this->PreheatNTrees(tree, q_start, planner_parameters);
+        if (planner_parameters.preheat_type == 0)
+        {
+            this->PreheatNTrees(tree, q_start, planner_parameters);
+        }
 
         // Random numbers
         this->rng = std::make_shared<RandomNumberGenerator>(planner_parameters.seed, planner_parameters.target_poses.size() - 1);
@@ -250,9 +259,12 @@ namespace Burs
         // To prevent uninitialized vectors in planner_parameters
         this->InitGraspClosestConfigs(planner_parameters, tree, 0);
         int preheat_iters = planner_parameters.max_iters * planner_parameters.preheat_ratio;
-        // std::cout << "preheat iters: " << preheat_iters << "\n";
+        std::cout << "preheat iters: " << preheat_iters << "\n";
 
-        this->PreheatTree(tree, 0, preheat_iters, planner_parameters);
+        if (planner_parameters.preheat_type == 1)
+        {
+            this->PreheatTree(tree, 0, preheat_iters, planner_parameters);
+        }
         // exit(1);
 
         double totalNNtime = 0;
