@@ -3,7 +3,7 @@
 -urdf /home/hartvi/Documents/CVUT/diploma_thesis/burs_of_free_space/jogramop/robots/franka_panda/mobile_panda_fingersSmallMesh.urdf \
 -obstacle /home/hartvi/Documents/CVUT/diploma_thesis/burs_of_free_space/jogramop/scenarios/001/export/obstacles.obj \
 -start_config /home/hartvi/Documents/CVUT/diploma_thesis/burs_of_free_space/jogramop/scenarios/001/export/robot_start_conf.csv \
--planner 1 \
+-planner 6 \
 -max_iters 50000 \
 -d_crit 0.05 \
 -delta_q 0.5 \
