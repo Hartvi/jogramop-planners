@@ -23,6 +23,23 @@ namespace Burs
         return ss.str();
     }
 
+    std::string
+    PlanningResult::toJSON()
+    {
+        std::stringstream ss;
+        ss << "{ ";
+        ss << "\"sr\":" << this->success << ","
+           << "\"dtg\":" << this->distance_to_goal << ","
+           << "\"time\":" << this->time_taken << ","
+           << "\"iters\":" << this->num_iterations << ","
+           << "\"treesize\": " << this->tree_size;
+        ss << "}\n";
+        return ss.str();
+    }
+
+
+
+
     PlanningResult
     PlanningResult::fromCSVString(const std::string &csvString)
     {

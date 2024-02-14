@@ -155,6 +155,7 @@ int main(int argc, char **argv)
     {
         std::cout << argv[i] << "\n";
     }
+        
 
     // the cmd-line parameters are now loaded into the variables
     std::cout << "Planner will load: \n";
@@ -209,6 +210,17 @@ int main(int argc, char **argv)
         params.use_rotation = useRotation;
         params.preheat_type = preheat_type;
         // END COMMON SETTINGS ------------------------------------------------------------------------------------------------------------
+
+        { // output .txt file with results also before the planner runs, so in the case of planner failure/killing the program, there
+            // will be (empty) outputfile, which indicates the failure
+            char fname[2000];
+            snprintf(fname, sizeof(fname), "%s.txt", targetPrefixFile);
+            ofstream ofs(fname);
+            //ofs << planning_result.toCSVString() << "\n";
+            ofs << planning_result.toJSON() << "\n";
+            ofs.close();
+        }
+
 
         switch (plannerType)
         {
@@ -366,7 +378,8 @@ int main(int argc, char **argv)
         {
             snprintf(fname, sizeof(fname), "%s.txt", targetPrefixFile);
             ofstream ofs(fname);
-            ofs << planning_result.toCSVString() << "\n";
+            //ofs << planning_result.toCSVString() << "\n";
+            ofs << planning_result.toJSON() << "\n";
             ofs.close();
         }
         {
@@ -502,7 +515,8 @@ int main(int argc, char **argv)
         {
             snprintf(fname, sizeof(fname), "%s.txt", targetPrefixFile);
             ofstream ofs(fname);
-            ofs << planning_result.toCSVString() << "\n";
+            //ofs << planning_result.toCSVString() << "\n";
+            ofs << planning_result.toJSON() << "\n";
             ofs.close();
         }
         {
