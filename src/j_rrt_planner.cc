@@ -336,14 +336,21 @@ namespace Burs
     JRRTPlanner::PreheatNTrees(std::shared_ptr<BurTree> tree, VectorXd q_start, JPlusRbtParameters &plan_params)
     {
         int iters = (int)(plan_params.preheat_ratio * plan_params.max_iters);
-        int num_points = 4;
+        int num_points = 20;
         int sub_iters = iters / num_points;
 
         for (int i = 0; i < num_points; ++i)
         {
-            double theta = i * 2 * M_PI / num_points;
-            std::cout << "theta: " << theta << "\n";
-            Vector3d v(2 * std::cos(theta), 2 * std::sin(theta), 0.1);
+            // double theta = i * 2 * M_PI / num_points;
+            // std::cout << "theta: " << theta << "\n";
+
+            VectorXd v = MatrixXd::Random(3, 1);
+            v.row(0).array() *= 2;
+            v.row(1).array() *= 2;
+            v.row(2).array() += 1;
+            v.row(2).array() *= 0.5;
+            // Vector3d v(2 * std::cos(theta), 2 * std::sin(theta), 0.1);
+
             Grasp g(v);
             JPlusRbtParameters tmp_params;
             tmp_params.d_crit = plan_params.d_crit;
@@ -427,19 +434,6 @@ namespace Burs
         double target_dist = plan_params.mean_target.norm();
         std::cout << "PREHEAT TARGET DIST: " << target_dist << "\n";
         int target_pos_num = heat_iters;
-        // Random workspace positions
-        // [-1, 1] interval
-        // MatrixXd rand_p = MatrixXd::Random(3, target_pos_num);
-        // MatrixXd rand_p = MatrixXd::Random(3, target_pos_num);
-        // Z above ground
-        // rand_p.row(2).array() += 0.9;
-        // rand_p.row(2).array() *= 0.5;
-        // rand_p.array() *= 100;
-        // double matmin = rand_p.cwiseAbs().minCoeff();
-        // Set minimal distance to ~distance to target
-        // rand_p.array() *= (target_dist / std::max(matmin, 1e-4));
-        // rand_p.array() *= (target_dist / std::max(matmin, 1e-4));
-        // std::cout << "randp: " << rand_p.col(50) << "\n";
         // Initialize a 3x6 MatrixXd
         Eigen::MatrixXd rand_p(3, 6);
 

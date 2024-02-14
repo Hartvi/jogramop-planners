@@ -69,7 +69,7 @@ namespace Burs
                 getTime(&gt2);
                 totalRunTime = getTime(gt1, gt2);
                 auto &best_pose = planner_parameters.target_poses[this->GetBestGrasp(planner_parameters)];
-                std::cout << "iter: " << k << "/" << planner_parameters.max_iters << ", tree.size: " << tree->GetNumberOfNodes() << ", distToGoal: " << best_pose.best_dist << ", ";
+                std::cout << "iter: " << k << "/" << planner_parameters.max_iters << ", tree.size: " << tree->GetNumberOfNodes() << ", distToGoal: " << best_pose.best_dist << ", prob_steer: " << planner_parameters.probability_to_steer_to_target;
                 std::cout << ", p_close_enough: " << planner_parameters.p_close_enough << ", totalNNtime: " << totalNNtime << ", totalCollideAndAddTime: " << totalCollideAndAddTime
                           << ", totalGetClosestDistTime: " << totalGetClosestDistTime << ", totalRunTime: " << totalRunTime << "\n";
                 std::cout.flush();
@@ -284,7 +284,7 @@ namespace Burs
                 getTime(&gt2);
                 totalRunTime = getTime(gt1, gt2);
                 Grasp &best_pose = planner_parameters.target_poses[this->GetBestGrasp(planner_parameters)];
-                std::cout << "iter: " << k << "/" << planner_parameters.max_iters << ", tree.size: " << tree->GetNumberOfNodes() << ", distToGoal: " << best_pose.best_dist << ", ";
+                std::cout << "iter: " << k << "/" << planner_parameters.max_iters << ", tree.size: " << tree->GetNumberOfNodes() << ", distToGoal: " << best_pose.best_dist << ", prob_steer: " << planner_parameters.probability_to_steer_to_target;
                 std::cout << ", p_close_enough: " << planner_parameters.p_close_enough << ", totalNNtime: " << totalNNtime << ", totalCollideAndAddTime: " << totalCollideAndAddTime
                           << ", totalGetClosestDistTime: " << totalGetClosestDistTime << ", totalRunTime: " << totalRunTime << "\n";
                 std::cout.flush();
