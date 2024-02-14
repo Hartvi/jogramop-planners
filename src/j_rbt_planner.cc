@@ -35,13 +35,20 @@ namespace Burs
         this->rng = std::make_shared<RandomNumberGenerator>(planner_parameters.seed, planner_parameters.target_poses.size() - 1);
 
         auto tree = std::make_shared<BurTree>(start_state, q_start.size());
+        if (planner_parameters.preheat_type == 0)
+        {
+            this->PreheatNTrees(tree, q_start, planner_parameters);
+        }
 
         // To prevent uninitialized vectors in planner_parameters
         this->InitGraspClosestConfigs(planner_parameters, tree, 0);
         int preheat_iters = planner_parameters.max_iters * planner_parameters.preheat_ratio;
         std::cout << "preheat iters: " << preheat_iters << "\n";
 
-        this->PreheatTree(tree, 0, preheat_iters, planner_parameters);
+        if (planner_parameters.preheat_type == 1)
+        {
+            this->PreheatTree(tree, 0, preheat_iters, planner_parameters);
+        }
         // exit(1);
 
         double totalNNtime = 0;
@@ -54,7 +61,7 @@ namespace Burs
         getTime(&gt1);
 
         int special_steps = 0;
-        for (unsigned int k = 0; k < planner_parameters.max_iters - preheat_iters; ++k)
+        for (unsigned int k = preheat_iters; k < planner_parameters.max_iters; ++k)
         {
             // LOGGING
             if (k % 1000 == 0)
@@ -169,10 +176,14 @@ namespace Burs
                 // Steer until hit the target or obstacle or joint limits
                 AlgorithmState state = this->ExtendToGoalRbt(tree, planner_parameters);
 
+                if (state != AlgorithmState::Reached)
+                {
+                    state = this->JumpToGoal(tree, planner_parameters);
+                }
                 // Get grasp with minimal distance
                 unsigned int best_grasp_idx = this->GetBestGrasp(planner_parameters);
                 Grasp best_grasp = planner_parameters.target_poses[best_grasp_idx];
-                std::cout << "best dist: " << best_grasp.best_dist << "\n";
+                // std::cout << "best dist: " << best_grasp.best_dist << "\n";
                 if (state != AlgorithmState::Reached)
                 {
                     state = best_grasp.best_dist < planner_parameters.p_close_enough ? AlgorithmState::Reached : AlgorithmState::Trapped;
@@ -236,17 +247,24 @@ namespace Burs
         }
         RS start_state = this->NewState(q_start);
 
+        auto tree = std::make_shared<BurTree>(start_state, q_start.size());
+        if (planner_parameters.preheat_type == 0)
+        {
+            this->PreheatNTrees(tree, q_start, planner_parameters);
+        }
+
         // Random numbers
         this->rng = std::make_shared<RandomNumberGenerator>(planner_parameters.seed, planner_parameters.target_poses.size() - 1);
-
-        auto tree = std::make_shared<BurTree>(start_state, q_start.size());
 
         // To prevent uninitialized vectors in planner_parameters
         this->InitGraspClosestConfigs(planner_parameters, tree, 0);
         int preheat_iters = planner_parameters.max_iters * planner_parameters.preheat_ratio;
         std::cout << "preheat iters: " << preheat_iters << "\n";
 
-        this->PreheatTree(tree, 0, preheat_iters, planner_parameters);
+        if (planner_parameters.preheat_type == 1)
+        {
+            this->PreheatTree(tree, 0, preheat_iters, planner_parameters);
+        }
         // exit(1);
 
         double totalNNtime = 0;
@@ -326,6 +344,10 @@ namespace Burs
                 // Steer until hit the target or obstacle or joint limits
                 AlgorithmState state = this->ExtendToGoalRbt(tree, planner_parameters);
 
+                if (state != AlgorithmState::Reached)
+                {
+                    state = this->JumpToGoal(tree, planner_parameters);
+                }
                 // Get grasp with minimal distance
                 unsigned int best_grasp_idx = this->GetBestGrasp(planner_parameters);
                 Grasp best_grasp = planner_parameters.target_poses[best_grasp_idx];
@@ -464,7 +486,7 @@ namespace Burs
                 // To tgt_frame (one of the randomly chosen goals)
                 // Move `closest_dist` along that direction
                 // Can be farther that the goal, but that's fine because we interpolate using `Densify`
-                KDL::Twist twist = this->GetTwist(tgt_frame, cur_frame, distance_to_move);
+                KDL::Twist twist = this->GetTwist(tgt_frame, cur_frame, distance_to_move, planner_parameters.use_rotation);
 
                 // TODO: reuse the jacobian for the pseudo-inverse J+
                 KDL::JntArray q_dot = this->env->robot->ForwardJPlus(*best_state, twist);
@@ -474,7 +496,7 @@ namespace Burs
 
             std::vector<RS> target_states = this->NewStates(target_configs);
             // DEBUG:
-            auto eeframe = this->env->robot->GetEEFrame(target_states[0]);
+            // auto eeframe = this->env->robot->GetEEFrame(target_states[0]);
 
             // END DEBUG
             // Iterate max `closest_dist` to `target_config`

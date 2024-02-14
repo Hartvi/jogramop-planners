@@ -17,6 +17,7 @@ namespace Burs
     class Grasp
     {
     public:
+        Grasp(Vector3d pos);
         Grasp(std::string grasp_data_csv);
         Grasp() = default;
 

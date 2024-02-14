@@ -89,6 +89,8 @@ int main(int argc, char **argv)
 
     int render_tree;
     double preheat_ratio;
+    int useRotation;
+    int preheat_type;
 
     {
         CmdOptions o;
@@ -115,7 +117,9 @@ int main(int argc, char **argv)
         o.addOption(Option<double>("goal_bias_prob", &goal_bias_probability, "probability to turn to goal when close to goal"));
         o.addOption(Option<double>("q_resolution", &q_resolution, "resolution of individual steps in rbt"));
 
-        o.addOption(Option<double>("preheat_ratio", &preheat_ratio, 0.0, "ratio of iterations to use for preheating"));
+        o.addOption(Option<int>("use_rot", &useRotation, 0, "whether to render video"));
+        o.addOption(Option<double>("preheat_ratio", &preheat_ratio, 0.1, "ratio of iterations to use for preheating"));
+        o.addOption(Option<int>("preheat_type", &preheat_type, 0, "type of preheating (0,1) so far"));
         o.addOption(Option<char *>("target_prefix", &targetPrefixFile, "file in which to save measurements, separated by keywords"));
 
         o.addOption(Option<int>("render", &renderVideo, "whether to render video"));
@@ -126,7 +130,7 @@ int main(int argc, char **argv)
 
         o.addOption(Option<int>("seed", &seed, -1, "random seed or time (if seed = -1)")); // default value is -1 -> seed is from time
 
-        o.addOption(Option<int>("render_tree", &render_tree, 0.01, "whether to render the tree")); // default value is 0
+        o.addOption(Option<int>("render_tree", &render_tree, 0, "whether to render the tree")); // default value is 0
 
         if (!o.parse(argc, argv))
         {
@@ -202,6 +206,8 @@ int main(int argc, char **argv)
         params.visualize_tree = render_tree;
         params.seed = usedSeed;
         params.preheat_ratio = preheat_ratio;
+        params.use_rotation = useRotation;
+        params.preheat_type = preheat_type;
         // END COMMON SETTINGS ------------------------------------------------------------------------------------------------------------
 
         switch (plannerType)

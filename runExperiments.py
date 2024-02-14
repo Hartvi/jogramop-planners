@@ -20,19 +20,25 @@ planners = {}
 
 #planners["jrbt"] = "-planner 1 " #burs rrt + j+ expand
 planners["jrrt"] = "-planner 3 -d_crit 100000 " #rrt, alternating random expansion + goal bias 
+#planners["jrrt"] = "-planner 3 -d_crit 100000 " #rrt, alternating random expansion + goal bias 
 #planners["ikrbt"] = "-planner 4 "   #goal is IK solution, goes to only single goal
 #planners["ikrrt"] = "-planner 5 -d_crit 100000 "  #goal is IK solution, goes to only single goal
 planners["jrbtNew"] = "-planner 6 -epsilon_q 0.2 -preheat_ratio 0.2 " #burs rrt + j+ expand
 
 fout = open("all-cmds.sh", "wt")
     
+
+
 rrtSize = 40 * 1000
 distanceToGoal = 0.07  #should be 0.05!!
 dcrit = 0.11
+dcrit = 0.05
 
 goalBiasRadius = 0.2
 goalBiasProbability = 0.8 #goal bias neer the goal, should be larger than goalBiasProbability2
 prob_steer = 0.05 #steer
+goalBiasProbability = 0.7 #goal bias neer the goal, should be larger than goalBiasProbability2
+goalBiasProbability2 = 0.01
     
 #urdfFile = "jogramop/robots/franka_panda/mobile_panda.urdf"
 #urdfFile = "jogramop/robots/franka_panda/mobile_panda_fingers.urdf"
@@ -44,6 +50,10 @@ for sprob in [0.05, 0.1, 0.2, 0.3 ]:
         for gbprob in [0.1, 0.2, 0.7, 0.9 ]:
             planners["jrbt-steer{}-gbr{}-gprob{}".format(sprob,gbr,gbprob)] = " -planner 1 -goal_bias_radius {} -prob_steer {} -goal_bias_prob {} ".format(gbr,sprob,gbprob) 
 """
+# urdfFile = "/home/hartvi/Documents/CVUT/diploma_thesis/burs_of_free_space/jogramop/robots/franka_panda/mobile_panda_fingersSmallMesh.urdf"
+seed = -1
+preheat_ratio=0.2
+
 
 for scenario in range(1,12+1):
     scenarioDir = "jogramop/scenarios/{:03d}/export/".format(scenario)
@@ -88,6 +98,7 @@ for scenario in range(1,12+1):
                 cmd += " -goal_bias_prob {} ".format(goalBiasProbability)
                 cmd += " -prob_steer {} ".format(prob_steer)
                 cmd += " -seed {} ".format(seed)
+                cmd += " -preheat_ratio  {} ".format(preheat_ratio)
                 cmd += planners[ planner ]  #when some cmdline option is repearing, the last one is accepted, so this line must be last in cmd
                 seed += 1
                 doBreak = True
