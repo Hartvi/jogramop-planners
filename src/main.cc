@@ -155,7 +155,6 @@ int main(int argc, char **argv)
     {
         std::cout << argv[i] << "\n";
     }
-        
 
     // the cmd-line parameters are now loaded into the variables
     std::cout << "Planner will load: \n";
@@ -216,11 +215,10 @@ int main(int argc, char **argv)
             char fname[2000];
             snprintf(fname, sizeof(fname), "%s.txt", targetPrefixFile);
             ofstream ofs(fname);
-            //ofs << planning_result.toCSVString() << "\n";
+            // ofs << planning_result.toCSVString() << "\n";
             ofs << planning_result.toJSON() << "\n";
             ofs.close();
         }
-
 
         switch (plannerType)
         {
@@ -322,7 +320,7 @@ int main(int argc, char **argv)
             // std::cout << "TARGET IK IDX: " << ik_index_in_target_configs << "\n";
             // std::cout << "selected goal: " << goals[ik_index_in_target_configs].transpose() << "\n";
             // exit(1);
-            path = jprbt->RbtConnect(start_config, goals[ik_index_in_target_configs], params, planning_result);
+            path = jprbt->RbtConnectDenseBurs(start_config, goals[ik_index_in_target_configs], params, planning_result);
             getTime(&t2);
             planning_result.time_taken = getTime(t1, t2);
             final_path = path.value();
@@ -368,6 +366,37 @@ int main(int argc, char **argv)
 
             break;
         }
+        case 7:
+        {
+            std::cout << "PLANNING IK RBT\n";
+
+            std::vector<Eigen::VectorXd> goals = RobotBase::parseCSVToVectors(targetConfigsFile);
+
+            struct rusage t1, t2;
+            getTime(&t1);
+            path = jprbt->RbtConnectDenseBurs(start_config, goals[ik_index_in_target_configs], params, planning_result);
+            getTime(&t2);
+            planning_result.time_taken = getTime(t1, t2);
+            final_path = path.value();
+
+            break;
+        }
+        case 99:
+        {
+            std::cout << "TEST SAMPLING RANDOM CONFIGS\n";
+            // only difference is that it doesnt use probability_to_steer_to_target
+
+            std::vector<Eigen::VectorXd> goals = RobotBase::parseCSVToVectors(targetConfigsFile);
+
+            struct rusage t1, t2;
+            getTime(&t1);
+            path = jprbt->TestSampling(start_config, params, planning_result);
+            getTime(&t2);
+            planning_result.time_taken = getTime(t1, t2);
+            final_path = path.value();
+
+            break;
+        }
         default:
         {
             break;
@@ -378,7 +407,7 @@ int main(int argc, char **argv)
         {
             snprintf(fname, sizeof(fname), "%s.txt", targetPrefixFile);
             ofstream ofs(fname);
-            //ofs << planning_result.toCSVString() << "\n";
+            // ofs << planning_result.toCSVString() << "\n";
             ofs << planning_result.toJSON() << "\n";
             ofs.close();
         }
@@ -515,7 +544,7 @@ int main(int argc, char **argv)
         {
             snprintf(fname, sizeof(fname), "%s.txt", targetPrefixFile);
             ofstream ofs(fname);
-            //ofs << planning_result.toCSVString() << "\n";
+            // ofs << planning_result.toCSVString() << "\n";
             ofs << planning_result.toJSON() << "\n";
             ofs.close();
         }

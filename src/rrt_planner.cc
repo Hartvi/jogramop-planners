@@ -54,11 +54,17 @@ namespace Burs
 
         for (int k = 0; k < plan_parameters.max_iters; k++)
         {
+            if (k % 1000 == 0)
+            {
+                std::cout << "tree: " << (t_start->GetNumberOfNodes() + t_goal->GetNumberOfNodes()) << "\n";
+            }
             // Get random configuration
             VectorXd q_rand = this->GetRandomQ(1);
+            // std::cout << "new state\n";
             RS rand_state = this->NewState(q_rand);
 
             // std::cout << "start tree:\n";
+            // std::cout << "greedy extend\n";
             auto status_a = this->GreedyExtendRandomConfig(t_start, rand_state, plan_parameters, goal_state, best_state);
 
             VectorXd tmp_vec(q_start);
@@ -75,7 +81,7 @@ namespace Burs
                 planning_result.tree_size = t_start->GetNumberOfNodes() + t_goal->GetNumberOfNodes();
                 planning_result.success = true;
                 planning_result.distance_to_goal = 0.0;
-                if (plan_parameters.visualize_tree)
+                if (plan_parameters.visualize_tree > 0)
                 {
                     this->tree_csv = this->TreePoints(t_start, plan_parameters.visualize_tree);
                     std::cout << "inside vis tree\n";
@@ -93,7 +99,7 @@ namespace Burs
 
         int best_idx = t_start->Nearest(best_state);
 
-        if (plan_parameters.visualize_tree)
+        if (plan_parameters.visualize_tree > 0)
         {
             this->tree_csv = this->TreePoints(t_start, plan_parameters.visualize_tree);
             std::cout << "inside vis tree\n";
@@ -141,6 +147,34 @@ namespace Burs
             step_result = this->RRTStep(t_a, step_result, rand_state, planner_parameters.epsilon_q);
         }
         return AlgorithmState::Trapped;
+    }
+
+    std::optional<std::vector<VectorXd>>
+    RRTPlanner::TestSampling(const VectorXd &q_start, const RRTParameters &plan_parameters, PlanningResult &planning_result)
+    {
+        // start of actual algorithm
+        RS start_state = this->NewState(q_start);
+
+        std::shared_ptr<BurTree> t_start = std::make_shared<BurTree>(start_state, q_start.size());
+
+        this->GenerateRandomSamples(t_start, plan_parameters.max_iters);
+
+        if (plan_parameters.visualize_tree > 0)
+        {
+            this->tree_csv = this->TreePoints(t_start, plan_parameters.visualize_tree);
+        }
+        return {{q_start}};
+    }
+
+    void
+    RRTPlanner::GenerateRandomSamples(std::shared_ptr<BurTree> t, int num_samples)
+    {
+        MatrixXd rand_Q = this->GetRandomQ(num_samples);
+        auto states = this->NewStates(rand_Q);
+        for (unsigned int i = 0; i < num_samples; ++i)
+        {
+            t->AddNode(0, states[i]);
+        }
     }
 
     // AlgorithmState

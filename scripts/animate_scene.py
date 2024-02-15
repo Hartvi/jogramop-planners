@@ -57,7 +57,9 @@ def load_csv_floats(csv_file):
     return ret
 
 
-def vis_points(point_positions):
+def vis_points(point_positions, max_frame=0):
+    # print("MAX FRAME", max_frame)
+    # exit(1)
     n = len(point_positions)
     max_val = float(n-1)
     for i in range(n):
@@ -68,7 +70,18 @@ def vis_points(point_positions):
         current_object = create_point(position, col, 0.015)
         # print("position: ", position)
         newest_object = bpy.context.object
-        newest_object.keyframe_insert(data_path="location", frame=0)
+
+        current_frame = i * max_frame / max_val
+        newest_object.hide_viewport = True
+        newest_object.hide_render = True
+        newest_object.keyframe_insert(data_path="hide_viewport", frame=current_frame - 1)
+        newest_object.keyframe_insert(data_path="hide_render", frame=current_frame - 1)
+        newest_object.hide_viewport = False
+        newest_object.hide_render = False
+        newest_object.keyframe_insert(data_path="hide_viewport", frame=current_frame)
+        newest_object.keyframe_insert(data_path="hide_render", frame=current_frame)
+
+        newest_object.keyframe_insert(data_path="location", frame=current_frame)
 
 
 def cylinder_between(x1, y1, z1, x2, y2, z2, r, mat=None, reuse_cyl=None):
@@ -205,13 +218,6 @@ def render_env(path_to_file, extra_points_file=None, tree_points_file=None):
 
     start_scene()
 
-    if tree_points_file:
-        try:
-            tree_points = load_csv_floats(tree_points_file)
-            vis_points(tree_points)
-            print("VIS TREE")
-        except:
-            print("NO TREE FILE", tree_points_file)
     # exit(1)
 
     if extra_points_file:
@@ -346,6 +352,14 @@ def render_env(path_to_file, extra_points_file=None, tree_points_file=None):
                         current_object.keyframe_insert(data_path="location", frame=frame)
 
             k += 1
+
+    if tree_points_file:
+        try:
+            tree_points = load_csv_floats(tree_points_file)
+            vis_points(tree_points, frame)
+            print("VIS TREE")
+        except:
+            print("NO TREE FILE", tree_points_file)
 
     camera = bpy.data.objects["Camera"]
     camera.location = (camX, camY, camZ)

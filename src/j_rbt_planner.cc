@@ -332,7 +332,20 @@ namespace Burs
                 double distance_to_move = std::min(d_closest, planner_parameters.delta_q);
                 std::vector<RS> endpoints = this->GetEndpoints(*near_state, Qe_states, distance_to_move);
 
-                this->AddDenseBur(tree, nearest_idx, endpoints, planner_parameters);
+                std::vector<double> bur_dists = this->AddDenseBur(tree, nearest_idx, endpoints, planner_parameters);
+                // double r = this->rng->getRandomReal();
+                // if (r < planner_parameters.goal_bias_probability)
+                // {
+                //     for (unsigned int i = 0; i < bur_dists.size(); ++i)
+                //     {
+                //         if (bur_dists[i] < planner_parameters.goal_bias_radius)
+                //         {
+                //             int endpoint_idx = tree->Nearest(endpoints[i]);
+                //             while ()
+                //                 auto [dists, states] = this->ExtendToGoalRbtStep(tree, endpoint_idx, planner_parameters);
+                //         }
+                //     }
+                // }
             }
 
             // TRAVELLED DISTANCES ARE INDEED ALWAYS SMALLER THAN D_CLOSEST
@@ -538,5 +551,90 @@ namespace Burs
         {
             return AlgorithmState::Trapped;
         }
+    }
+
+    std::pair<std::vector<double>, std::vector<RS>>
+    JRbtPlanner::ExtendToGoalRbtStep(std::shared_ptr<BurTree> tree, const int &idx_near, JPlusRbtParameters &planner_parameters) const
+    {
+        /* OUTLINE:
+        1. Get best grasp's best configuration
+        2. From that best configuration expand towards the grasp and some random grasps
+        3. Go to 1.
+        */
+        double closest_dist = 1e14;
+
+        // STEP 1.
+        // Best grasp is in index 0
+        std::vector<Grasp> tgt_grasps = this->GetBestAndRandomGrasps(planner_parameters);
+        Grasp best_grasp = tgt_grasps[0];
+
+        RS *near_state = tree->Get(idx_near);
+
+        // Get closest obstacle distance
+        closest_dist = this->GetClosestDistance(*near_state);
+
+        // SWITCH TO RRT IF OBSTACLE TOO CLOSE
+        // bool too_close = false;
+        bool too_close = closest_dist < planner_parameters.d_crit;
+        unsigned int num_extensions = too_close ? 1 : planner_parameters.num_spikes;
+        double distance_to_move = too_close ? planner_parameters.epsilon_q : closest_dist;
+        // std::cout << "closest dist: " << closest_dist << " dist to move: " << distance_to_move << "\n";
+
+        // closest_dist = this->GetClosestDistance(q_near);
+
+        // Target configs to extend to gained from the jacobian
+        MatrixXd target_configs = MatrixXd(this->q_dim, num_extensions);
+
+        for (unsigned int i = 0; i < num_extensions; ++i)
+        {
+            // Max dist => closest_dist / dist to goal (maybe better to have distance to goal since it can be farther)
+            KDL::Frame tgt_frame = tgt_grasps[i].frame;
+            KDL::Frame cur_frame = this->env->robot->GetEEFrame(*near_state);
+            // KDL::Frame cur_frame = best_grasp.best_frame;
+
+            // From cur_frame (best config)
+            // To tgt_frame (one of the randomly chosen goals)
+            // Move `closest_dist` along that direction
+            // Can be farther that the goal, but that's fine because we interpolate using `Densify`
+            KDL::Twist twist = this->GetTwist(tgt_frame, cur_frame, distance_to_move, planner_parameters.use_rotation);
+
+            // TODO: reuse the jacobian for the pseudo-inverse J+
+            KDL::JntArray q_dot = this->env->robot->ForwardJPlus(*near_state, twist);
+            VectorXd delta_q = q_dot.data;
+            target_configs.col(i) = near_state->config + delta_q;
+        }
+
+        std::vector<RS> target_states = this->NewStates(target_configs);
+        // DEBUG:
+        // auto eeframe = this->env->robot->GetEEFrame(target_states[0]);
+
+        // END DEBUG
+        // Iterate max `closest_dist` to `target_config`
+        std::vector<RS> bur_endpoints = this->GetEndpoints(*near_state, target_states, distance_to_move);
+        // std::vector<double> distances(bur_endpoints.size());
+        // for (unsigned int i = 0; i < bur_endpoints.size(); ++i)
+        // {
+        //     double tmpdist = this->env->robot->MaxDistance(*best_state, bur_endpoints[i]);
+        //     std::cout << "max dist " << i << " in extend: " << tmpdist << "\n";
+        // }
+
+        // If closest obstacle was too close => check collisions for the RRT step
+        if (too_close)
+        {
+            for (unsigned int i = 0; i < bur_endpoints.size(); ++i)
+            {
+                if (this->IsColliding(bur_endpoints[i]))
+                {
+                    // std::cout << "JRBT COLLIDED IN RRT EXTEND\n";
+                    // break;
+                    return {};
+                }
+            }
+        }
+
+        // Checks bounds
+        // Interpolates with max resolution_q distance between points
+        // Updates best config for each grasp
+        return {this->AddDenseBur(tree, idx_near, bur_endpoints, planner_parameters), bur_endpoints};
     }
 }

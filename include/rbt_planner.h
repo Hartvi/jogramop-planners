@@ -41,15 +41,18 @@ namespace Burs
         // GetDeltaTk(double phi_tk, double tk, const VectorXd &q_e, const VectorXd &q_k) const;
 
         std::optional<std::vector<Eigen::VectorXd>>
+        RbtConnectDenseBurs(const VectorXd &q_start, const VectorXd &q_goal, const RbtParameters &plan_parameters, PlanningResult &planning_result);
+
+        std::optional<std::vector<Eigen::VectorXd>>
         RbtConnect(const VectorXd &q_start, const VectorXd &q_goal, const RbtParameters &plan_parameters, PlanningResult &planning_result);
 
         std::pair<AlgorithmState, int>
-        BurConnect(std::shared_ptr<BurTree> t, RS &state, const RbtParameters &plan_parameters, const RS &goal_state, RS &best_state, double &best_dist);
+        BurConnect(std::shared_ptr<BurTree> t, const RS &state, const RbtParameters &plan_parameters, const RS &goal_state, RS &best_state, double &best_dist);
 
         int
         AddPointsExceptFirst(std::shared_ptr<BurTree> t, const int &first_el_idx, const std::vector<RS> vec) const;
 
-        void
+        std::vector<double>
         AddDenseBur(std::shared_ptr<BurTree> tree, const int &idx_near, const std::vector<RS> &endpoints, JPlusRbtParameters &plan_params) const;
 
         std::vector<RS>
@@ -58,7 +61,7 @@ namespace Burs
         void
         InitGraspClosestConfigs(JPlusRbtParameters &planner_parameters, std::shared_ptr<BurTree> t, const int &start_idx) const;
 
-        void
+        double
         SetGraspClosestConfigs(JPlusRbtParameters &planner_parameters, std::shared_ptr<BurTree> t, const int &state_idx) const;
 
         unsigned int

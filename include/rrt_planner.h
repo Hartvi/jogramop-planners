@@ -32,6 +32,12 @@ namespace Burs
         AlgorithmState
         GreedyExtendRandomConfig(std::shared_ptr<BurTree> t_a, RS rand_state, const RRTParameters &planner_parameters, const RS &goal_state, RS &best_state) const;
 
+        std::optional<std::vector<VectorXd>>
+        TestSampling(const VectorXd &q_start, const RRTParameters &plan_parameters, PlanningResult &planning_result);
+
+        void
+        GenerateRandomSamples(std::shared_ptr<BurTree> t, int num_samples);
+
     protected:
         // RadiusFuncParallel radius_func;
         // ForwardKinematicsParallel forwardKinematicsParallel;

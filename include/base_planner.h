@@ -35,10 +35,11 @@ namespace Burs
         std::vector<RS>
         QToStates(const MatrixXd &Q) const;
 
-        std::vector<RS>
-        GetEndpointsWInterstates(const RS &state_near, const std::vector<RS> &rand_states, double d_max) const;
+        std::vector<std::vector<RS>>
+        GetEndpointsInterstates(const RS &state_near, const std::vector<RS> &rand_states, double d_max, double q_resolution) const;
 
-        std::vector<RS> GetEndpoints(const RS &state_near, const std::vector<RS> &rand_states, double d_max) const;
+        std::vector<RS>
+        GetEndpoints(const RS &state_near, const std::vector<RS> &rand_states, double d_max) const;
 
         // EXAMPLE USAGE OF BASIC FUNCTIONS
         void

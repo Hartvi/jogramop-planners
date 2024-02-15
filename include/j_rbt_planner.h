@@ -31,6 +31,9 @@ namespace Burs
         AlgorithmState
         ExtendToGoalRbt(std::shared_ptr<BurTree> t_a, JPlusRbtParameters &planner_parameters) const;
 
+        std::pair<std::vector<double>, std::vector<RS>>
+        ExtendToGoalRbtStep(std::shared_ptr<BurTree> tree, const int &idx_near, JPlusRbtParameters &planner_parameters) const;
+
         std::vector<Grasp>
         GetBestAndRandomGrasps(JPlusRbtParameters &planner_parameters) const;
     };
