@@ -401,9 +401,12 @@ def render_animation(frame_start, frame_end, frame_step):
 
 
 if __name__ == "__main__":
-    test_path = "/home/hartvi/Documents/CVUT/diploma_thesis/burs_of_free_space/build/test_file.txt"
-    grasps_file = None   
+    test_path = "/home/hartvi/Documents/CVUT/diploma_thesis/burs_of_free_space/lel.try"
+    grasps_file = "/home/hartvi/Documents/CVUT/diploma_thesis/burs_of_free_space/jogramop/scenarios/005/export/grasps.csv"
     tree_file = None
+    camX = -3
+    camY = 2
+    camZ = 7
     if len(sys.argv) > 1:
         test_path = sys.argv[1]
         print("try file",test_path)

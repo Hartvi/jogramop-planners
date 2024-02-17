@@ -21,29 +21,18 @@ namespace Burs
     JRRTPlanner::JRRT(VectorXd q_start, JPlusRbtParameters &planner_parameters, PlanningResult &plan_result)
     {
         // Setup rng:
-        // std::cout << "target poses: " << planner_parameters.target_poses.size() << "\n";
         if (planner_parameters.target_poses.size() < 1)
         {
             throw std::runtime_error("Target poses has length 0!");
         }
 
         RS start_state = this->NewState(q_start);
-        // td::cout << "start state: " << start_state.config << "\n";
-        // To prevent uninitialized vectors in planner_parameters
-        // exit(1);
 
         this->rng = std::make_shared<RandomNumberGenerator>(planner_parameters.seed, planner_parameters.target_poses.size() - 1);
 
         auto tree = std::make_shared<BurTree>(start_state, q_start.size());
 
         this->InitGraspClosestConfigs(planner_parameters, tree, 0);
-
-        // for (auto &s : planner_parameters.target_poses)
-        // {
-        //     std::cout << "best state: " << s.best_state << "\n";
-        //     std::cout << "config: " << tree->Get(s.best_state)->config.transpose() << "\n";
-        //     // std::cout << s.best_state->config.transpose() << "\n";
-        // }s
 
         double totalNNtime = 0;
         // double totalAddTime = 0;
@@ -61,10 +50,16 @@ namespace Burs
             {
                 getTime(&gt2);
                 totalRunTime = getTime(gt1, gt2);
+                // std::cout << "target poses: " << planner_parameters.target_poses.size() << "\n";
+                // std::cout << "best grasp: " << this->GetBestGrasp(planner_parameters) << "\n";
                 auto &best_pose = planner_parameters.target_poses[this->GetBestGrasp(planner_parameters)];
-                std::cout << "iter: " << k << "/" << planner_parameters.max_iters << ", tree.size: " << tree->GetNumberOfNodes() << ", distToGoal: " << best_pose.best_dist << ", ";
-                std::cout << ", p_close_enough: " << planner_parameters.p_close_enough << ", totalNNtime: " << totalNNtime << ", totalCollideAndAddTime: " << totalCollideAndAddTime
-                          << ", totalRunTime: " << totalRunTime << "\n";
+                std::cout << "iter: " << k << "/" << planner_parameters.max_iters;
+                std::cout << ", tree.size: " << tree->GetNumberOfNodes();
+                std::cout << ", distToGoal: " << best_pose.best_dist << ", ";
+                std::cout << ", p_close_enough: " << planner_parameters.p_close_enough;
+                std::cout << ", totalNNtime: " << totalNNtime;
+                std::cout << ", totalCollideAndAddTime: " << totalCollideAndAddTime;
+                std::cout << ", totalRunTime: " << totalRunTime << "\n";
                 std::cout.flush();
             }
             // END LOGGING
@@ -86,17 +81,12 @@ namespace Burs
             {
                 // Check distance to goal
                 RS new_state = *tree->Get(step_result);
-                // auto eepose = this->env->robot->GetEEFrame(new_state);
-                // VectorXd q_new = tree->Get(step_result);
-                // auto ee_pose = this->GetEEPose(q_new);
                 this->SetGraspClosestConfigs(planner_parameters, tree, step_result);
             }
 
             if (this->rng->getRandomReal() < planner_parameters.probability_to_steer_to_target)
             {
                 // Steer until hit the target or obstacle or joint limits
-                // std::cout << "tree: " << tree->GetNumberOfNodes() << "\n";
-                // std::cout << "planner parameters: " << planner_parameters.target_poses[0].dv->v.transpose() << "\n";
                 AlgorithmState state = this->ExtendToGoalRRT(tree, planner_parameters);
 
                 if (state == AlgorithmState::Reached)
@@ -106,11 +96,8 @@ namespace Burs
                     Grasp best_grasp = planner_parameters.target_poses[best_grasp_idx];
                     // Get idx in tree that leads to the best config
                     int best_idx = tree->Nearest(best_grasp.best_state);
-                    // int best_idx = tree->Nearest(best_grasp.best_state->config.data());
-                    // int best_idx = tree->Nearest(best_grasp.dv->v.data());
                     // Take measurements
                     plan_result.distance_to_goal = best_grasp.best_dist;
-                    // plan_result.distance_to_goal = best_grasp.dv->d;
                     plan_result.num_iterations = k;
                     plan_result.tree_size = tree->GetNumberOfNodes();
                     plan_result.success = true;
@@ -131,11 +118,8 @@ namespace Burs
         Grasp best_grasp = planner_parameters.target_poses[best_grasp_idx];
         // Get idx in tree that leads to the best config
         int best_idx = tree->Nearest(best_grasp.best_state);
-        // int best_idx = tree->Nearest(best_grasp.best_state->config.data());
-        // int best_idx = tree->Nearest(best_grasp.dv->v.data());
         // Take measurements
         plan_result.distance_to_goal = best_grasp.best_dist;
-        // plan_result.distance_to_goal = best_grasp.dv->d;
         plan_result.num_iterations = planner_parameters.max_iters;
         plan_result.tree_size = tree->GetNumberOfNodes();
         plan_result.success = false;
@@ -212,54 +196,45 @@ namespace Burs
     AlgorithmState
     JRRTPlanner::ExtendToGoalRRT(std::shared_ptr<BurTree> t_a, JPlusRbtParameters &planner_parameters) const
     {
-        // std::cout << "inside extend to goal rrt\n";
         int randint = this->rng->getRandomInt();
-        // std::cout << "num tgts: " << planner_parameters.target_poses.size() << " randint: " << randint << "\n";
         Grasp random_grasp = planner_parameters.target_poses[randint];
-        // RS p_goal = random_grasp.frame;
         KDL::Frame p_goal = random_grasp.frame;
 
-        // std::cout << "random grasp config: " << random_grasp.dv->v.transpose() << "\n";
-        // std::cout << "random grasp config: " << random_grasp.dv->v.size() << "\n";
-        // std::cout << "best config: " << random_grasp.best_state->frames.size() << "\n";
-        // std::cout << "best config: " << random_grasp.best_state->config << "\n";
         int best_state_idx = random_grasp.best_state;
         RS *best_state = t_a->Get(best_state_idx);
         RS near_state = *best_state;
-        // RS near_state(*random_grasp.best_state);
         // Copy since we will change it
-        // VectorXd q_near(random_grasp.dv->v);
 
         int prev_idx = t_a->Nearest(best_state_idx);
-        // int prev_idx = t_a->Nearest(q_near.data());
-        // std::cout << "prev_idx: " << prev_idx << "\n";
         double delta_p = random_grasp.best_dist;
-        // double delta_p = random_grasp.dv->d;
         KDL::Frame p_near = this->env->robot->GetEEFrame(*best_state);
-        // RS p_near = random_grasp.best_state;
-        // KDL::Frame p_near = random_grasp.best_frame;
         double delta_p_old = 0;
         do
         {
-            delta_p = (p_goal.p - p_near.p).Norm();
-            // delta_p = this->env->robot->EEDistance(p_goal, p_near);
-            // delta_p = this->DistanceToGoal(p_goal, p_near);
+            double metric_dist = (p_goal.p - p_near.p).Norm();
+            auto [d, f_tgt] = this->BasicDistanceMetric(p_near, p_goal);
+            delta_p = d;
+            bool use_rotation = (delta_p <= planner_parameters.use_rotation);
 
             // Max dist => epsilon_q
-            KDL::Twist twist = this->GetTwist(p_goal, p_near, std::min(delta_p, planner_parameters.epsilon_q), planner_parameters.use_rotation);
+            double dist_to_move = std::min(metric_dist, planner_parameters.epsilon_q);
+            KDL::Twist twist = this->GetTwist(f_tgt, p_near, dist_to_move, use_rotation);
+            // if (this->rng->getRandomReal() < 0.01)
+            // {
+            //     std::cout << "distance metric: " << delta_p << " use rot: " << use_rotation << " metric dist: " << metric_dist << "\n";
+            //     std::cout << "twist: " << twist << "\n";
+            // }
 
-            // std::cout << "q_near: " << q_near.transpose() << "\n";
-            // std::cout << "twist: " << twist << "\n";
             KDL::JntArray q_dot = this->env->robot->ForwardJPlus(near_state, twist);
-            // KDL::JntArray q_dot = this->myRobot->ForwardJPlus(q_near, twist);
             VectorXd delta_q = q_dot.data;
-            if (!planner_parameters.use_platform)
-            {
-                delta_q(0) = 0;
-                delta_q(1) = 0;
-            }
-            near_state = this->NewState(near_state.config + delta_q);
-            // q_near = q_near + delta_q;
+            // if (!planner_parameters.use_platform)
+            // {
+            //     delta_q(0) = 0;
+            //     delta_q(1) = 0;
+            // }
+            RS new_state = this->NewState(near_state.config + delta_q);
+            near_state = this->GetEndpoints(near_state, {new_state}, dist_to_move)[0];
+            // near_state = this->NewState(near_state.config + delta_q);
 
             if (this->IsColliding(near_state) || !this->InBounds(near_state.config) || (delta_p - delta_p_old) < 0.01)
             {
@@ -270,10 +245,7 @@ namespace Burs
 
             p_near = this->env->robot->GetEEFrame(near_state);
 
-            // p_near = this->GetEEPose(q_near);
-            // std::cout << "delta p: " << delta_p - delta_p_old << "\n";
             delta_p_old = delta_p;
-
         } while (delta_p > planner_parameters.p_close_enough);
 
         return AlgorithmState::Reached;
@@ -332,8 +304,7 @@ namespace Burs
         return tree;
     }
 
-    void
-    JRRTPlanner::PreheatNTrees(std::shared_ptr<BurTree> tree, VectorXd q_start, JPlusRbtParameters &plan_params)
+    void JRRTPlanner::PreheatNTrees(std::shared_ptr<BurTree> tree, VectorXd q_start, JPlusRbtParameters &plan_params)
     {
         int iters = (int)(plan_params.preheat_ratio * plan_params.max_iters);
         int num_points = 20;
@@ -355,7 +326,7 @@ namespace Burs
             JPlusRbtParameters tmp_params;
             tmp_params.d_crit = plan_params.d_crit;
             tmp_params.epsilon_q = plan_params.epsilon_q;
-            tmp_params.use_rotation = false;
+            tmp_params.use_rotation = 0;
             tmp_params.preheat_ratio = plan_params.preheat_ratio;
             tmp_params.p_close_enough = plan_params.p_close_enough;
             tmp_params.probability_to_steer_to_target = plan_params.probability_to_steer_to_target;
@@ -369,7 +340,7 @@ namespace Burs
             tmp_params.num_spikes = plan_params.num_spikes;
             tmp_params.visualize_tree = plan_params.visualize_tree;
             tmp_params.q_resolution = plan_params.q_resolution;
-            tmp_params.use_platform = true;
+            tmp_params.use_platform = false;
 
             std::shared_ptr<BurTree> t = this->JRRTPreheat(q_start, sub_iters, tmp_params);
             std::cout << "tree nodes: " << t->GetNumberOfNodes() << "\n";
@@ -377,8 +348,7 @@ namespace Burs
         }
     }
 
-    void
-    JRRTPlanner::CopyTree(std::shared_ptr<BurTree> src, std::shared_ptr<BurTree> tgt)
+    void JRRTPlanner::CopyTree(std::shared_ptr<BurTree> src, std::shared_ptr<BurTree> tgt)
     {
         int num_nodes = src->GetNumberOfNodes();
         // assuming initial nodes are the same
@@ -423,8 +393,7 @@ namespace Burs
         }
     }
 
-    void
-    JRRTPlanner::PreheatTree(std::shared_ptr<BurTree> t, const int &init_idx, const int &heat_iters, JPlusRbtParameters &plan_params)
+    void JRRTPlanner::PreheatTree(std::shared_ptr<BurTree> t, const int &init_idx, const int &heat_iters, JPlusRbtParameters &plan_params)
     {
         /*
         PREHEATING:
@@ -521,31 +490,6 @@ namespace Burs
         return KDL::Vector(x, y, z);
     }
 
-    KDL::Rotation
-    JRRTPlanner::GetClosestSymmetricGrasp(const KDL::Rotation &rotMatGrasp, const KDL::Rotation &rotMatEE) const
-    {
-        // Extract the Y-axis (second column) from both rotation matrices
-        KDL::Vector yGrasp = KDL::Vector(rotMatGrasp(0, 1), rotMatGrasp(1, 1), rotMatGrasp(2, 1));
-        KDL::Vector yEE = KDL::Vector(rotMatEE(0, 1), rotMatEE(1, 1), rotMatEE(2, 1));
-
-        // Initialize the closest grasp rotation matrix to the input grasp rotation matrix
-        KDL::Rotation closestGrasp = rotMatGrasp;
-
-        // Check if the dot product of the Y-axes is negative, indicating opposing directions
-        if ((yGrasp(0) * yEE(0) + yGrasp(1) * yEE(1) + yGrasp(2) * yEE(2)) < 0)
-        {
-            // Need to flip both the X (first column) and Y-axis (second column)
-            closestGrasp(0, 0) = -closestGrasp(0, 0); // Flip X-axis
-            closestGrasp(1, 0) = -closestGrasp(1, 0); // Flip X-axis
-            closestGrasp(2, 0) = -closestGrasp(2, 0); // Flip X-axis
-            closestGrasp(0, 1) = -closestGrasp(0, 1); // Flip Y-axis
-            closestGrasp(1, 1) = -closestGrasp(1, 1); // Flip Y-axis
-            closestGrasp(2, 1) = -closestGrasp(2, 1); // Flip Y-axis
-        }
-
-        return closestGrasp;
-    }
-
     Eigen::Matrix3d
     JRRTPlanner::ProjectApproachDirection(const Eigen::Matrix3d &rotMatGrasp, const Eigen::Matrix3d &rotMatEE) const
     {
@@ -608,7 +552,8 @@ namespace Burs
             KDL::Frame grasp_frame = best_grasp.frame;
             RS *best_state = tree->Get(last_idx);
             std::cout << "grasp before: " << grasp_frame << "\n";
-            grasp_frame.M = this->GetClosestSymmetricGrasp(grasp_frame.M, best_state->frames.back().M);
+            auto [changed, fr] = this->GetClosestSymmetricGrasp(grasp_frame.M, best_state->frames.back().M);
+            grasp_frame.M = fr;
             std::cout << "grasp after: " << grasp_frame << "\n";
 
             // exit(1);
@@ -655,4 +600,5 @@ namespace Burs
         std::cout << "TEST PATH LENGTH: " << path.size() << "\n";
         return path;
     }
+
 }

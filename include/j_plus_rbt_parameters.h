@@ -16,7 +16,7 @@ namespace Burs
     public:
         int preheat_type;
         bool use_platform = true;
-        bool use_rotation;
+        int use_rotation;
         double preheat_ratio;
         double p_close_enough;
         double probability_to_steer_to_target;

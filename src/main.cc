@@ -117,7 +117,7 @@ int main(int argc, char **argv)
         o.addOption(Option<double>("goal_bias_prob", &goal_bias_probability, "probability to turn to goal when close to goal"));
         o.addOption(Option<double>("q_resolution", &q_resolution, "resolution of individual steps in rbt"));
 
-        o.addOption(Option<int>("use_rot", &useRotation, 0, "whether to render video"));
+        o.addOption(Option<int>("use_rot", &useRotation, 0, "rotation bias threshold when to start using it (mm*deg)"));
         o.addOption(Option<double>("preheat_ratio", &preheat_ratio, 0.1, "ratio of iterations to use for preheating"));
         o.addOption(Option<int>("preheat_type", &preheat_type, 0, "type of preheating (0,1) so far"));
         o.addOption(Option<char *>("target_prefix", &targetPrefixFile, "file in which to save measurements, separated by keywords"));
@@ -175,6 +175,7 @@ int main(int argc, char **argv)
         // 2. Setup parameters
         // 3. Plan
         auto &env = jprbt->env;
+        std::cout << "REMOVED OBSTACLE TEMPORARILY\n";
         env->AddObstacle(obstacleFile);
         env->SetGroundLevel(groundLevel, minColSegmentIdx);
 
@@ -379,6 +380,28 @@ int main(int argc, char **argv)
             planning_result.time_taken = getTime(t1, t2);
             final_path = path.value();
 
+            break;
+        }
+        case 8:
+        {
+            std::cout << "PLANNING J+RBT basic\n";
+
+            struct rusage t1, t2;
+            getTime(&t1);
+            path = jprbt->JRbtBasic(start_config, params, planning_result);
+
+            getTime(&t2);
+            planning_result.time_taken = getTime(t1, t2);
+            final_path = path.value();
+
+            break;
+        }
+        case 98:
+        {
+            std::cout << "TEST COLLISION VS DISTANCE SPEED\n";
+            std::vector<Eigen::VectorXd> goals = RobotBase::parseCSVToVectors(targetConfigsFile);
+            path = jprbt->TestCollisionVsDistanceTime(start_config, params, planning_result);
+            exit(0);
             break;
         }
         case 99:

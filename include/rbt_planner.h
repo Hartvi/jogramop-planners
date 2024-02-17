@@ -67,14 +67,17 @@ namespace Burs
         unsigned int
         GetBestGrasp(JPlusRbtParameters &planner_parameters) const;
 
+        std::optional<std::vector<Eigen::VectorXd>>
+        TestCollisionVsDistanceTime(const VectorXd &q_start, const RbtParameters &plan_parameters, PlanningResult &planning_result);
+
+        std::pair<double, KDL::Frame>
+        BasicDistanceMetric(const KDL::Frame &ee, const KDL::Frame &tgt) const;
+
+        std::pair<bool, KDL::Rotation>
+        GetClosestSymmetricGrasp(const KDL::Rotation &rotMatGrasp, const KDL::Rotation &rotMatEE) const;
+
     protected:
         bool checkGround;
-
-        // int num_spikes;
-        // int max_iters;
-        // double d_crit;
-        // double delta_q;
-        // double epsilon_q;
     };
 
 }

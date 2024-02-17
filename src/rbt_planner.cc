@@ -84,10 +84,6 @@ namespace Burs
 
         for (int k = 0; k < plan_parameters.max_iters; k++)
         {
-
-            // for (unsigned int k = preheat_iters; k < planner_parameters.max_iters; ++k)
-            // {
-            // LOGGING
             if (k % 1000 == 0)
             {
                 getTime(&gt2);
@@ -158,11 +154,9 @@ namespace Burs
                 {
                     auto endpoint_vec = endpoints[i];
                     int prev_idx = nearest_idx; // idx of q_near
-                    // std::cout << "q_t " << i << ": num in bur" << endpoint_vec.size() << "\n";
 
                     for (unsigned int l = 0; l < endpoint_vec.size(); ++l)
                     {
-                        // std::cout << "q: " << endpoint_vec[l].config.transpose() << "\n";
                         prev_idx = t_a->AddNode(prev_idx, endpoint_vec[l]);
                         if (t_a == t_start)
                         {
@@ -665,7 +659,8 @@ namespace Burs
         {
             auto &tgt = tgts[i];
             auto &goal = tgt.frame;
-            double dist_to_goal = (goal.p - ee.p).Norm();
+            auto [dist_to_goal, f] = this->BasicDistanceMetric(ee, goal);
+            // double dist_to_goal = (goal.p - ee.p).Norm();
             tgt.best_dist = dist_to_goal;
             tgt.best_state = start_idx;
             // std::cout << "q: " << q.config << "\n";
@@ -684,13 +679,14 @@ namespace Burs
         {
             auto &tgt = tgts[i];
             auto &goal = tgt.frame;
-            double dist_to_goal = (goal.p - ee.p).Norm();
-            // double dist_to_goal = this->DistanceToGoal(goal, ee_q);
+            auto [dist_to_goal, f] = this->BasicDistanceMetric(ee, goal);
+            // std::cout << "dist: " << dist_to_goal << "\n";
+            // double dist_to_goal = (goal.p - ee.p).Norm();
             if (dist_to_goal < tgt.best_dist)
             {
+                // std::cout << "new best dist: " << dist_to_goal << "\n";
                 tgt.best_dist = dist_to_goal;
                 tgt.best_state = state_idx;
-                // std::cout << "new best config: " << tgt.dv->v.transpose() << "\n";
             }
             if (dist_to_goal < tmp_dist)
             {
@@ -711,6 +707,7 @@ namespace Burs
         {
             auto &tgt = tgts[i];
             auto &goal = tgt.frame;
+            // std::cout << "current dist: " << tgt.best_dist << "\n";
             if (tgt.best_dist < best_dist)
             {
                 best_dist = tgt.best_dist;
@@ -718,5 +715,110 @@ namespace Burs
             }
         }
         return best_idx;
+    }
+
+    std::optional<std::vector<Eigen::VectorXd>>
+    RbtPlanner::TestCollisionVsDistanceTime(const VectorXd &q_start, const RbtParameters &plan_parameters, PlanningResult &planning_result)
+    {
+        struct rusage tt1, tt2;
+        // getTime(&tt1);
+        double totalCollideTime = 0.0;
+        double totalDistanceCheckTime = 0.0;
+        for (unsigned int k = 0; k < plan_parameters.max_iters; ++k)
+        {
+            RS rand_state = this->NewState(this->GetRandomQ(1));
+
+            getTime(&tt1);
+            this->IsColliding(rand_state);
+            getTime(&tt2);
+            totalCollideTime += getTime(tt1, tt2);
+
+            getTime(&tt1);
+            this->GetClosestDistance(rand_state);
+            getTime(&tt2);
+            totalDistanceCheckTime += getTime(tt1, tt2);
+        }
+        std::cout << "TOTAL COLLIDE TIME: " << totalCollideTime << "\n";
+        std::cout << "TOTAL DISTANCE CHECK TIME: " << totalDistanceCheckTime << "\n";
+        return {{q_start}};
+    }
+
+    std::pair<double, KDL::Frame>
+    RbtPlanner::BasicDistanceMetric(const KDL::Frame &ee, const KDL::Frame &tgt) const
+    {
+        // units [meters]
+        double dist = (ee.p - tgt.p).Norm() * 1000;
+        KDL::Rotation ee_inv = ee.M.Inverse();
+
+        auto [changed_rot, closest_grasp_rot] = this->GetClosestSymmetricGrasp(tgt.M, ee.M);
+        KDL::Rotation r = tgt.M * ee_inv;
+        double angle_dist = acos((r(0, 0) + r(1, 1) + r(2, 2) - 1.0) * 0.5) * rad_to_deg;
+        // if the symmetric rotation is a different one
+        if (changed_rot)
+        {
+            KDL::Rotation r2 = closest_grasp_rot * ee_inv;
+            double angle_dist2 = acos((r2(0, 0) + r2(1, 1) + r2(2, 2) - 1.0) * 0.5) * rad_to_deg;
+            // take the smaller of the two distances
+            if (angle_dist2 < angle_dist)
+            {
+                // std::cout << "symmetric has smaller angle: " << angle_dist2 << " < " << angle_dist << "\n";
+                angle_dist = angle_dist2;
+                r = r2;
+            }
+            else
+            {
+                // std::cout << "default was smaller: " << angle_dist << " < " << angle_dist2 << "\n";
+            }
+        }
+        // KDL::Rotation invm = tgt.M * ee_inv.Inverse();
+        // KDL::Rotation r = (tgt.M * ee.M);
+        // KDL::Rotation r2 = (closest_grasp_rot.Inverse() * ee.M);
+        // if (acos((r(0, 0) + r(1, 1) + r(2, 2) - 1.0) * 0.5) <= acos((r2(0, 0) + r2(1, 1) + r2(2, 2) - 1.0) * 0.5))
+        // {
+        // std::cout << "default angle dist: " << acos((r(0, 0) + r(1, 1) + r(2, 2) - 1.0) * 0.5) << "\n";
+        // std::cout << "symmetr angle dist: " << acos((r2(0, 0) + r2(1, 1) + r2(2, 2) - 1.0) * 0.5) << "\n";
+        // std::cout << "reverse def angle dist: " << acos((invm(0, 0) + invm(1, 1) + invm(2, 2) - 1.0) * 0.5) << "\n";
+        // std::cout << "reverse sym angle dist: " << acos((invm2(0, 0) + invm2(1, 1) + invm2(2, 2) - 1.0) * 0.5) << "\n";
+        // std::cout << "\n";
+        // }
+        // assert(acos((r(0, 0) + r(1, 1) + r(2, 2) - 1.0) * 0.5) <= acos((r2(0, 0) + r2(1, 1) + r2(2, 2) - 1.0) * 0.5));
+
+        // 2 * cos + 1 on diagonal *always*
+        // units: [degrees / 1000] to make it equivalent to [mm * deg]
+        KDL::Frame f(r, tgt.p);
+        return {dist + angle_dist, f};
+    }
+
+    std::pair<bool, KDL::Rotation>
+    RbtPlanner::GetClosestSymmetricGrasp(const KDL::Rotation &rotMatGrasp, const KDL::Rotation &rotMatEE) const
+    {
+        // Extract the Y-axis (second column) from both rotation matrices
+        KDL::Vector yGrasp = KDL::Vector(rotMatGrasp(0, 1), rotMatGrasp(1, 1), rotMatGrasp(2, 1));
+        KDL::Vector yEE = KDL::Vector(rotMatEE(0, 1), rotMatEE(1, 1), rotMatEE(2, 1));
+
+        // Initialize the closest grasp rotation matrix to the input grasp rotation matrix
+        KDL::Rotation closestGrasp(rotMatGrasp);
+
+        // Check if the dot product of the Y-axes is negative, indicating opposing directions
+        double dot_product = (yGrasp(0) * yEE(0) + yGrasp(1) * yEE(1) + yGrasp(2) * yEE(2));
+        // std::cout << "dot product: " << dot_product << "\n";
+        // std::cout << "arccos dot product: " << acos(dot_product) << "\n";
+        // std::cout << "closest: \n"
+        //           << closestGrasp << "\n";
+        // std::cout << "rot mat: \n"
+        //           << rotMatGrasp << "\n";
+        bool changed_rot = dot_product < 0;
+        if (changed_rot)
+        {
+            // Need to flip both the X (first column) and Y-axis (second column)
+            closestGrasp(0, 0) = -closestGrasp(0, 0); // Flip X-axis
+            closestGrasp(1, 0) = -closestGrasp(1, 0); // Flip X-axis
+            closestGrasp(2, 0) = -closestGrasp(2, 0); // Flip X-axis
+            closestGrasp(0, 1) = -closestGrasp(0, 1); // Flip Y-axis
+            closestGrasp(1, 1) = -closestGrasp(1, 1); // Flip Y-axis
+            closestGrasp(2, 1) = -closestGrasp(2, 1); // Flip Y-axis
+        }
+
+        return {changed_rot, closestGrasp};
     }
 }

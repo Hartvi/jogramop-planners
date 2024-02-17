@@ -32,9 +32,6 @@ namespace Burs
         KDL::Vector
         GetRotVec(const KDL::Frame &tgt, const KDL::Frame &src) const;
 
-        KDL::Rotation
-        GetClosestSymmetricGrasp(const KDL::Rotation &rotMatGrasp, const KDL::Rotation &rotMatEE) const;
-
         Eigen::Matrix3d
         ProjectApproachDirection(const Eigen::Matrix3d &rotMatGrasp, const Eigen::Matrix3d &rotMatEE) const;
 

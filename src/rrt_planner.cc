@@ -40,13 +40,6 @@ namespace Burs
 
         std::shared_ptr<BurTree> t_start = std::make_shared<BurTree>(start_state, q_start.size());
         std::shared_ptr<BurTree> t_goal = std::make_shared<BurTree>(goal_state, q_goal.size());
-        // TODO: check collision at the beginning
-        // auto ee_goal = this->GetEEPose(q_goal);
-
-        // KDL::Jacobian test_jac = this->myRobot->CachedJacobian(q_start);
-        // std::cout << "test jac:\n"
-        //           << test_jac.data << "\n";
-        // exit(1);
 
         VectorXd q_best(q_start);
         RS &best_state = start_state;
@@ -105,6 +98,33 @@ namespace Burs
             std::cout << "inside vis tree\n";
         }
         return this->ConstructPathFromTree(t_start, best_idx);
+    }
+
+    std::vector<int>
+    RRTPlanner::ExtendRandomConfig(std::shared_ptr<BurTree> t_a, RS rand_state, const RRTParameters &planner_parameters) const
+    {
+        std::vector<int> ids;
+        int nearest_idx = t_a->Nearest(rand_state);
+        auto step_result = this->RRTStep(t_a, nearest_idx, rand_state, planner_parameters.epsilon_q);
+
+        while (step_result >= 0)
+        {
+            ids.push_back(step_result);
+            // if stepped in tree: new node added and crashless
+            // if finished: return result
+            RS step_state = *t_a->Get(step_result);
+            double max_dist = this->env->robot->MaxDistance(step_state, rand_state);
+
+            // if reached the random config:
+            if (max_dist <= planner_parameters.epsilon_q)
+            {
+                return ids;
+            }
+
+            // then step again from newly added node: step_result
+            step_result = this->RRTStep(t_a, step_result, rand_state, planner_parameters.epsilon_q);
+        }
+        return ids;
     }
 
     AlgorithmState
