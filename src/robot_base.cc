@@ -1,3 +1,5 @@
+#include <Eigen/QR>
+
 #include <kdl_parser/kdl_parser.hpp>
 #include <kdl/chainfksolverpos_recursive.hpp>
 #include <kdl/frames_io.hpp>
@@ -346,6 +348,16 @@ namespace Burs
             throw std::runtime_error("RobotBase::ForwardJPlus failed. error: " + std::string(pinv_solver.strError(res)));
         }
         return q_dot;
+    }
+
+    MatrixXd
+    RobotBase::JPlus(const RS &state)
+    {
+        MatrixXd pinv = state.jac.data.completeOrthogonalDecomposition().pseudoInverse();
+        std::cout << "pinv: \n"
+                  << pinv << "\n";
+        // exit(1);
+        return pinv;
     }
 
     std::pair<KDL::Jacobian, VectorXd>

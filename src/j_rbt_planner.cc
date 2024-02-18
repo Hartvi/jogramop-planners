@@ -32,7 +32,7 @@ namespace Burs
         RS start_state = this->NewState(q_start);
 
         // Random numbers
-        this->rng = std::make_shared<RandomNumberGenerator>(planner_parameters.seed, planner_parameters.target_poses.size() - 1);
+        this->rng = std::make_shared<RandomNumberGenerator>(planner_parameters.seed, planner_parameters.target_poses.size());
 
         auto tree = std::make_shared<BurTree>(start_state, q_start.size());
         if (planner_parameters.preheat_type == 0)
@@ -250,7 +250,8 @@ namespace Burs
         auto tree = std::make_shared<BurTree>(start_state, q_start.size());
 
         // Random numbers
-        this->rng = std::make_shared<RandomNumberGenerator>(planner_parameters.seed, planner_parameters.target_poses.size() - 1);
+        // std::cout << "target poses: " << planner_parameters.target_poses.size() << "\n";
+        this->rng = std::make_shared<RandomNumberGenerator>(planner_parameters.seed, planner_parameters.target_poses.size());
 
         // To prevent uninitialized vectors in planner_parameters
         this->InitGraspClosestConfigs(planner_parameters, tree, 0);
@@ -306,14 +307,21 @@ namespace Burs
 
             if (too_close)
             {
-                RS Qe_state = this->NewState(Qe.col(0));
-                std::vector<int> ids = this->ExtendRandomConfig(tree, Qe_state, planner_parameters);
-                // std::cout << "RRT TOO CLOSE NUM NODES: " << ids.size() << "\n";
-                for (unsigned int i = 0; i < ids.size(); ++i)
+                RS endpoint = this->GetEndpoints(*near_state, {Qe_states[0]}, planner_parameters.epsilon_q)[0];
+                if (!this->IsColliding(endpoint))
                 {
-                    // std::cout << "q: " << tree->Get(ids[i])->config.transpose() << "\n";
-                    this->SetGraspClosestConfigs(planner_parameters, tree, ids[i]);
+                    int new_id = tree->AddNode(nearest_idx, endpoint);
+                    this->SetGraspClosestConfigs(planner_parameters, tree, new_id);
                 }
+                // RS Qe_state = this->NewState(Qe.col(0));
+                // std::vector<int> ids = this->ExtendRandomConfig(tree, Qe_state, planner_parameters);
+                // // std::cout << "RRT TOO CLOSE NUM NODES: " << ids.size() << "\n";
+                // // std::cout << "extend to random point: " << ids.size() << "\n";
+                // for (unsigned int i = 0; i < ids.size(); ++i)
+                // {
+                //     // std::cout << "q: " << tree->Get(ids[i])->config.transpose() << "\n";
+                //     this->SetGraspClosestConfigs(planner_parameters, tree, ids[i]);
+                // }
             }
             else // REGULAR BUR
             {
@@ -328,8 +336,8 @@ namespace Burs
                     for (unsigned int l = 0; l < endpoint_vec.size(); ++l)
                     {
                         prev_idx = tree->AddNode(prev_idx, endpoint_vec[l]);
+                        double tmp_dist = this->SetGraspClosestConfigs(planner_parameters, tree, prev_idx);
                     }
-                    double tmp_dist = this->SetGraspClosestConfigs(planner_parameters, tree, prev_idx);
                 }
             }
 
@@ -340,6 +348,7 @@ namespace Burs
             if (rand_num < planner_parameters.probability_to_steer_to_target)
             {
                 // Steer until hit the target or obstacle or joint limits
+                // AlgorithmState state = this->ExtendToGoalRbt(tree, planner_parameters);
                 AlgorithmState state = this->ExtendToGoalRRT(tree, planner_parameters);
 
                 // Get grasp with minimal distance
@@ -348,7 +357,10 @@ namespace Burs
                 // std::cout << "best dist: " << best_grasp.best_dist << "\n";
                 if (state != AlgorithmState::Reached)
                 {
-                    state = best_grasp.best_dist < planner_parameters.p_close_enough ? AlgorithmState::Reached : AlgorithmState::Trapped;
+                    if (best_grasp.best_dist <= planner_parameters.p_close_enough)
+                    {
+                        state = AlgorithmState::Reached;
+                    }
                 }
                 if (state == AlgorithmState::Reached)
                 {
@@ -412,7 +424,7 @@ namespace Burs
         }
 
         // Random numbers
-        this->rng = std::make_shared<RandomNumberGenerator>(planner_parameters.seed, planner_parameters.target_poses.size() - 1);
+        this->rng = std::make_shared<RandomNumberGenerator>(planner_parameters.seed, planner_parameters.target_poses.size());
 
         // To prevent uninitialized vectors in planner_parameters
         this->InitGraspClosestConfigs(planner_parameters, tree, 0);
@@ -583,10 +595,18 @@ namespace Burs
 
         // Get shuffled integer vector
         auto non_repeating_ints = this->rng->getNonRepeatingInts();
+
+        // for (unsigned int i = 0; i < planner_parameters.num_spikes; ++i)
+        // {
+        //     std::cout << "int: " << non_repeating_ints[i] << " ";
+        // }
+        // std::cout << "\n";
         for (unsigned int i = 1; i < planner_parameters.num_spikes; ++i)
         {
             // i-th element from shuffled vector
-            unsigned int rand_int = *std::next(non_repeating_ints, i);
+            // unsigned int rand_int = *std::next(non_repeating_ints, i);
+            unsigned int rand_int = non_repeating_ints[i];
+            // std::cout << "rand int: " << rand_int << "\n";
             if (rand_int == best_grasp_idx)
             {
                 // rand_int == best_idx => choose index 0 because we started at "i = 1"
@@ -596,6 +616,7 @@ namespace Burs
             {
                 grasps[i] = planner_parameters.target_poses[rand_int];
             }
+            // std::cout << "grasp: " << grasps[i].frame.p << "\n";
         }
         return grasps;
     }
@@ -616,12 +637,16 @@ namespace Burs
             // STEP 1.
             // Best grasp is in index 0
             std::vector<Grasp> tgt_grasps = this->GetBestAndRandomGrasps(planner_parameters);
+            // for (unsigned int i = 0; i < tgt_grasps.size(); ++i)
+            // {
+            //     std::cout << "tgt: " << tgt_grasps[i].frame.p << "\n";
+            // }
             Grasp best_grasp = tgt_grasps[0];
             int best_state_idx = best_grasp.best_state;
             RS *best_state = tree->Get(best_state_idx);
 
             // STEP 2.
-            int idx_near = tree->Nearest(best_state_idx);
+            // int idx_near = tree->Nearest(best_state_idx);
             delta_p = best_grasp.best_dist;
             double best_dist = best_grasp.best_dist;
 
@@ -629,24 +654,35 @@ namespace Burs
             closest_dist = this->GetClosestDistance(*best_state);
 
             // SWITCH TO RRT IF OBSTACLE TOO CLOSE
-            bool too_close = closest_dist < planner_parameters.d_crit;
+            bool too_close = false;
+            // bool too_close = closest_dist < planner_parameters.d_crit;
             unsigned int num_extensions = too_close ? 1 : planner_parameters.num_spikes;
-            double distance_to_move = too_close ? planner_parameters.epsilon_q : closest_dist;
 
             // Target configs to extend to gained from the jacobian
             MatrixXd target_configs = MatrixXd(this->q_dim, num_extensions);
+
+            KDL::Frame ee_frame = this->env->robot->GetEEFrame(*best_state);
+            // double distance_to_move = too_close ? planner_parameters.epsilon_q : closest_dist;
+            double distance_to_move = closest_dist;
 
             for (unsigned int i = 0; i < num_extensions; ++i)
             {
                 // Max dist => closest_dist / dist to goal (maybe better to have distance to goal since it can be farther)
                 KDL::Frame tgt_frame = tgt_grasps[i].frame;
-                KDL::Frame cur_frame = this->env->robot->GetEEFrame(*best_state);
 
-                // From cur_frame (best config)
+                // From ee_frame (best config)
                 // To tgt_frame (one of the randomly chosen goals)
                 // Move `closest_dist` along that direction
                 // Can be farther that the goal, but that's fine because we interpolate using `Densify`
-                KDL::Twist twist = this->GetTwist(tgt_frame, cur_frame, distance_to_move, planner_parameters.use_rotation);
+                double metric_dist = (tgt_frame.p - ee_frame.p).Norm();
+                auto [d, f_tgt] = this->BasicDistanceMetric(ee_frame, tgt_frame);
+                delta_p = d;
+                bool use_rotation = (delta_p <= planner_parameters.use_rotation);
+                std::cout << "delta p: " << delta_p << " rotation threshold: " << planner_parameters.use_rotation << " userot: " << use_rotation << "\n";
+
+                // Max dist => epsilon_q
+                double dist_to_move = std::min(metric_dist, closest_dist);
+                KDL::Twist twist = this->GetTwist(f_tgt, ee_frame, distance_to_move, planner_parameters.use_rotation);
 
                 // TODO: reuse the jacobian for the pseudo-inverse J+
                 KDL::JntArray q_dot = this->env->robot->ForwardJPlus(*best_state, twist);
@@ -657,24 +693,34 @@ namespace Burs
             std::vector<RS> target_states = this->NewStates(target_configs);
 
             // Iterate max `closest_dist` to `target_config`
-            std::vector<RS> bur_endpoints = this->GetEndpoints(*best_state, target_states, distance_to_move);
+            std::cout << "dist to move: " << distance_to_move << " res: " << planner_parameters.q_resolution << "\n";
+            std::vector<std::vector<RS>> bur_endpoints = this->GetEndpointsInterstates(*best_state, target_states, distance_to_move, planner_parameters.q_resolution);
 
             // If closest obstacle was too close => check collisions for the RRT step
-            if (too_close)
+            for (unsigned int i = 0; i < bur_endpoints.size(); ++i)
             {
-                for (unsigned int i = 0; i < bur_endpoints.size(); ++i)
+                std::vector<RS> line = bur_endpoints[i];
+                // std::cout << "line: " << i << "\n";
+                int prev_idx = best_state_idx;
+                for (unsigned int j = 0; j < line.size(); ++j)
                 {
-                    if (this->IsColliding(bur_endpoints[i]))
+                    if (too_close)
                     {
-                        return AlgorithmState::Trapped;
+                        if (this->IsColliding(line[j]))
+                        {
+                            return AlgorithmState::Trapped;
+                        }
                     }
+                    // std::cout << "point: " << j << "\n";
+                    prev_idx = tree->AddNode(prev_idx, line[j]);
+                    this->SetGraspClosestConfigs(planner_parameters, tree, prev_idx);
                 }
             }
 
             // Checks bounds
             // Interpolates with max resolution_q distance between points
             // Updates best config for each grasp
-            this->AddDenseBur(tree, idx_near, bur_endpoints, planner_parameters);
+            // this->AddDenseBur(tree, idx_near, bur_endpoints, planner_parameters);
 
         } while (delta_p > planner_parameters.p_close_enough && closest_dist > planner_parameters.d_crit);
 
@@ -720,18 +766,18 @@ namespace Burs
         // Target configs to extend to gained from the jacobian
         MatrixXd target_configs = MatrixXd(this->q_dim, num_extensions);
 
+        KDL::Frame ee_frame = this->env->robot->GetEEFrame(*near_state);
         for (unsigned int i = 0; i < num_extensions; ++i)
         {
             // Max dist => closest_dist / dist to goal (maybe better to have distance to goal since it can be farther)
             KDL::Frame tgt_frame = tgt_grasps[i].frame;
-            KDL::Frame cur_frame = this->env->robot->GetEEFrame(*near_state);
-            // KDL::Frame cur_frame = best_grasp.best_frame;
+            // KDL::Frame ee_frame = best_grasp.best_frame;
 
-            // From cur_frame (best config)
+            // From ee_frame (best config)
             // To tgt_frame (one of the randomly chosen goals)
             // Move `closest_dist` along that direction
             // Can be farther that the goal, but that's fine because we interpolate using `Densify`
-            KDL::Twist twist = this->GetTwist(tgt_frame, cur_frame, distance_to_move, planner_parameters.use_rotation);
+            KDL::Twist twist = this->GetTwist(tgt_frame, ee_frame, distance_to_move, planner_parameters.use_rotation);
 
             // TODO: reuse the jacobian for the pseudo-inverse J+
             KDL::JntArray q_dot = this->env->robot->ForwardJPlus(*near_state, twist);

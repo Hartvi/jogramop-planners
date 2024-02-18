@@ -763,7 +763,7 @@ namespace Burs
             {
                 // std::cout << "symmetric has smaller angle: " << angle_dist2 << " < " << angle_dist << "\n";
                 angle_dist = angle_dist2;
-                r = r2;
+                // r = r2;
             }
             else
             {

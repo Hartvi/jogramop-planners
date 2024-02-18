@@ -175,7 +175,7 @@ int main(int argc, char **argv)
         // 2. Setup parameters
         // 3. Plan
         auto &env = jprbt->env;
-        std::cout << "REMOVED OBSTACLE TEMPORARILY\n";
+        // std::cout << "REMOVED OBSTACLE TEMPORARILY\n";
         env->AddObstacle(obstacleFile);
         env->SetGroundLevel(groundLevel, minColSegmentIdx);
 

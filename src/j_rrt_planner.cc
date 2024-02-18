@@ -28,7 +28,7 @@ namespace Burs
 
         RS start_state = this->NewState(q_start);
 
-        this->rng = std::make_shared<RandomNumberGenerator>(planner_parameters.seed, planner_parameters.target_poses.size() - 1);
+        this->rng = std::make_shared<RandomNumberGenerator>(planner_parameters.seed, planner_parameters.target_poses.size());
 
         auto tree = std::make_shared<BurTree>(start_state, q_start.size());
 
@@ -89,11 +89,18 @@ namespace Burs
                 // Steer until hit the target or obstacle or joint limits
                 AlgorithmState state = this->ExtendToGoalRRT(tree, planner_parameters);
 
+                unsigned int best_grasp_idx = this->GetBestGrasp(planner_parameters);
+                Grasp best_grasp = planner_parameters.target_poses[best_grasp_idx];
+                if (state != AlgorithmState::Reached)
+                {
+                    if (best_grasp.best_dist <= planner_parameters.p_close_enough)
+                    {
+                        state = AlgorithmState::Reached;
+                    }
+                }
                 if (state == AlgorithmState::Reached)
                 {
                     // Get grasp with minimal distance
-                    unsigned int best_grasp_idx = this->GetBestGrasp(planner_parameters);
-                    Grasp best_grasp = planner_parameters.target_poses[best_grasp_idx];
                     // Get idx in tree that leads to the best config
                     int best_idx = tree->Nearest(best_grasp.best_state);
                     // Take measurements
@@ -151,10 +158,25 @@ namespace Burs
 
             KDL::Rotation inv_src_rot = src.M.Inverse();
             double x, y, z;
+            // tgt.M.GetRPY(x, y, z);
+            // std::cout << "tgt: " << x << ", " << y << ", " << z << "\n";
+            // src.M.GetRPY(x, y, z);
+            // std::cout << "src: " << x << ", " << y << ", " << z << "\n";
+            // exit(1);
+
+            // KDL::Rotation diff_rot = src.M * tgt.M;
+            // KDL::Rotation diff_rot = src.M * tgt.M.Inverse();
+            // KDL::Rotation diff_rot = tgt.M.Inverse() * src.M;
+            // KDL::Rotation diff_rot = inv_src_rot * tgt.M;
             KDL::Rotation diff_rot = tgt.M * inv_src_rot;
             diff_rot.GetRPY(x, y, z);
+            // diff_rot.GetEulerZYX(z, y, x);
+            KDL::Vector global_xyz(x, y, z);
+            KDL::Vector rot_vel = src.M * global_xyz;
+            // std::cout << "diff: " << x << ", " << y << ", " << z << "\n";
 
-            twist.rot = KDL::Vector(x, y, z);
+            twist.rot = rot_vel;
+            // twist.rot = KDL::Vector(x, y, z);
         }
 
         return twist;
@@ -196,6 +218,7 @@ namespace Burs
     AlgorithmState
     JRRTPlanner::ExtendToGoalRRT(std::shared_ptr<BurTree> t_a, JPlusRbtParameters &planner_parameters) const
     {
+        // std::cout << "inside RRT extend to goal\n";
         int randint = this->rng->getRandomInt();
         Grasp random_grasp = planner_parameters.target_poses[randint];
         KDL::Frame p_goal = random_grasp.frame;
@@ -209,34 +232,64 @@ namespace Burs
         double delta_p = random_grasp.best_dist;
         KDL::Frame p_near = this->env->robot->GetEEFrame(*best_state);
         double delta_p_old = 0;
+        // TESTING
+
         do
         {
-            double metric_dist = (p_goal.p - p_near.p).Norm();
+            KDL::Vector delta_pos = (p_goal.p - p_near.p);
+            double metric_dist = delta_pos.Norm();
             auto [d, f_tgt] = this->BasicDistanceMetric(p_near, p_goal);
             delta_p = d;
             bool use_rotation = (delta_p <= planner_parameters.use_rotation);
+            // std::cout << "delta p: " << delta_p << " rotation threshold: " << planner_parameters.use_rotation << "\n";
 
             // Max dist => epsilon_q
             double dist_to_move = std::min(metric_dist, planner_parameters.epsilon_q);
+            /*
             KDL::Twist twist = this->GetTwist(f_tgt, p_near, dist_to_move, use_rotation);
-            // if (this->rng->getRandomReal() < 0.01)
-            // {
-            //     std::cout << "distance metric: " << delta_p << " use rot: " << use_rotation << " metric dist: " << metric_dist << "\n";
-            //     std::cout << "twist: " << twist << "\n";
-            // }
+            if (this->rng->getRandomReal() < 0.01)
+            {
+                // std::cout << "distance metric: " << delta_p << " use rot: " << use_rotation << " metric dist: " << metric_dist << "\n";
+                std::cout << "twist: " << twist << "\n";
+            }
 
             KDL::JntArray q_dot = this->env->robot->ForwardJPlus(near_state, twist);
             VectorXd delta_q = q_dot.data;
+            RS new_state = this->NewState(near_state.config + delta_q);
+            */
+
+            MatrixXd p_inv = this->env->robot->JPlus(near_state);
+            VectorXd delta_frame(6);
+            delta_frame(0) = delta_pos(0);
+            delta_frame(1) = delta_pos(1);
+            delta_frame(2) = delta_pos(2);
+            if (use_rotation)
+            {
+                double x, y, z;
+                f_tgt.M.GetEulerZYX(z, y, x);
+                delta_frame(3) = x;
+                delta_frame(4) = y;
+                delta_frame(5) = z;
+            }
+            else
+            {
+                delta_frame(3) = 0;
+                delta_frame(4) = 0;
+                delta_frame(5) = 0;
+            }
+            // std::cout << "pinv: " << p_inv.rows() << ", " << p_inv.cols() << "\n";
+            // std::cout << "delta_frame: " << delta_frame.transpose() << "\n";
+            VectorXd delta_q = p_inv * delta_frame;
+
+            RS new_state = this->NewState(near_state.config + delta_q);
             // if (!planner_parameters.use_platform)
             // {
             //     delta_q(0) = 0;
             //     delta_q(1) = 0;
             // }
-            RS new_state = this->NewState(near_state.config + delta_q);
             near_state = this->GetEndpoints(near_state, {new_state}, dist_to_move)[0];
-            // near_state = this->NewState(near_state.config + delta_q);
 
-            if (this->IsColliding(near_state) || !this->InBounds(near_state.config) || (delta_p - delta_p_old) < 0.01)
+            if (this->IsColliding(near_state) || !this->InBounds(near_state.config) || (delta_p - delta_p_old) < 0.001)
             {
                 return AlgorithmState::Trapped;
             }
@@ -262,7 +315,7 @@ namespace Burs
 
         RS start_state = this->NewState(q_start);
 
-        this->rng = std::make_shared<RandomNumberGenerator>(planner_parameters.seed, planner_parameters.target_poses.size() - 1);
+        this->rng = std::make_shared<RandomNumberGenerator>(planner_parameters.seed, planner_parameters.target_poses.size());
 
         auto tree = std::make_shared<BurTree>(start_state, q_start.size());
 
@@ -535,7 +588,7 @@ namespace Burs
         RS start_state = this->NewState(first_state);
         // RS start_state = this->NewState(q_start);
 
-        this->rng = std::make_shared<RandomNumberGenerator>(planner_parameters.seed, planner_parameters.target_poses.size() - 1);
+        this->rng = std::make_shared<RandomNumberGenerator>(planner_parameters.seed, planner_parameters.target_poses.size());
 
         auto tree = std::make_shared<BurTree>(start_state, q_start.size());
 
@@ -600,5 +653,4 @@ namespace Burs
         std::cout << "TEST PATH LENGTH: " << path.size() << "\n";
         return path;
     }
-
 }

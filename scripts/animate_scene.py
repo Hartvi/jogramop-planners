@@ -168,6 +168,20 @@ def start_scene():
         bpy.data.objects.remove(bpy.data.objects["Cube"])
     except:
         pass
+    # Disable global shadows in Eevee
+    # bpy.context.scene.eevee.use_shadow = False
+
+    # Disable shadows for each light source in the scene
+    for light in bpy.data.lights:
+        light.use_shadow = False
+
+    # For Cycles, to disable a light casting shadows
+    for light in bpy.data.objects:
+        if light.type == 'LIGHT':
+            try:
+                light.cycles_visibility.shadow = False
+            except:
+                pass
 
 
 def set_creation_time(scene):

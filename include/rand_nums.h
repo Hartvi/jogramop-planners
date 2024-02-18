@@ -9,9 +9,11 @@ class RandomNumberGenerator
 {
 public:
     RandomNumberGenerator(const int seed, const int maxNodes)
-        : rng(rd()), realDistr(0.0, 1.0), intDistr(0, maxNodes), intVector(maxNodes)
+        : rng(rd()), realDistr(0.0, 1.0), intDistr(0, maxNodes - 1), intVector(maxNodes)
     {
         rng.seed(seed);
+        std::iota(this->intVector.begin(), this->intVector.end(), 0);
+        std::cout << "max rand: " << this->intVector.size() << "\n";
     }
 
     double
@@ -34,6 +36,7 @@ public:
     }
 
 private:
+public:
     std::random_device rd;
     std::mt19937 rng;
     std::uniform_real_distribution<> realDistr;

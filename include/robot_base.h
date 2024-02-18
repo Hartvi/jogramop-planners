@@ -96,6 +96,9 @@ namespace Burs
         KDL::JntArray
         ForwardJPlus(const RS &state, const KDL::Twist &v_in);
 
+        MatrixXd
+        JPlus(const RS &state);
+
         std::pair<KDL::Jacobian, VectorXd>
         ForwardJacs(const VectorXd &q_in);
 

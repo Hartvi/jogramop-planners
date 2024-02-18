@@ -23,20 +23,20 @@ planners["jrrt"] = "-planner 3 -d_crit 100000 " #rrt, alternating random expansi
 #planners["jrrt"] = "-planner 3 -d_crit 100000 " #rrt, alternating random expansion + goal bias 
 #planners["ikrbt"] = "-planner 4 "   #goal is IK solution, goes to only single goal
 #planners["ikrrt"] = "-planner 5 -d_crit 100000 "  #goal is IK solution, goes to only single goal
-planners["jrbtNew"] = "-planner 6 -epsilon_q 0.2 -preheat_ratio 0.2 " #burs rrt + j+ expand
+# planners["jrbtNew"] = "-planner 8 -epsilon_q 0.2 -preheat_ratio 0.2 " #burs rrt + j+ expand
 
 fout = open("all-cmds.sh", "wt")
     
 
 
 rrtSize = 40 * 1000
-distanceToGoal = 0.07  #should be 0.05!!
+distanceToGoal = 15.0  #should be 0.05!!
 dcrit = 0.11
 dcrit = 0.05
 
 goalBiasRadius = 0.2
 goalBiasProbability = 0.8 #goal bias neer the goal, should be larger than goalBiasProbability2
-prob_steer = 0.05 #steer
+prob_steer = 0.01 #steer
 goalBiasProbability = 0.7 #goal bias neer the goal, should be larger than goalBiasProbability2
 goalBiasProbability2 = 0.01
     
@@ -85,9 +85,9 @@ for scenario in range(1,12+1):
                     print("Result ", outFile, " finished ")
                     continue
 
-                cmd = "timeout 30s ./burs_of_free_space test "
+                cmd = "timeout 30s ./build/burs_of_free_space test "
                 cmd += " -grasp {} -urdf {} -obstacle {} -start_config {}".format(graspFile, urdfFile, obstacleFile, startFile)
-                cmd += " -delta_q 1.3 -epsilon_q 0.2 -num_spikes 7  "
+                cmd += " -delta_q 3.3 -epsilon_q 0.1 -num_spikes 7  "
                 cmd += " -render 0 -vis_script scripts/animate_scene.py -cx -1 -cy 3 -cz 6 -groundLevel 0.00 -minColSegIdx 6 "
                 cmd += " -target_prefix {} ".format(outFile)
                 cmd += " -d_crit {} ".format(dcrit)

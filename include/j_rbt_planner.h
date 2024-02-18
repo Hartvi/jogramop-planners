@@ -17,9 +17,6 @@ namespace Burs
     {
 
     public:
-        std::shared_ptr<RandomNumberGenerator> rng;
-
-    public:
         JRbtPlanner(std::string urdf_file);
 
         std::optional<std::vector<Eigen::VectorXd>>
