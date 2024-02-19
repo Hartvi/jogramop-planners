@@ -266,7 +266,9 @@ namespace Burs
             if (use_rotation)
             {
                 double x, y, z;
-                f_tgt.M.GetEulerZYX(z, y, x);
+                // (p_near.M.Inverse() * f_tgt.M).GetEulerZYX(z, y, x);
+                (f_tgt.M * p_near.M.Inverse()).GetEulerZYX(z, y, x);
+                // (f_tgt.M).GetEulerZYX(z, y, x);
                 delta_frame(3) = x;
                 delta_frame(4) = y;
                 delta_frame(5) = z;
