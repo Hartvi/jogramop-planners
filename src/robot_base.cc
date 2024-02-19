@@ -354,8 +354,8 @@ namespace Burs
     RobotBase::JPlus(const RS &state)
     {
         MatrixXd pinv = state.jac.data.completeOrthogonalDecomposition().pseudoInverse();
-        std::cout << "pinv: \n"
-                  << pinv << "\n";
+        // std::cout << "pinv: \n"
+        //           << pinv << "\n";
         // exit(1);
         return pinv;
     }
