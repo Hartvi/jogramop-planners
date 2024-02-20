@@ -90,6 +90,8 @@ int main(int argc, char **argv)
     int render_tree;
     double preheat_ratio;
     int useRotation;
+    double rotationDistRatio;
+    int biasCalculationType;
     int preheat_type;
 
     {
@@ -117,9 +119,12 @@ int main(int argc, char **argv)
         o.addOption(Option<double>("goal_bias_prob", &goal_bias_probability, "probability to turn to goal when close to goal"));
         o.addOption(Option<double>("q_resolution", &q_resolution, "resolution of individual steps in rbt"));
 
-        o.addOption(Option<int>("use_rot", &useRotation, 0, "rotation bias threshold when to start using it (mm*deg)"));
+        o.addOption(Option<int>("use_rot", &useRotation, 0, "rotation bias threshold when to start using it (mm+deg)"));
+        o.addOption(Option<double>("rot_ratio", &rotationDistRatio, 0.5, "ratio of rotation in distance metric (mm+deg)"));
+        o.addOption(Option<int>("bias_calculation", &biasCalculationType, 0, "type of J+ bias calculation 0 - pseudoinverse; 1 - Twist"));
+
         o.addOption(Option<double>("preheat_ratio", &preheat_ratio, 0.1, "ratio of iterations to use for preheating"));
-        o.addOption(Option<int>("preheat_type", &preheat_type, 0, "type of preheating (0,1) so far"));
+        o.addOption(Option<int>("preheat_type", &preheat_type, 0, "type of preheating options 0, 1 so far"));
         o.addOption(Option<char *>("target_prefix", &targetPrefixFile, "file in which to save measurements, separated by keywords"));
 
         o.addOption(Option<int>("render", &renderVideo, "whether to render video"));
@@ -131,6 +136,8 @@ int main(int argc, char **argv)
         o.addOption(Option<int>("seed", &seed, -1, "random seed or time (if seed = -1)")); // default value is -1 -> seed is from time
 
         o.addOption(Option<int>("render_tree", &render_tree, 0, "whether to render the tree")); // default value is 0
+        // int super_duper_long_argument;
+        // o.addOption(Option<int>("super_duper_long_argument_to_crash_this", &super_duper_long_argument, "super duper long argument that should normally work")); // default value is 0
 
         if (!o.parse(argc, argv))
         {
@@ -207,8 +214,12 @@ int main(int argc, char **argv)
         params.visualize_tree = render_tree;
         params.seed = usedSeed;
         params.preheat_ratio = preheat_ratio;
-        params.use_rotation = useRotation;
         params.preheat_type = preheat_type;
+
+        params.use_rotation = useRotation;
+        params.rotation_dist_ratio = rotationDistRatio;
+        params.bias_calculation_type = biasCalculationType;
+
         // END COMMON SETTINGS ------------------------------------------------------------------------------------------------------------
 
         { // output .txt file with results also before the planner runs, so in the case of planner failure/killing the program, there

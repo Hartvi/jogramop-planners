@@ -659,7 +659,7 @@ namespace Burs
         {
             auto &tgt = tgts[i];
             auto &goal = tgt.frame;
-            auto [dist_to_goal, f] = this->BasicDistanceMetric(ee, goal);
+            auto [dist_to_goal, f] = this->BasicDistanceMetric(ee, goal, planner_parameters.rotation_dist_ratio);
             // double dist_to_goal = (goal.p - ee.p).Norm();
             tgt.best_dist = dist_to_goal;
             tgt.best_state = start_idx;
@@ -679,7 +679,7 @@ namespace Burs
         {
             auto &tgt = tgts[i];
             auto &goal = tgt.frame;
-            auto [dist_to_goal, f] = this->BasicDistanceMetric(ee, goal);
+            auto [dist_to_goal, f] = this->BasicDistanceMetric(ee, goal, planner_parameters.rotation_dist_ratio);
             // std::cout << "dist: " << dist_to_goal << "\n";
             // double dist_to_goal = (goal.p - ee.p).Norm();
             if (dist_to_goal < tgt.best_dist)
@@ -744,7 +744,7 @@ namespace Burs
     }
 
     std::pair<double, KDL::Frame>
-    RbtPlanner::BasicDistanceMetric(const KDL::Frame &ee, const KDL::Frame &tgt) const
+    RbtPlanner::BasicDistanceMetric(const KDL::Frame &ee, const KDL::Frame &tgt, const double &angle_ratio) const
     {
         // units [meters]
         double dist = (ee.p - tgt.p).Norm() * 1000;
@@ -786,7 +786,8 @@ namespace Burs
         // 2 * cos + 1 on diagonal *always*
         // units: [degrees / 1000] to make it equivalent to [mm * deg]
         KDL::Frame f(r, tgt.p);
-        return {dist + angle_dist, f};
+        // std::cout << "ratio: " << angle_ratio << " metric: " << dist << " angular: " << angle_dist << " total: " << (1.0 - angle_ratio) * dist + angle_ratio * angle_dist << "\n";
+        return {(1.0 - angle_ratio) * dist + angle_ratio * angle_dist, f};
     }
 
     std::pair<bool, KDL::Rotation>
