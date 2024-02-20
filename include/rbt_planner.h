@@ -71,7 +71,7 @@ namespace Burs
         TestCollisionVsDistanceTime(const VectorXd &q_start, const RbtParameters &plan_parameters, PlanningResult &planning_result);
 
         std::pair<double, KDL::Frame>
-        BasicDistanceMetric(const KDL::Frame &ee, const KDL::Frame &tgt) const;
+        BasicDistanceMetric(const KDL::Frame &ee, const KDL::Frame &tgt, const double &angle_ratio) const;
 
         std::pair<bool, KDL::Rotation>
         GetClosestSymmetricGrasp(const KDL::Rotation &rotMatGrasp, const KDL::Rotation &rotMatEE) const;

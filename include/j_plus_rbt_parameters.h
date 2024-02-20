@@ -16,7 +16,12 @@ namespace Burs
     public:
         int preheat_type;
         bool use_platform = true;
+
         int use_rotation;
+        double rotation_dist_ratio;
+
+        int bias_calculation_type;
+
         double preheat_ratio;
         double p_close_enough;
         double probability_to_steer_to_target;

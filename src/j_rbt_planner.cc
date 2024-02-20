@@ -675,7 +675,7 @@ namespace Burs
                 // Move `closest_dist` along that direction
                 // Can be farther that the goal, but that's fine because we interpolate using `Densify`
                 double metric_dist = (tgt_frame.p - ee_frame.p).Norm();
-                auto [d, f_tgt] = this->BasicDistanceMetric(ee_frame, tgt_frame);
+                auto [d, f_tgt] = this->BasicDistanceMetric(ee_frame, tgt_frame, planner_parameters.rotation_dist_ratio);
                 delta_p = d;
                 bool use_rotation = (delta_p <= planner_parameters.use_rotation);
                 std::cout << "delta p: " << delta_p << " rotation threshold: " << planner_parameters.use_rotation << " userot: " << use_rotation << "\n";
