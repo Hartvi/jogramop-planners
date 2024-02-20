@@ -1,9 +1,9 @@
 ./build/burs_of_free_space test \
--grasp /home/hartvi/Documents/CVUT/diploma_thesis/burs_of_free_space/jogramop/scenarios/002/export/grasps.csv \
+-grasp /home/hartvi/Documents/CVUT/diploma_thesis/burs_of_free_space/jogramop/scenarios/004/export/grasps.csv \
 -urdf /home/hartvi/Documents/CVUT/diploma_thesis/burs_of_free_space/jogramop/robots/franka_panda/mobile_panda_fingersSmallMesh.urdf \
--obstacle /home/hartvi/Documents/CVUT/diploma_thesis/burs_of_free_space/jogramop/scenarios/002/export/obstacles.obj \
--start_config /home/hartvi/Documents/CVUT/diploma_thesis/burs_of_free_space/jogramop/scenarios/002/export/robot_start_conf.csv \
--planner 8 \
+-obstacle /home/hartvi/Documents/CVUT/diploma_thesis/burs_of_free_space/jogramop/scenarios/004/export/obstacles.obj \
+-start_config /home/hartvi/Documents/CVUT/diploma_thesis/burs_of_free_space/jogramop/scenarios/004/export/robot_start_conf.csv \
+-planner 1 \
 -max_iters 10000 \
 -d_crit 0.1 \
 -delta_q 3.1415 \
@@ -11,7 +11,7 @@
 -num_spikes 7 \
 -p_close_enough 50.0 \
 -prob_steer 0.01 \
--q_resolution 0.1 \
+-q_resolution 0.2 \
 -seed -1 \
 -use_rot 100 \
 -rot_ratio 0.5 \
@@ -19,7 +19,7 @@
 -groundLevel 0.0 \
 -minColSegIdx 6 \
 -target_prefix /home/hartvi/Documents/CVUT/diploma_thesis/burs_of_free_space/lel \
--target_configs /home/hartvi/Documents/CVUT/diploma_thesis/burs_of_free_space/jogramop/scenarios/002/export/grasp_IK_solutions.csv \
+-target_configs /home/hartvi/Documents/CVUT/diploma_thesis/burs_of_free_space/jogramop/scenarios/004/export/grasp_IK_solutions.csv \
 -ik_index 0 \
 -render 0 \
 -vis_script /home/hartvi/Documents/CVUT/diploma_thesis/burs_of_free_space/scripts/animate_scene.py \

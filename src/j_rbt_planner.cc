@@ -621,12 +621,14 @@ namespace Burs
         return grasps;
     }
 
+    // NOT IN USE
     AlgorithmState
     JRbtPlanner::ExtendToGoalRbt(std::shared_ptr<BurTree> tree, JPlusRbtParameters &planner_parameters) const
     {
         /* OUTLINE:
         1. Get best grasp's best configuration
         2. From that best configuration expand towards the grasp and some random grasps
+        4. End if gone closer than d_crit to obstacle or close enough to goal
         3. Go to 1.
         */
         double delta_p = 1e14;
@@ -678,7 +680,7 @@ namespace Burs
                 auto [d, f_tgt] = this->BasicDistanceMetric(ee_frame, tgt_frame, planner_parameters.rotation_dist_ratio);
                 delta_p = d;
                 bool use_rotation = (delta_p <= planner_parameters.use_rotation);
-                std::cout << "delta p: " << delta_p << " rotation threshold: " << planner_parameters.use_rotation << " userot: " << use_rotation << "\n";
+                // std::cout << "delta p: " << delta_p << " rotation threshold: " << planner_parameters.use_rotation << " userot: " << use_rotation << "\n";
 
                 // Max dist => epsilon_q
                 double dist_to_move = std::min(metric_dist, closest_dist);
@@ -693,7 +695,7 @@ namespace Burs
             std::vector<RS> target_states = this->NewStates(target_configs);
 
             // Iterate max `closest_dist` to `target_config`
-            std::cout << "dist to move: " << distance_to_move << " res: " << planner_parameters.q_resolution << "\n";
+            // std::cout << "dist to move: " << distance_to_move << " res: " << planner_parameters.q_resolution << "\n";
             std::vector<std::vector<RS>> bur_endpoints = this->GetEndpointsInterstates(*best_state, target_states, distance_to_move, planner_parameters.q_resolution);
 
             // If closest obstacle was too close => check collisions for the RRT step
