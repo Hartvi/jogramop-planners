@@ -332,6 +332,11 @@ int main(int argc, char **argv)
             // std::cout << "TARGET IK IDX: " << ik_index_in_target_configs << "\n";
             // std::cout << "selected goal: " << goals[ik_index_in_target_configs].transpose() << "\n";
             // exit(1);
+            if (goals.size() == 0)
+            {
+                std::cout << "NO INVERSE KINEMATICS SOLUTIONS PRESENT\n\n";
+                exit(1);
+            }
             path = jprbt->RbtConnectDenseBurs(start_config, goals[ik_index_in_target_configs], params, planning_result);
             getTime(&t2);
             planning_result.time_taken = getTime(t1, t2);
@@ -351,8 +356,11 @@ int main(int argc, char **argv)
 
             struct rusage t1, t2;
             getTime(&t1);
-            // auto path = jprbt->RbtConnect(start_config, goals[0], params);
-            // auto path = jprbt->RRTMultiGoal(start_config, goals, params, planning_result, max_iter_for_all_ik);
+            if (goals.size() == 0)
+            {
+                std::cout << "NO INVERSE KINEMATICS SOLUTIONS PRESENT\n\n";
+                exit(1);
+            }
             path = jprbt->RRTConnect(start_config, goals[ik_index_in_target_configs], params, planning_result);
             getTime(&t2);
             planning_result.time_taken = getTime(t1, t2);
@@ -384,6 +392,11 @@ int main(int argc, char **argv)
 
             std::vector<Eigen::VectorXd> goals = RobotBase::parseCSVToVectors(targetConfigsFile);
 
+            if (goals.size() == 0)
+            {
+                std::cout << "NO INVERSE KINEMATICS SOLUTIONS PRESENT\n\n";
+                exit(1);
+            }
             struct rusage t1, t2;
             getTime(&t1);
             path = jprbt->RbtConnectDenseBurs(start_config, goals[ik_index_in_target_configs], params, planning_result);

@@ -246,7 +246,7 @@ namespace Burs
             // Max dist => epsilon_q
             double dist_to_move = std::min(metric_dist, planner_parameters.epsilon_q);
             RS new_state;
-            if (planner_parameters.bias_calculation_type == 0)
+            if (planner_parameters.bias_calculation_type == 1)
             {
                 // /*
                 KDL::Twist twist = this->GetTwist(f_tgt, p_near, dist_to_move, use_rotation);
@@ -297,7 +297,7 @@ namespace Burs
             // }
             near_state = this->GetEndpoints(near_state, {new_state}, dist_to_move)[0];
 
-            if (this->IsColliding(near_state) || !this->InBounds(near_state.config) || abs(delta_p_old - delta_p) < 0.001)
+            if (this->IsColliding(near_state) || !this->InBounds(near_state.config))
             {
                 return AlgorithmState::Trapped;
             }
