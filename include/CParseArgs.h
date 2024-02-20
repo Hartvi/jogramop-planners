@@ -62,7 +62,7 @@ struct Option {
 
     void parseVal(char *v);
 	void setShortName() {
-		char ss[20];
+		char ss[100];
 		snprintf(ss,sizeof(ss),"-%s",name.c_str());
 		sname = std::string(ss);
 	}
