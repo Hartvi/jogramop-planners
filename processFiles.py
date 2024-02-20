@@ -15,7 +15,7 @@ prefix = sys.argv[2]
 maxReportedTime = float(sys.argv[3])
  
 
-DTG = 0.07
+DTG = 70
 
 
 
@@ -159,7 +159,8 @@ for scenario in results:
 
         line = plt.plot( xvals, yvals, label="{}".format(planner) )
     plt.legend()
-    outfile = "{}-scenario-{}.png".format(prefix, scenario)
+    scenario = int(scenario)
+    outfile = "{}-scenario-{:02d}.png".format(prefix, scenario)
     plt.savefig("{}.png".format(outfile))
 
     def val(x):
@@ -185,7 +186,7 @@ for scenario in results:
         line = plt.plot( xvals, yvals, label="{}".format(planner) )
     plt.legend()
 
-    outfile = "{}-scenario-{}-best.png".format(prefix, scenario)
+    outfile = "{}-scenario-{:02d}-best.png".format(prefix, scenario)
     plt.savefig("{}.png".format(outfile))
 
 
@@ -204,7 +205,7 @@ for scenario in results:
         line = plt.plot( xvals, yvals, label="{}".format(planner) )
     plt.legend()
 
-    outfile = "{}-scenario-{}-worst.png".format(prefix, scenario)
+    outfile = "{}-scenario-{:02d}-worst.png".format(prefix, scenario)
     plt.savefig("{}.png".format(outfile))
 
 
