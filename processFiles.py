@@ -17,6 +17,15 @@ maxReportedTime = float(sys.argv[3])
 
 DTG = 70
 
+def val(x):
+    return x[1][-1][1]
+
+def val2(x):
+    return areaUnderCurve(x[1], maxReportedTime)
+
+def val3(x):
+    return rankSRCurve(x[1])
+
 
 
 def getSRCurve(values, distances):
@@ -64,9 +73,9 @@ def rankSRCurve(srCurve):
 
 
 results = {}
-
-iks = []
-
+allScenarios = {}
+allPlanners = {}
+allIKS = {}
 
 for plannerDir in glob.glob("{}/*/*".format(resultDir)):
     res = re.search(r"{}\/(.*)\/(.*)".format(resultDir), plannerDir)
@@ -78,8 +87,6 @@ for plannerDir in glob.glob("{}/*/*".format(resultDir)):
 
     files = glob.glob("{}/out-*-*.txt".format(plannerDir))
     filesAll = glob.glob("{}/out-*-*.stdout".format(plannerDir))
-#    allLines = []
-    allMeasurements = []
     for fn in files:
         res = re.search(r"out-(\d+)-(\d+)\.txt", fn)
         if len(res.groups()) != 2:
@@ -87,10 +94,16 @@ for plannerDir in glob.glob("{}/*/*".format(resultDir)):
             quit()
         ikindex = int(res.group(1))
         trial = int(res.group(2))
-        iks.append( ikindex )
+        allScenarios[scenarioNum] = 1
+        allPlanners[plannerName] = 1
+        allIKS[ikindex] = 1
+
+        key = (scenarioNum, plannerName, ikindex)
+
+        if not key in results:
+            results[key] = []
         with open(fn, "rt") as f:
             for line in f:
-                
                 if line.find("{") != -1 and line.find("}") != -1:
                     y = json.loads(line)
                     if y["time"] < 1e-3 or y["treesize"] == 0:
@@ -100,181 +113,104 @@ for plannerDir in glob.glob("{}/*/*".format(resultDir)):
                     print("Loading ", line, "->", y)
                     y["ikindex"] = ikindex
                     y["trial"] = trial
-                    allMeasurements += [y]
-
-    if len(allMeasurements) == 0:
-        continue
-    print("Loaded ", len(allMeasurements), "lines from", len(files), "files in", plannerDir)
-    #each measurement is [finished, distanceToGoal, time ,treeSize ]
-    #mes = [ list(map(float, line.split() ) ) for line in allLines ]
-    if not scenarioNum in results:
-        results[ scenarioNum ] = {}
-    results[scenarioNum][plannerName] = allMeasurements
+                    results[key] += [y]
 
 
-print("Largest tested ikindex ", max(iks) )
+for key in results:
+    scenarioNum, plannerName, ikindex = key
 
-tableData = {}
-usedPlanners = {}
-
-for scenario in results:
     plt.clf()
     plt.xlabel("time [s]")
     plt.ylabel("sucess rate")
     srCurves = []
 
-    tableData[scenario] = {}
+    data = results[key]
+    distances = [ item["dtg"] for item in data ]
+    times = [ item["time"]  for item in data ]
+    srCurve = getSRCurve( times, distances )
 
-    for planner in results[scenario]:
-        usedPlanners[planner] = 1
+    xvals = [ item[0] for item in srCurve if item[0] < maxReportedTime ]
+    yvals = [ item[1] for item in srCurve if item[0] < maxReportedTime ]
 
-        tableData[scenario][planner] = {}
-        tableData[scenario][planner]["timeavg"] = None
-        tableData[scenario][planner]["timedev"] = None
-        tableData[scenario][planner]["sucess"] = None
+    if len(times) > 0:
+        avgTime = sum(times) /len(times)
+        stdDev = sum( [ (i-avgTime)**2 for i in times ] ) / len(times)
+        stdDev = stdDev**(0.5)
 
-
-        data = results[scenario][planner]  #data is list of hash 
-        distances = [ item["dtg"] for item in data ]
-        times = [ item["time"]  for item in data ]
-        srCurve = getSRCurve( times, distances )
-
-        xvals = [ item[0] for item in srCurve if item[0] < maxReportedTime ]
-        yvals = [ item[1] for item in srCurve if item[0] < maxReportedTime ]
-
-        if len(times) > 0:
-            avgTime = sum(times) /len(times)
-            stdDev = sum( [ (i-avgTime)**2 for i in times ] ) / len(times)
-            stdDev = stdDev**(0.5)
-            tableData[scenario][planner]["timeavg"] = avgTime
-            tableData[scenario][planner]["timedev"] = stdDev
-
-        if len(distances) > 0:
-            goodTrials = [ 1 for item in distances if item <= DTG ]
-            sr = len(goodTrials ) / len(distances)
-            tableData[scenario][planner]["sucess"] = 100*sr
+    if len(distances) > 0:
+        goodTrials = [ 1 for item in distances if item <= DTG ]
+        sr = len(goodTrials ) / len(distances)
             
-        if len(srCurve) != 0:
-            srCurves.append([planner, srCurve])
+    if len(srCurve) != 0:
+        srCurves.append([plannerName, srCurve])
 
-        line = plt.plot( xvals, yvals, label="{}".format(planner) )
+    line = plt.plot( xvals, yvals, label="{}".format(plannerName) )
+
+        
     plt.legend()
-    scenario = int(scenario)
-    outfile = "{}-scenario-{:02d}.png".format(prefix, scenario)
-    plt.savefig("{}.png".format(outfile))
-
-    def val(x):
-        return x[1][-1][1]
-
-    def val2(x):
-        return areaUnderCurve(x[1], maxReportedTime)
-
-    def val3(x):
-        return rankSRCurve(x[1])
-
-    srCurves.sort( key=val3, reverse=True)
-    print("num curves", len(srCurves))
-    plt.clf()
-
-    plt.xlabel("time [s]")
-    plt.ylabel("sucess rate")
-    for i in range(min(5, len(srCurves))):
-        srCurve = srCurves[i][1]
-        planner = srCurves[i][0]
-        xvals = [ item[0] for item in srCurve ]
-        yvals = [ item[1] for item in srCurve ]
-        line = plt.plot( xvals, yvals, label="{}".format(planner) )
-    plt.legend()
-
-    outfile = "{}-scenario-{:02d}-best.png".format(prefix, scenario)
+    scenario = int(scenarioNum)
+    ikindex = int(ikindex)
+    outfile = "{}-scenario{:02d}-ik{:02d}-{}.png".format(prefix, scenario, ikindex, plannerName)
     plt.savefig("{}.png".format(outfile))
 
 
-    #plot worse ones
-    srCurves.sort( key=val3, reverse=False)
-    print("num curves", len(srCurves))
-    plt.clf()
+def summary(key):
+    if not key in results:
+        print("Cannot find key", key)
+        quit()
+    data = results[key]
+    distances = [ item["dtg"] for item in data ]
+    times = [ item["time"]  for item in data ]
+    srCurve = getSRCurve( times, distances )
 
-    plt.xlabel("time [s]")
-    plt.ylabel("sucess rate")
-    for i in range(min(20, len(srCurves))):
-        srCurve = srCurves[i][1]
-        planner = srCurves[i][0]
-        xvals = [ item[0] for item in srCurve ]
-        yvals = [ item[1] for item in srCurve ]
-        line = plt.plot( xvals, yvals, label="{}".format(planner) )
-    plt.legend()
+    xvals = [ item[0] for item in srCurve if item[0] < maxReportedTime ]
+    yvals = [ item[1] for item in srCurve if item[0] < maxReportedTime ]
+    avgTime = None
+    stdDev = None
+    sr = None
+    if len(times) > 0:
+        avgTime = sum(times) /len(times)
+        stdDev = sum( [ (i-avgTime)**2 for i in times ] ) / len(times)
+        stdDev = stdDev**(0.5)
 
-    outfile = "{}-scenario-{:02d}-worst.png".format(prefix, scenario)
-    plt.savefig("{}.png".format(outfile))
+    if len(distances) > 0:
+        goodTrials = [ 1 for item in distances if item <= DTG ]
+        sr = 100*len(goodTrials ) / len(distances)
+                    
+    return avgTime, stdDev, sr
 
 
 
-#making table
+
 fot = open("table.tex", "wt")
-fot.write("\\begin{tabular}{llccc}\n")
+fot.write("\\begin{tabular}{lc cccc}\n")
 fot.write("\\toprule\n")
-fot.write("Scenario & Planner & Runtime avg & Runtime dev & Sucess \\\\ \n ")
-for scenario in results:
-    fot.write("\\midrule\n")
-    fot.write("\\multirow{" + str(len(usedPlanners)) + "}{*}{" + str(scenario) + "} \n ")
-    for planner in results[scenario]:
+fot.write(" scene & jrrt & \\multicolumn{4}{c}{ikrrt} \\\\ \n")
+fot.write("       &      & 0 & 1 & 2 & 3 \\\\ \n")
 
-        timeavg = tableData[scenario][planner]["timeavg"]
-        timedev = tableData[scenario][planner]["timedev"] 
-        sucess = tableData[scenario][planner]["sucess"] 
+scenes = list(allScenarios.keys())
+scenes.sort()
+for scene in scenes:
+    fot.write("\\\\\n \\midrule ")
+    fot.write("{\\b " + str(scene) + "}  ")
+    
+    key = (scene, "jrrt", 0)
+    tavg,timedev,sr = summary(key)
 
-        timeavg = "{:.2f}".format( timeavg ) if timeavg != None else "N/A"
-        timedev = "{:.2f}".format( timedev ) if timeavg != None else "N/A"
-        sucess = "{:.2f}".format( sucess ) if timeavg != None else "N/A"
+    fot.write(" & {:.2f}/{:.2f}/{:.2f}  ".format(tavg,timedev, sr))
 
-
-        fot.write(" & {} & {} & {} & {}  \\\\ \n".format( planner, timeavg, timedev, sucess) )
-fot.write("\\end{tabular}\n\n")
-fot.close()
-
-
-"""
-for scenario in results:
-    break
-    plt.clf()
-    plt.xlabel("ikindex [-]")
-    plt.ylabel("sr")
-
-
-    for planner in results[scenario]:
-        if planner == "ikrrt" or planner=="ikrbt":
-            pass
+    for ik in range(4):
+        key = (scene, "ikrrt", ik)
+        if key in results:
+            tavg,timedev,sr = summary(key)
+            fot.write(" & {:.2f}/{:.2f}/{:.2f}  ".format(tavg,timedev, sr))
         else:
-            continue
-        pts = []
-        for ikindex in range(max(iks)):
-            measurement = results[scenario][planner]
-            print("measurement", measurement)
+            fot.write(" & NA ")
+    fot.write("\\\\ \n")
 
-            times = [ measurement[i][2] for i in range(len(measurement)) if measurement[i][-2] == ikindex ]
-            distances = [ measurement[i][1] for i in range(len(measurement)) if measurement[i][-2] == ikindex ]
-            print("planner", planner, ikindex, times, distances)
-            srCurve = getSRCurve( times, distances )
-            if len(srCurve) != 0:
-                maxSR = srCurve[-1][1]
-                pts.append([ ikindex, maxSR])
-            else:
-                pts.append([ ikindex, 0 ] )
-
-        xvals = [ item[0] for item in pts ]
-        yvals = [ item[1] for item in pts ]
-        line = plt.plot( xvals, yvals, label="{}".format(planner) )
-    plt.legend()
-
-    outfile = "{}-scenarioIK-SR-{}.png".format(prefix, scenario)
-
-    plt.savefig("{}.png".format(outfile))
-
-"""
-
-
-
+fot.write("\n\\bottomrule\n")
+fot.write("\\end{tabular}\n")
+fot.close()
 
 
 
