@@ -155,6 +155,9 @@ for key in results:
 
 
 def summary(key):
+    if not key in results:
+        print("Cannot find key", key)
+        quit()
     data = results[key]
     distances = [ item["dtg"] for item in data ]
     times = [ item["time"]  for item in data ]
@@ -172,26 +175,42 @@ def summary(key):
 
     if len(distances) > 0:
         goodTrials = [ 1 for item in distances if item <= DTG ]
-        sr = len(goodTrials ) / len(distances)
-                
+        sr = 100*len(goodTrials ) / len(distances)
+                    
     return avgTime, stdDev, sr
 
 
 
 
-fot = open("table.tex", "wo")
-fot.write("\\begin{tabular}{lccccc}\n")
+fot = open("table.tex", "wt")
+fot.write("\\begin{tabular}{lc cccc}\n")
 fot.write("\\toprule\n")
-fot.write(" scene & jrrt & \\multicol{4}{c}{ikrrt} \\\\ \n")
+fot.write(" scene & jrrt & \\multicolumn{4}{c}{ikrrt} \\\\ \n")
+fot.write("       &      & 0 & 1 & 2 & 3 \\\\ \n")
 
 scenes = list(allScenarios.keys())
 scenes.sort()
 for scene in scenes:
-    fot.write("{\b " + str(scene) + "} & ")
+    fot.write("\\\\\n \\midrule ")
+    fot.write("{\\b " + str(scene) + "}  ")
     
     key = (scene, "jrrt", 0)
-    if not key in results:
-        print("Cannot find key", key)
-        quit()
+    tavg,timedev,sr = summary(key)
+
+    fot.write(" & {:.2f}/{:.2f}/{:.2f}  ".format(tavg,timedev, sr))
+
+    for ik in range(4):
+        key = (scene, "ikrrt", ik)
+        if key in results:
+            tavg,timedev,sr = summary(key)
+            fot.write(" & {:.2f}/{:.2f}/{:.2f}  ".format(tavg,timedev, sr))
+        else:
+            fot.write(" & NA ")
+    fot.write("\\\\ \n")
+
+fot.write("\n\\bottomrule\n")
+fot.write("\\end{tabular}\n")
+fot.close()
+
 
 
