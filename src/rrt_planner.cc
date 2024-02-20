@@ -70,7 +70,7 @@ namespace Burs
                 int start_closest = t_start->Nearest(q_rand.data());
                 int goal_closest = t_goal->Nearest(q_rand.data());
 
-                planning_result.num_iterations = plan_parameters.max_iters;
+                planning_result.num_iterations = k;
                 planning_result.tree_size = t_start->GetNumberOfNodes() + t_goal->GetNumberOfNodes();
                 planning_result.success = true;
                 planning_result.distance_to_goal = 0.0;
