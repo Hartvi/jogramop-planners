@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import sys, os
+import sys, os, glob
 
 #generate all-cmds.sh that contains individual commands to run the experiments
 #you can run them: parallel < all-cmds.sh
@@ -15,12 +15,8 @@ def loadGrasps(filename):
 outputDir = "results"
 
 planners = {}
-#planners["rbt"] = "-planner 0 " #blind RTB: no goal bias, no goal-steer
-#planners["rrt"] = "-planner 2 -d_crit 100000 "  #rrt, no goal bias
 
-#planners["jrbt"] = "-planner 1 " #burs rrt + j+ expand
 planners["jrrt"] = "-planner 3 -d_crit 100000 " #rrt, alternating random expansion + goal bias 
-#planners["ikrbt"] = "-planner 4 "   #goal is IK solution, goes to only single goal
 planners["ikrrt"] = "-planner 5 -d_crit 100000 "  #goal is IK solution, goes to only single goal
 #planners["jrbtNew"] = "-planner 8 -epsilon_q 0.1 -preheat_ratio 0.0 " #burs rrt + j+ expand
 
@@ -42,19 +38,23 @@ goalBiasProbability = 0.7 #goal bias neer the goal
 #urdfFile = "jogramop/robots/franka_panda/mobile_panda_fingers.urdf"
 urdfFile = "jogramop/robots/franka_panda/mobile_panda_fingersSmallMesh.urdf"
 seed = 1
-"""
-for sprob in [0.05, 0.1, 0.2, 0.3 ]:
-    for gbr in [0.1, 0.2, 0.3, 0.5]:
-        for gbprob in [0.1, 0.2, 0.7, 0.9 ]:
-            planners["jrbt-steer{}-gbr{}-gprob{}".format(sprob,gbr,gbprob)] = " -planner 1 -goal_bias_radius {} -prob_steer {} -goal_bias_prob {} ".format(gbr,sprob,gbprob) 
-"""
+
+
+
 # urdfFile = "/home/hartvi/Documents/CVUT/diploma_thesis/burs_of_free_space/jogramop/robots/franka_panda/mobile_panda_fingersSmallMesh.urdf"
 seed = -1
 preheat_ratio=0.0
 
+nameScenarios = {}
+for scene in glob.glob("jogramop/scenarios/*"):
+    scenename = scene.replace("jogramop/scenarios/", "")
+    nameScenarios[ scenename ] = True
+print("nameScenarios", nameScenarios)
+nameScenarios = list(nameScenarios.keys())
+nameScenarios.sort()
 
-for scenario in range(1,12+1):
-    scenarioDir = "jogramop/scenarios/{:03d}/export/".format(scenario)
+for scenario in nameScenarios:
+    scenarioDir = "jogramop/scenarios/{}/export/".format(scenario)
     obstacleFile = "{}/obstacles.obj".format(scenarioDir)
     startFile = "{}/robot_start_conf.csv".format(scenarioDir)
     ikFile = "{}/grasp_IK_solutions.csv".format(scenarioDir)
@@ -71,6 +71,8 @@ for scenario in range(1,12+1):
                 graspConfigurations = [1]
 
             for ikindex in range(len(graspConfigurations)):
+                if ikindex > 0 and planner == "jrrt":
+                    break;
 
                 outFile = "{}/out-{:03d}-{:03d}".format(resultsDir,ikindex,iteration)
 
@@ -95,8 +97,9 @@ for scenario in range(1,12+1):
                 cmd += " -preheat_type 0 "
                 cmd += " -use_rot 100 "
                 cmd += planners[ planner ]  #when some cmdline option is repearing, the last one is accepted, so this line must be last in cmd
-                cmd += "-target_configs {} ".format(ikFile)
-                cmd += "-ik_index {} ".format(ikindex)
+                cmd += " -target_configs {} ".format(ikFile)
+                cmd += " -bias_calculation 0 "
+                cmd += " -ik_index {} ".format(ikindex)
                 seed += 1
                 fout.write("{} > {}.stdout \n".format( cmd, outFile ) )
 

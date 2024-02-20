@@ -148,15 +148,14 @@ for key in results:
 
         
     plt.legend()
-    scenario = int(scenarioNum)
     ikindex = int(ikindex)
-    outfile = "{}-scenario{:02d}-ik{:02d}-{}.png".format(prefix, scenario, ikindex, plannerName)
+    outfile = "{}-scenario{}-ik{:02d}-{}.png".format(prefix, scenarioNum, ikindex, plannerName)
     plt.savefig("{}.png".format(outfile))
 
 
 def summary(key):
     if not key in results:
-        print("Cannot find key", key)
+        print("Cannot find key!", key)
         quit()
     data = results[key]
     distances = [ item["dtg"] for item in data ]
@@ -180,32 +179,37 @@ def summary(key):
     return avgTime, stdDev, sr
 
 
-
+maxIKreport = 6
 
 fot = open("table.tex", "wt")
-fot.write("\\begin{tabular}{lc cccc}\n")
+fot.write("\\begin{tabular}{lc" + "c"*maxIKreport + "}\n")
 fot.write("\\toprule\n")
-fot.write(" scene & jrrt & \\multicolumn{4}{c}{ikrrt} \\\\ \n")
-fot.write("       &      & 0 & 1 & 2 & 3 \\\\ \n")
+fot.write(" {\\bf Scenario } & {\\bf JRRT } & \\multicolumn{4}{c}{{\\bf IKRRT }} \\\\ \n")
+fot.write("       &      ");
+for i in range(maxIKreport):
+    fot.write(" & {} ".format(i))
+fot.write("\\\\ \n")    
 
 scenes = list(allScenarios.keys())
 scenes.sort()
 for scene in scenes:
     fot.write("\\\\\n \\midrule ")
-    fot.write("{\\b " + str(scene) + "}  ")
+    fot.write("{\\bf " + str(scene) + "}  ")
     
     key = (scene, "jrrt", 0)
+    if not key in results:
+        continue
     tavg,timedev,sr = summary(key)
 
-    fot.write(" & {:.2f}/{:.2f}/{:.2f}  ".format(tavg,timedev, sr))
+    fot.write(" & ${:.2f}/{:.2f} | {:.2f}\%$  ".format(tavg,timedev, sr))
 
-    for ik in range(4):
+    for ik in range(maxIKreport):
         key = (scene, "ikrrt", ik)
         if key in results:
             tavg,timedev,sr = summary(key)
-            fot.write(" & {:.2f}/{:.2f}/{:.2f}  ".format(tavg,timedev, sr))
+            fot.write(" & ${:.2f}/{:.2f} | {:.2f}\%$  ".format(tavg,timedev, sr))
         else:
-            fot.write(" & NA ")
+            fot.write(" & --- ")
     fot.write("\\\\ \n")
 
 fot.write("\n\\bottomrule\n")
