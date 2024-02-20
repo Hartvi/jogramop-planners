@@ -297,7 +297,7 @@ namespace Burs
             // }
             near_state = this->GetEndpoints(near_state, {new_state}, dist_to_move)[0];
 
-            if (this->IsColliding(near_state) || !this->InBounds(near_state.config) || (delta_p - delta_p_old) < 0.001)
+            if (this->IsColliding(near_state) || !this->InBounds(near_state.config) || abs(delta_p_old - delta_p) < 0.001)
             {
                 return AlgorithmState::Trapped;
             }
