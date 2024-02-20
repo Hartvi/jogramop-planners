@@ -3,7 +3,7 @@
 ## Installation
 
 1. Clone this repository into a directory
-2. Clone (PQP)[https://github.com/GammaUNC/PQP] into the same directory
+2. Clone [PQP](https://github.com/GammaUNC/PQP) into the same directory
   - In CMakeLists.txt: `add_subdirectory(../PQP PQP_build)` 
   - Or move it where you like and change the CMakeLists as well
 3. Install the following libraries `urdfdom` and `KDL`
