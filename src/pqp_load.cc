@@ -114,11 +114,6 @@ namespace pqploader
         auto &attrib = reader.GetAttrib();
         auto &shapes = reader.GetShapes();
 
-        // assume only one shape per model
-        // if (shapes.size() > 1)
-        // {
-        //     throw std::runtime_error("[ERROR] TinyObjReader: OBJ must have only one shape in function `tiny_OBJ_to_PQP_model`, currently has: " + std::to_string(shapes.size()));
-        // }
         auto &materials = reader.GetMaterials();
 
         // Loop over shapes

@@ -76,18 +76,6 @@ namespace RtModels
         return os.str();
     }
 
-    // RtModel::RtModel(std::shared_ptr<PQP_Model> model, std::string filePath)
-    //     : pqpModel(model), // Set the external PQP_Model
-    //       filePath(filePath)
-    // {
-    //     if (filePath.empty())
-    //     {
-    //         throw std::invalid_argument("filePath cannot be empty");
-    //     }
-    //     this->SetRotation(Matrix<PQP_REAL, 3, 3>::Identity()); // Initialized as identity matrix
-    //     this->SetTranslation(Matrix<PQP_REAL, 3, 1>::Zero());  // Initialized as zero vector
-    // }
-
     PQP_REAL(*RtModel::getR())
     [3]
     {
@@ -124,11 +112,8 @@ namespace RtModels
     void
     RtModel::SetTranslation(Eigen::Vector3d tr)
     {
-        // std::cout << "INSIDE SET TRANSLATE: tr: " << tr.transpose() << std::endl;
         this->t = tr;
-        // std::cout << "INSIDE SET TRANSLATE: this->t: " << this->t.transpose() << std::endl;
         Eigen::Map<Eigen::Matrix<PQP_REAL, 3, 1>>(this->translation, 3) = this->t;
-        // std::cout << "INSIDE SET TRANSLATE: this->translation: " << Vector3d(this->translation).transpose() << std::endl;
     }
 
     Eigen::Vector3d
@@ -159,16 +144,12 @@ namespace RtModels
     void
     RtModel::CheckDistance(PQP_DistanceResult *result, PQP_REAL rel_err, PQP_REAL abs_err, RtModel *m2)
     {
-        // std::cout << "inside distance check" << std::endl;
-        // std::cout << "robot position " << Vector3d(this->getT()).transpose() << std::endl;
-        // std::cout << "obstacle position " << Vector3d(m2->getT()).transpose() << std::endl;
         PQP_Distance(result, this->getR(), this->getT(), this->pqpModel.get(), m2->getR(), m2->getT(), m2->pqpModel.get(), rel_err, abs_err);
     }
 
     void
     RtModel::Collide(PQP_CollideResult *result, RtModel *m2)
     {
-        // std::cout << "Checkin collision at m1: " << Vector3d(this->getT()) << " m2: " << Vector3d(m2->getT()) << std::endl;
         PQP_Collide(result, this->getR(), this->getT(), this->pqpModel.get(), m2->getR(), m2->getT(), m2->pqpModel.get());
     }
 

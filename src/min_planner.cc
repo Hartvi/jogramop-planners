@@ -24,7 +24,6 @@ namespace Burs
     {
         for (unsigned int i = 0; i < q.size(); ++i)
         {
-            // std::cout << "bounds (rows, cols): " << this->bounds.rows() << ", " << this->bounds.cols() << "\n";
             if (this->bounds(i, 0) > q(i) || q(i) > this->bounds(i, 1))
             {
                 return false;
@@ -48,18 +47,6 @@ namespace Burs
         }
         return m;
     }
-
-    // VectorXd
-    // MinPlanner::Nearest(std::shared_ptr<BurTree> t, VectorXd &q)
-    // {
-    //     return t->GetQ(t->Nearest(q.data()));
-    // }
-
-    // int
-    // MinPlanner::NearestIndex(std::shared_ptr<BurTree> t, VectorXd &q)
-    // {
-    //     return t->Nearest(q.data());
-    // }
 
     std::pair<int, std::vector<double>>
     MinPlanner::GetClosestDistances(const RS &state) const
@@ -132,8 +119,6 @@ namespace Burs
         do
         {
             res_b.push_back(node_id_b);
-            // std::cout << "node:\n"
-            //           << t_b->GetQ(node_id_b).transpose() << "\n\n";
             node_id_b = t_b->GetParentIdx(node_id_b);
         } while (node_id_b != -1);
 

@@ -5,11 +5,6 @@ namespace Burs
 {
     using namespace Eigen;
 
-    // BurTree::BurTree()
-    // {
-    //     // ye
-    // }
-
     BurTree::BurTree(RS state, int q_dim) : mQDim(q_dim)
     {
         this->AddNode(-1, state);
@@ -20,9 +15,6 @@ namespace Burs
     {
         int ret_idx = this->mNodes.size();
         this->mNodes.emplace_back(p, state);
-        // this->mNodes[p].child_ids.push_back(ret_idx);
-        // have to build index to register the new node
-        //        this->BuildIndex();
 
         // HACK
         if (mNodes.size() == 1)

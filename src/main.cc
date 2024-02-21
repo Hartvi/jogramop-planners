@@ -6,7 +6,6 @@
 #include <ctime>
 #include <cstdlib>
 #include <iostream>
-// #include <stdio.h>
 #include <Eigen/Dense>
 #include "pqp_load.h"
 #include "rt_model.h"
@@ -14,11 +13,9 @@
 #include "printing.h"
 #include "bur_tree.h"
 #include "base_planner.h"
-// #include "test.h"
 #include "CParseArgs.h"
 #include "j_rbt_planner.h"
 #include "ut.h"
-// #include "j_plus_rbt_planner.h"
 
 using namespace std;
 using namespace Burs;

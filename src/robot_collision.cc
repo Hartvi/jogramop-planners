@@ -13,7 +13,6 @@ namespace Burs
 
         int numModels = 0;
         // Initialization specific to RobotCollision
-        // std::cout << "number of segments " << this->kdl_chain.getNrOfSegments() << std::endl;
         std::cout << "URDF dir: " << urdf_dir << "\n";
         for (int i = 0; i < this->kdl_chain.getNrOfSegments(); ++i)
         {
@@ -40,16 +39,8 @@ namespace Burs
         }
         this->numberOfModels = numModels;
 
-        // std::cout << "num models: " << this->numberOfModels << "\n";
         auto movablejoints = this->MovableJoints();
         this->segmentToJntCausality = movablejoints;
-        // std::cout << "MOVABLE JOINT MAPPING\n";
-        // for (unsigned int i = 0; i < movablejoints.size(); ++i)
-        // {
-        //     std::cout << "segment " << i << ": " << movablejoints[i] << "\n";
-        // }
-        // exit(1);
-        // std::cout << "Initialized RobotCollision. Number of models: " << this->numberOfModels << std::endl;
     }
 
     std::vector<bool>
@@ -76,7 +67,6 @@ namespace Burs
         // TODO create a mask for each case so that when I generate random samples I can zero out joints that aren't supposed to be moved
         // each segment denotes joint ids that affect the segment
         // segment 1 => joints 0,1,2 affect it => 2
-        // this->numberOfModels
         std::vector<VectorXd> segmentToJointVector(this->numberOfModels, VectorXd::Ones(this->kdl_chain.getNrOfJoints()));
         std::vector<int> segmentToJointCausality;
         // lastInactiveSegment is the id of the segment that had the distance too close
@@ -108,7 +98,7 @@ namespace Burs
             {
                 ++joint;
             }
-            // std::cout << "segment " << this->kdl_chain.getSegment(i).getName() << " joints: " << joint << " type: " << this->kdl_chain.getSegment(i).getJoint().getTypeName() << " has model: ";
+
             if (this->segmentIdToModel[i])
             {
                 for (int l = k; l < segmentToJointVector.size(); ++l)
@@ -120,82 +110,13 @@ namespace Burs
                 }
                 segmentToJointCausality.push_back(joint);
                 ++k;
-
-                // std::cout << "true\n";
             }
             else
             {
-
-                // std::cout << "false\n";
             }
         }
-        // for (unsigned int i = 0; i < this->numberOfModels; ++i)
-        // {
-        //     std::cout << segmentToJointVector[i].transpose() << "\n";
-        // }
-        // exit(1);
         return segmentToJointVector;
     }
-
-    // // ForwardQ returns N rotations and translation, but we have M <= N objects, select only transforms relevant to existing meshes
-    // std::tuple<std::vector<Matrix3d>, std::vector<Vector3d>>
-    // RobotCollision::SelectedForwardQ(const RS &state)
-    // {
-    //     assert(this->segmentIdToModel.size() == state.frames.size());
-    //     assert(this->numberOfModels == state.frames.size());
-
-    //     std::vector<Matrix3d> Rs;
-    //     Rs.reserve(this->numberOfModels);
-    //     std::vector<Vector3d> ts;
-    //     ts.reserve(this->numberOfModels);
-
-    //     for (unsigned int i = 0; i < state.frames.size(); ++i)
-    //     {
-    //         if (this->segmentIdToModel[i])
-    //         {
-    //             KDL::Frame f = state.frames[i];
-    //             auto rt = this->KDLFrameToEigen(f);
-    //             Rs.push_back(rt.first);
-    //             ts.push_back(rt.second);
-    //         }
-    //     }
-    //     // this->ForwardPass()
-    //     // std::tuple<std::vector<Matrix3d>, std::vector<Vector3d>> rawRts = this->ForwardQ(q_in);
-
-    //     // std::vector<Matrix3d>
-    //     //     rawRotations = std::get<0>(rawRts);
-    //     // std::vector<Vector3d> rawTranslations = std::get<1>(rawRts);
-
-    //     // std::vector<Matrix3d> Rs(this->numberOfModels);
-    //     // std::vector<Vector3d> ts(this->numberOfModels);
-
-    //     // int k = 0;
-    //     // for (int i = 0; i < this->segmentIdToModel.size(); ++i)
-    //     // {
-    //     //     if (this->segmentIdToModel[i])
-    //     //     {
-    //     //         ts[k] = rawTranslations[i];
-    //     //         Rs[k] = rawRotations[i];
-    //     //         k++;
-    //     //     }
-    //     // }
-
-    //     // if (k != this->numberOfModels)
-    //     // {
-    //     //     throw std::runtime_error("Number of models in forward doesn't match initialized number of models. ");
-    //     // }
-    //     return make_tuple(Rs, ts);
-    // }
-
-    // ForwardRtKDL
-    // RobotCollision::GetSelectedForwardRtFunc()
-    // {
-    //     ForwardRtKDL srt = [this](const RS &state) -> std::tuple<std::vector<Matrix3d>, std::vector<Vector3d>>
-    //     {
-    //         return this->SelectedForwardQ(state);
-    //     };
-    //     return srt;
-    // }
 
     std::vector<std::shared_ptr<RtModels::RtModel>> RobotCollision::GetModels()
     {
@@ -227,8 +148,6 @@ namespace Burs
     double
     RobotCollision::MaxDistance(const RS &state1, const RS &state2) const
     {
-
-        // std::cout << "q1: " << q1.transpose() << " q2: " << q2.transpose() << "\n";
         auto f1 = state1.frames;
         auto f2 = state2.frames;
 
@@ -243,23 +162,6 @@ namespace Burs
             }
         }
         return max_dist;
-
-        // auto fk1 = this->GetForwardPointParallel(q1);
-        // // std::cout << "fk1: " << fk1.size() << "\n";
-        // auto fk2 = this->GetForwardPointParallel(q2);
-        // // std::cout << "fk2: " << fk2.size() << "\n";
-
-        // double max_dist = 0;
-        // for (unsigned int i = 0; i < fk1.size(); ++i)
-        // {
-        //     // dist is in meters
-        //     double dist = (fk2[i] - fk1[i]).norm();
-        //     if (dist > max_dist)
-        //     {
-        //         max_dist = dist;
-        //     }
-        // }
-        // return max_dist;
     }
 
     std::pair<Matrix3d, Vector3d>
@@ -282,131 +184,5 @@ namespace Burs
         }
         return {R, t};
     }
-
-    // std::vector<Vector3d>
-    // RobotCollision::GetForwardPointParallel(const RS &robot_state)
-    // {
-    //     auto fk_res = this->ForwardPass(q_in);
-    //     unsigned int nrSegments = this->kdl_chain.getNrOfSegments();
-
-    //     std::vector<Vector3d> segment_positions(nrSegments);
-
-    //     // typedef enum { RotAxis,RotX,RotY,RotZ,TransAxis,TransX,TransY,TransZ,None} JointType;
-    //     for (unsigned int i = 0; i < nrSegments; ++i)
-    //     {
-    //         auto segment_pose = fk_res[i].p;
-    //         // Convert KDL position to Eigen vector
-    //         Vector3d position(segment_pose.x(), segment_pose.y(), segment_pose.z());
-    //         segment_positions[i] = position;
-    //     }
-
-    //     return segment_positions;
-    // }
-
-    // ForwardKinematicsParallelKDL
-    // RobotCollision::GetForwardPointParallelFunc()
-    // {
-    //     ForwardKinematicsParallelKDL fpf = [this](const RS &robot_state) -> std::vector<Vector3d>
-    //     {
-    //         return this->GetForwardPointParallel(robot_state);
-    //     };
-    //     return fpf;
-    // }
-
-    // VectorXd
-    // RobotCollision::GetRadii(const VectorXd &q_in)
-    // {
-    //     auto fk_res = this->ForwardPass(q_in);
-    //     VectorXd radii(q_in.size());
-    //     unsigned int nrSegments = this->kdl_chain.getNrOfSegments();
-
-    //     unsigned int j = 0;
-    //     for (unsigned int i = 0; i < nrSegments - 1; ++i)
-    //     {
-    //         auto segment_pose = fk_res[i];
-    //         Vector3d position(segment_pose.p.x(), segment_pose.p.y(), segment_pose.p.z());
-
-    //         // Local axis: https://docs.ros.org/en/indigo/api/orocos_kdl/html/classKDL_1_1Joint.html#a57c97b32765b0caeb84b303d66a96a1b
-    //         auto joint = this->kdl_chain.getSegment(i).getJoint();
-    //         KDL::Vector joint_axis_local = joint.JointAxis();
-
-    //         // typedef enum { RotAxis,RotX,RotY,RotZ,TransAxis,TransX,TransY,TransZ,None} JointType;
-    //         // std::cout << "Joint: " << joint.getTypeName() << " Axis: " << joint.JointAxis() << std::endl;
-
-    //         if (joint.getType() == KDL::Joint::JointType::None)
-    //         {
-    //             continue;
-    //         }
-
-    //         /*
-    //         The expression \sum^n_{i=1} r_i |y_i − q_i| is a conservative upper bound on the displacement of any point on the manipulator
-    //           when the configuration changes from q = (q_1 . . . q_n)T to y = (y_1 . . . y_n)^T .
-
-    //         In short: it is the first order derivative of the mapping from configuration value q_i to euclidean space
-
-    //         Ergo: translational joints: d(distance)/dq = 1
-    //         rotational joints: d(phi*r)/dphi = r - the radius
-    //         */
-
-    //         double radius = 0.0;
-    //         switch (joint.getType())
-    //         {
-    //         case KDL::Joint::JointType::TransAxis:
-    //         case KDL::Joint::JointType::TransX:
-    //         case KDL::Joint::JointType::TransY:
-    //         case KDL::Joint::JointType::TransZ:
-    //         {
-    //             radius = 1;
-    //             break;
-    //         }
-    //         default:
-    //         {
-    //             break;
-    //         }
-    //         }
-
-    //         for (unsigned int k = i + 1; k < nrSegments; ++k)
-    //         {
-    //             KDL::Frame next_segment_pose = fk_res[k];
-    //             KDL::Vector next_segment_kdl = next_segment_pose.p;
-    //             Vector3d next_segment(next_segment_kdl.x(), next_segment_kdl.y(), next_segment_kdl.z());
-
-    //             // Transform the local joint axis to the world reference frame
-    //             KDL::Vector joint_axis_world = segment_pose.M * joint_axis_local;
-    //             // std::cout << "GetRadius axis: " << joint_axis_world << std::endl;
-    //             Vector3d joint_axis(joint_axis_world.x(), joint_axis_world.y(), joint_axis_world.z());
-
-    //             Vector3d diff = next_segment - position;
-    //             // Project the end effector onto the plane defined by the joint axis
-    //             double dot_product = diff.dot(joint_axis);
-
-    //             // joint_axis has norm = 1 => NO NORMALIZATION NECESSARY
-    //             Vector3d projection = diff - dot_product * joint_axis;
-
-    //             // Update the radius
-    //             // std::cout << "Radius distance " << ith_distal_point << ": " << projection.norm() << std::endl;
-    //             double tmp_radius = projection.norm();
-    //             if (tmp_radius > radius)
-    //             {
-    //                 radius = tmp_radius;
-    //             }
-    //         }
-
-    //         radii(j) = radius;
-    //         ++j;
-    //     }
-    //     return radii;
-    // }
-
-    // RadiusFuncParallel
-    // RobotCollision::GetRadiusFunc()
-    // {
-    //     RadiusFuncParallel rf = [this](const VectorXd &configuration) -> VectorXd
-    //     {
-    //         // return this->GetRadius(ith_distal_point, configuration);
-    //         return this->GetRadii(configuration);
-    //     };
-    //     return rf;
-    // }
 
 }

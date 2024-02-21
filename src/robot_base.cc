@@ -40,10 +40,6 @@ namespace Burs
         }
 
         this->kdl_tree = kdl_tree_res.value();
-        // for (auto &l : this->kdl_tree.getSegments())
-        // {
-        //     std::cout << "segment: " << l.first << "\n";
-        // }
 
         auto end_links_res = this->GetEndLinks(robot_model);
 
@@ -60,9 +56,7 @@ namespace Burs
             std::cout << "end link: " << end_links[i] << std::endl;
         }
         std::cout << "\n";
-        // exit(1);
 
-        // auto kdl_chain_res = this->GetKDLChain(robot_model, kdl_tree, "panda_hand");
         auto kdl_chain_res = this->GetKDLChain(robot_model, kdl_tree, end_links[0]);
 
         if (!kdl_chain_res)
@@ -107,7 +101,6 @@ namespace Burs
                 // Use the joint limits here
                 minmaxs[num_joints][0] = lower_limit;
                 minmaxs[num_joints][1] = upper_limit;
-                // std::cout << "Joint " << name << ": Lower: " << lower_limit << " Upper: " << upper_limit << std::endl;
                 num_joints++;
             }
         }
@@ -169,13 +162,9 @@ namespace Burs
                 std::string mesh_filename = mesh->filename;
                 std::string link_name = l.second->name;
                 // Do something with mesh_filename, which is the path to the .obj file
-                // std::cout << "Link children: " << l.second->child_links.size() << " has mesh: " << mesh_filename << " mesh file name length: " << mesh_filename.size() << std::endl;
-                // std::cout << "Link " << l.second->name << " has mesh: " << mesh_filename << std::endl;
                 my_map[link_name] = mesh_filename;
-                // std::cout << "Segment: " << my_map[link_name] << " File: " << mesh_filename << std::endl;
             }
         }
-        // exit(1);
 
         return my_map;
     }
@@ -215,7 +204,6 @@ namespace Burs
         {
             if (rl.second->child_links.size() == 0)
             {
-                // std::cout << "Link : " << rl.second->name << " links: " << rl.second->child_links.size() << std::endl;
                 end_links.push_back(rl.second->name);
             }
         }
@@ -334,7 +322,6 @@ namespace Burs
     RobotBase::ForwardJPlus(const RS &state, const KDL::Twist &v_in)
     {
         VectorXd q_in = state.config;
-        // std::cout << "TODO: reuse jacobian for multiple target calculation later on\n";
         KDL::JntArray q_kdl;
         q_kdl.data = q_in;
 
@@ -354,9 +341,6 @@ namespace Burs
     RobotBase::JPlus(const RS &state)
     {
         MatrixXd pinv = state.jac.data.completeOrthogonalDecomposition().pseudoInverse();
-        // std::cout << "pinv: \n"
-        //           << pinv << "\n";
-        // exit(1);
         return pinv;
     }
 
@@ -365,52 +349,12 @@ namespace Burs
     {
         VectorXd r(q_in.size());
         r.array() = 0;
-        // std::cout << "TODO: COPY JACOBIAN FUNCTION FROM KDL REPO AND REWRITE IT TO RETURN THE VECTOR OF ALL JACOBIANS\n";
         KDL::JntArray q_kdl(q_in.size());
         q_kdl.data = q_in;
         KDL::Jacobian jac(q_in.size());
 
-        // KDL::ChainJntToJacSolver s(this->kdl_chain);
-
-        // int res = 0;
-        // for (unsigned int i = 0; i < this->kdl_chain.getNrOfSegments(); ++i)
-        // {
-        //     res = s.JntToJac(q_kdl, jac, i + 1);
-        //     if (res < 0)
-        //     {
-        //         std::cout << "failed jnt to jac: " << (i + 1) << "\n";
-        //         // exit(1);
-        //     }
-        //     // std::cout << "jac " << i << ": \n"
-        //     //           << jac.data << "\n";
-        //     for (unsigned int l = 0; l < q_in.size(); ++l)
-        //     {
-        //         double tmp_r = jac.data.col(l).head<3>().norm();
-        //         if (tmp_r > r(l))
-        //         {
-        //             r(l) = tmp_r;
-        //         }
-        //     }
-        //     // std::cout << "best r: " << r.transpose() << "\n\n";
-        // }
-        // std::cout << "best r: " << r.transpose() << "\n\n";
-        // r.array() = 0;
-        // exit(1);
-
-        //     if (locked_joints_.size() != chain.getNrOfJoints()) return (error = E_NOT_UP_TO_DATE);
-        // unsigned int segmentNr;
-        // if (seg_nr < 0)
-        //     segmentNr = chain.getNrOfSegments();
-        // else
-        //     segmentNr = seg_nr;
-
         // Initialize Jacobian to zero since only segmentNr columns are computed
         KDL::SetToZero(jac);
-
-        // if (q_in.rows() != chain.getNrOfJoints() || jac.columns() != chain.getNrOfJoints())
-        //     return (error = E_SIZE_MISMATCH);
-        // else if (segmentNr > chain.getNrOfSegments())
-        //     return (error = E_OUT_OF_RANGE);
 
         KDL::Twist t_tmp;
         KDL::Frame T_tmp;
@@ -448,8 +392,6 @@ namespace Burs
                 j++;
             }
 
-            // std::cout << "inside jac " << i << " jnt: " << k << " :\n"
-            //           << jac.data << "\n";
             for (unsigned int l = 0; l < k; ++l)
             {
                 double tmp_r = jac.data.col(l).head<3>().norm();
@@ -458,22 +400,15 @@ namespace Burs
                     r(l) = tmp_r;
                 }
             }
-            // std::cout << "best r: " << r.transpose() << "\n";
 
             T_tmp = total;
         }
-        // std::cout << "best r: " << r.transpose() << "\n";
-        // std::cout << "my jac:\n"
-        //           << jac.data << "\n";
-        // exit(1);
-        // return (error = E_NOERROR);
         return {jac, r};
     }
 
     VectorXd
     RobotBase::GetRadii(const RS &state)
     {
-        // auto fk_res = this->CachedForwardPass(q_in);
         VectorXd radii(state.config.size());
         unsigned int nrSegments = this->kdl_chain.getNrOfSegments();
 
@@ -488,7 +423,6 @@ namespace Burs
             KDL::Vector joint_axis_local = joint.JointAxis();
 
             // typedef enum { RotAxis,RotX,RotY,RotZ,TransAxis,TransX,TransY,TransZ,None} JointType;
-            // std::cout << "Joint: " << joint.getTypeName() << " Axis: " << joint.JointAxis() << std::endl;
 
             if (joint.getType() == KDL::Joint::JointType::None)
             {
@@ -554,113 +488,6 @@ namespace Burs
             ++j;
         }
         return radii;
-
-        // unsigned int num_segments = this->kdl_chain.getNrOfSegments();
-        // unsigned int num_joints = this->kdl_chain.getNrOfJoints();
-        // // std::cout << "Number of joints: " << num_joints << "  Number of segments: " << num_segments << std::endl;
-
-        // VectorXd radii(q_in.size());
-
-        // KDL::ChainFkSolverPos_recursive fk_solver(this->kdl_chain);
-
-        // assert(q_in.size() == num_joints);
-
-        // KDL::JntArray joint_positions(num_joints);
-
-        // for (unsigned int i = 0; i < num_joints; ++i)
-        // {
-        //     joint_positions(i) = q_in(i);
-        // }
-
-        // // Why does it fail when i use segment_poses instead of just a single pose
-        // // CAUSE: it returns -1 for all errors, regardless of what you did wrong
-        // // Solution: https://github.com/orocos/orocos_kinematics_dynamics/blob/master/orocos_kdl/src/chainfksolverpos_recursive.cpp
-
-        // std::vector<KDL::Frame> segment_poses(num_segments);
-
-        // if (fk_solver.JntToCart(joint_positions, segment_poses) >= 0)
-        // {
-        //     unsigned int j = 0;
-        //     for (unsigned int i = 0; i < segment_poses.size() - 1; ++i)
-        //     {
-        //         auto segment_pose = segment_poses[i];
-        //         Vector3d position(segment_pose.p.x(), segment_pose.p.y(), segment_pose.p.z());
-
-        //         // Local axis: https://docs.ros.org/en/indigo/api/orocos_kdl/html/classKDL_1_1Joint.html#a57c97b32765b0caeb84b303d66a96a1b
-        //         auto joint = this->kdl_chain.getSegment(i).getJoint();
-        //         KDL::Vector joint_axis_local = joint.JointAxis();
-
-        //         // typedef enum { RotAxis,RotX,RotY,RotZ,TransAxis,TransX,TransY,TransZ,None} JointType;
-        //         // std::cout << "Joint: " << joint.getTypeName() << " Axis: " << joint.JointAxis() << std::endl;
-
-        //         if (joint.getType() == KDL::Joint::JointType::None)
-        //         {
-        //             continue;
-        //         }
-
-        //         /*
-        //         The expression \sum^n_{i=1} r_i |y_i − q_i| is a conservative upper bound on the displacement of any point on the manipulator
-        //           when the configuration changes from q = (q_1 . . . q_n)T to y = (y_1 . . . y_n)^T .
-
-        //         In short: it is the first order derivative of the mapping from configuration value q_i to euclidean space
-
-        //         Ergo: translational joints: d(distance)/dq = 1
-        //         rotational joints: d(phi*r)/dphi = r - the radius
-        //         */
-
-        //         double radius = 0.0;
-        //         switch (joint.getType())
-        //         {
-        //         case KDL::Joint::JointType::TransAxis:
-        //         case KDL::Joint::JointType::TransX:
-        //         case KDL::Joint::JointType::TransY:
-        //         case KDL::Joint::JointType::TransZ:
-        //         {
-        //             radius = 1;
-        //             break;
-        //         }
-        //         default:
-        //         {
-        //             break;
-        //         }
-        //         }
-
-        //         for (unsigned int k = i + 1; k < segment_poses.size(); ++k)
-        //         {
-        //             KDL::Frame next_segment_pose = segment_poses[k];
-        //             KDL::Vector next_segment_kdl = next_segment_pose.p;
-        //             Vector3d next_segment(next_segment_kdl.x(), next_segment_kdl.y(), next_segment_kdl.z());
-
-        //             // Transform the local joint axis to the world reference frame
-        //             KDL::Vector joint_axis_world = segment_pose.M * joint_axis_local;
-        //             // std::cout << "GetRadius axis: " << joint_axis_world << std::endl;
-        //             Vector3d joint_axis(joint_axis_world.x(), joint_axis_world.y(), joint_axis_world.z());
-
-        //             Vector3d diff = next_segment - position;
-        //             // Project the end effector onto the plane defined by the joint axis
-        //             double dot_product = diff.dot(joint_axis);
-
-        //             // joint_axis has norm = 1 => NO NORMALIZATION NECESSARY
-        //             Vector3d projection = diff - dot_product * joint_axis;
-
-        //             // Update the radius
-        //             // std::cout << "Radius distance " << ith_distal_point << ": " << projection.norm() << std::endl;
-        //             double tmp_radius = projection.norm();
-        //             if (tmp_radius > radius)
-        //             {
-        //                 radius = tmp_radius;
-        //             }
-        //         }
-
-        //         radii(j) = radius;
-        //         ++j;
-        //     }
-        // }
-        // else
-        // {
-        //     throw std::runtime_error("Forward kinematics solver failed in GetRadii");
-        // }
-        // return radii;
     }
 
     RS
@@ -671,16 +498,6 @@ namespace Burs
         // Jacobian of every segment
         auto [jac, r] = this->ForwardJacs(q_in);
         RS state(q_in, frames, jac, r);
-
-        // std::cout << "r: " << r.transpose() << "\n";
-
-        // KDL::Jacobian jac = this->ForwardJac(q_in);
-        // RS state(q_in, frames, jac);
-        // VectorXd r_orig = this->GetRadii(state);
-        // state.radii = r_orig;
-
-        // std::cout << "r_orig: " << r_orig.transpose() << "\n";
-        // exit(1);
 
         return state;
     }
