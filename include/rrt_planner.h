@@ -26,25 +26,8 @@ namespace Burs
         std::optional<std::vector<Eigen::VectorXd>>
         RRTConnect(const VectorXd &q_start, const VectorXd &q_goal, const RRTParameters &plan_parameters, PlanningResult &planning_result);
 
-        // AlgorithmState
-        // GreedyExtend(std::shared_ptr<BurTree> t_a, std::shared_ptr<BurTree> t_b, Eigen::VectorXd q_a, const RRTParameters &planner_parameters);
-
-        std::vector<int>
-        ExtendRandomConfig(std::shared_ptr<BurTree> t_a, RS rand_state, const RRTParameters &planner_parameters) const;
-
         AlgorithmState
         GreedyExtendRandomConfig(std::shared_ptr<BurTree> t_a, RS rand_state, const RRTParameters &planner_parameters, const RS &goal_state, RS &best_state) const;
-
-        std::optional<std::vector<VectorXd>>
-        TestSampling(const VectorXd &q_start, const RRTParameters &plan_parameters, PlanningResult &planning_result);
-
-        void
-        GenerateRandomSamples(std::shared_ptr<BurTree> t, int num_samples);
-
-    protected:
-        // RadiusFuncParallel radius_func;
-        // ForwardKinematicsParallel forwardKinematicsParallel;
-        // bool checkGround;
     };
 
 }

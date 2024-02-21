@@ -51,16 +51,12 @@ namespace Burs
             }
             // Get random configuration
             VectorXd q_rand = this->GetRandomQ(1);
-            // std::cout << "new state\n";
             RS rand_state = this->NewState(q_rand);
 
-            // std::cout << "start tree:\n";
-            // std::cout << "greedy extend\n";
             auto status_a = this->GreedyExtendRandomConfig(t_start, rand_state, plan_parameters, goal_state, best_state);
 
             VectorXd tmp_vec(q_start);
             // we do not want the closest config in the goal tree since it already leads to the goal
-            // std::cout << "goal tree:\n";
             auto status_b = this->GreedyExtendRandomConfig(t_goal, rand_state, plan_parameters, goal_state, tmp_state);
 
             if (status_a == AlgorithmState::Reached && status_b == AlgorithmState::Reached)
@@ -86,7 +82,6 @@ namespace Burs
         planning_result.success = false;
 
         planning_result.distance_to_goal = this->env->robot->EEDistance(best_state, goal_state);
-        // planning_result.distance_to_goal = this->GetDistToGoal(q_best, ee_goal);
 
         int best_idx = t_start->Nearest(best_state);
 
@@ -102,25 +97,18 @@ namespace Burs
     RRTPlanner::GreedyExtendRandomConfig(std::shared_ptr<BurTree> t_a, RS rand_state, const RRTParameters &planner_parameters, const RS &goal_state, RS &best_state) const
     {
         int nearest_idx = t_a->Nearest(rand_state);
-        // std::cout << "last tree config: " << t_a->GetQ(t_a->GetNumberOfNodes() - 1).transpose() << "\n\n";
         auto step_result = this->RRTStep(t_a, nearest_idx, rand_state, planner_parameters.epsilon_q);
 
         double best_dist = this->env->robot->EEDistance(best_state, goal_state);
-        // double best_dist = this->GetDistToGoal(q_best, goal_ee);
 
         while (step_result >= 0)
         {
             // if stepped in tree: new node added and crashless
             // if finished: return result
             RS step_state = *t_a->Get(step_result);
-            // VectorXd step_q = t_a->GetQ(step_result);
             double max_dist = this->env->robot->MaxDistance(step_state, rand_state);
-            // double max_dist = this->MaxMovedDistance(step_q, rand_q);
-            // std::cout << "step to random: " << max_dist << "\n";
-            // std::cout << "rand: " << rand_q.transpose() << " step: " << step_q.transpose() << "\n";
 
             double tmp_dist = this->env->robot->EEDistance(step_state, goal_state);
-            // double tmp_dist = this->GetDistToGoal(step_q, goal_ee);
 
             if (tmp_dist < best_dist)
             {
@@ -138,66 +126,6 @@ namespace Burs
             step_result = this->RRTStep(t_a, step_result, rand_state, planner_parameters.epsilon_q);
         }
         return AlgorithmState::Trapped;
-    }
-
-    // BELOW NOT IN USE - only used for experimenting/validating //////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    // NOT IN USE
-    std::vector<int>
-    RRTPlanner::ExtendRandomConfig(std::shared_ptr<BurTree> t_a, RS rand_state, const RRTParameters &planner_parameters) const
-    {
-        std::vector<int> ids;
-        int nearest_idx = t_a->Nearest(rand_state);
-        auto step_result = this->RRTStep(t_a, nearest_idx, rand_state, planner_parameters.epsilon_q);
-
-        while (step_result >= 0)
-        {
-            ids.push_back(step_result);
-            // if stepped in tree: new node added and crashless
-            // if finished: return result
-            RS step_state = *t_a->Get(step_result);
-            double max_dist = this->env->robot->MaxDistance(step_state, rand_state);
-
-            // if reached the random config:
-            if (max_dist <= planner_parameters.epsilon_q)
-            {
-                return ids;
-            }
-
-            // then step again from newly added node: step_result
-            step_result = this->RRTStep(t_a, step_result, rand_state, planner_parameters.epsilon_q);
-        }
-        return ids;
-    }
-
-    // NOT IN USE
-    std::optional<std::vector<VectorXd>>
-    RRTPlanner::TestSampling(const VectorXd &q_start, const RRTParameters &plan_parameters, PlanningResult &planning_result)
-    {
-        // start of actual algorithm
-        RS start_state = this->NewState(q_start);
-
-        std::shared_ptr<BurTree> t_start = std::make_shared<BurTree>(start_state, q_start.size());
-
-        this->GenerateRandomSamples(t_start, plan_parameters.max_iters);
-
-        if (plan_parameters.visualize_tree > 0)
-        {
-            this->tree_csv = this->TreePoints(t_start, plan_parameters.visualize_tree);
-        }
-        return {{q_start}};
-    }
-
-    // NOT IN USE
-    void
-    RRTPlanner::GenerateRandomSamples(std::shared_ptr<BurTree> t, int num_samples)
-    {
-        MatrixXd rand_Q = this->GetRandomQ(num_samples);
-        auto states = this->NewStates(rand_Q);
-        for (unsigned int i = 0; i < num_samples; ++i)
-        {
-            t->AddNode(0, states[i]);
-        }
     }
 
 }

@@ -214,7 +214,6 @@ namespace Burs
             if (d_closest > plan_parameters.d_crit)
             {
                 // if q_n is within the collision free bur of q, then we finish, game over
-                // RS q_t = this->GetEndpoints(q_n, {q}, d_closest)[0];
                 std::vector<RS> q_t = this->GetEndpointsInterstates(q_n, {q}, d_closest, plan_parameters.q_resolution)[0];
 
                 delta_s = (q_t.back().config - q_n.config).norm();
@@ -286,7 +285,6 @@ namespace Burs
     RbtPlanner::SetGraspClosestConfigs(JPlusRbtParameters &planner_parameters, std::shared_ptr<BurTree> t, const int &state_idx) const
     {
         auto &tgts = planner_parameters.target_poses;
-        // auto ee_q = this->GetEEPose(q);
         KDL::Frame ee = this->env->robot->GetEEFrame(*t->Get(state_idx));
 
         double tmp_dist = 1e10;
@@ -295,11 +293,8 @@ namespace Burs
             auto &tgt = tgts[i];
             auto &goal = tgt.frame;
             auto [dist_to_goal, f] = this->BasicDistanceMetric(ee, goal, planner_parameters.rotation_dist_ratio);
-            // std::cout << "dist: " << dist_to_goal << "\n";
-            // double dist_to_goal = (goal.p - ee.p).Norm();
             if (dist_to_goal < tgt.best_dist)
             {
-                // std::cout << "new best dist: " << dist_to_goal << "\n";
                 tgt.best_dist = dist_to_goal;
                 tgt.best_state = state_idx;
             }
@@ -322,7 +317,6 @@ namespace Burs
         {
             auto &tgt = tgts[i];
             auto &goal = tgt.frame;
-            // std::cout << "current dist: " << tgt.best_dist << "\n";
             if (tgt.best_dist < best_dist)
             {
                 best_dist = tgt.best_dist;
@@ -335,12 +329,13 @@ namespace Burs
     std::pair<double, KDL::Frame>
     RbtPlanner::BasicDistanceMetric(const KDL::Frame &ee, const KDL::Frame &tgt, const double &angle_ratio) const
     {
-        // units [meters]
+        // units [mm]
         double dist = (ee.p - tgt.p).Norm() * 1000;
         KDL::Rotation ee_inv = ee.M.Inverse();
 
         auto [changed_rot, closest_grasp_rot] = this->GetClosestSymmetricGrasp(tgt.M, ee.M);
         KDL::Rotation r = tgt.M * ee_inv;
+        // units [deg]
         double angle_dist = acos((r(0, 0) + r(1, 1) + r(2, 2) - 1.0) * 0.5) * rad_to_deg;
         // if the symmetric rotation is a different one
         if (changed_rot)
@@ -358,7 +353,6 @@ namespace Burs
         }
 
         // 2 * cos + 1 on diagonal *always*
-        // units: [degrees / 1000] to make it equivalent to [mm * deg]
         KDL::Frame f(r, tgt.p);
         return {(1.0 - angle_ratio) * dist + angle_ratio * angle_dist, f};
     }
@@ -388,358 +382,6 @@ namespace Burs
         }
 
         return {changed_rot, closestGrasp};
-    }
-
-    // BELOW NOT IN USE - only used for experimenting/validating //////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    // NOT IN USE
-    std::optional<std::vector<Eigen::VectorXd>>
-    RbtPlanner::RbtConnect(const VectorXd &q_start, const VectorXd &q_goal, const RbtParameters &plan_parameters, PlanningResult &planning_result)
-    {
-        // Givens:
-        RS start_state = this->NewState(q_start);
-        RS goal_state = this->NewState(q_goal);
-        std::shared_ptr<BurTree> t_start = std::make_shared<BurTree>(start_state, q_start.size());
-        std::shared_ptr<BurTree> t_goal = std::make_shared<BurTree>(goal_state, q_goal.size());
-        // TODO: check collision at the beginning
-        // KDL::Frame ee_goal = this->GetEEPose(q_goal);
-
-        // if (this->IsColliding(q_start))
-        // {
-        //     std::cout << "START COLLIDING\n";
-        //     return {};
-        // }
-
-        // if (this->IsColliding(q_goal))
-        // {
-        //     std::cout << "GOAL COLLIDING\n";
-        //     return {};
-        // }
-        // Changing
-        auto t_a = t_start;
-        auto t_b = t_goal;
-        RS &best_state = start_state;
-        // VectorXd q_best(q_start);
-        double best_dist = 1e10;
-
-        for (int k = 0; k < plan_parameters.max_iters; k++)
-        {
-            MatrixXd Qe = this->GetRandomQ(plan_parameters.num_spikes);
-            std::vector<RS> rand_states = this->NewStates(Qe);
-
-            // Random column
-            int nearest_idx = t_a->Nearest(rand_states[0]);
-            RS near_state = *t_a->Get(nearest_idx);
-            // VectorXd q_near = t_a->Get(nearest_idx);
-            // std::cout << "q_near:\n"
-            //   << q_near.transpose() << "\n";
-
-            // Slow => maybe in the future use FCL and somehow compile it because it had a ton of compilation errors and version mismatches
-            double d_closest = this->GetClosestDistance(near_state);
-            // std::cout << "d_closest: " << d_closest << "\n";
-
-            if (d_closest < plan_parameters.d_crit)
-            {
-                int step_result = this->RRTStep(t_a, nearest_idx, near_state, plan_parameters.epsilon_q);
-                if (step_result < 0)
-                {
-                    // If small basic rrt collides, then don't go here, hence the `continue`
-                    // std::cout << "RRT COLLIDE\n";
-                    continue;
-                }
-
-                if (t_a == t_start)
-                {
-                    RS tmp_state = *t_start->Get(step_result);
-                    // VectorXd tmp_vec = t_start->GetQ(step_result);
-                    // double tmp_dist = this->GetDistToGoal(tmp_vec, ee_goal);
-                    double tmp_dist = this->env->robot->EEDistance(goal_state, tmp_state);
-
-                    if (tmp_dist < best_dist)
-                    {
-                        std::cout << "RRT best dist: " << best_dist << "\n";
-                        best_dist = tmp_dist;
-                        best_state = tmp_state;
-                        // q_best = tmp_vec;
-                    }
-                }
-            }
-            else
-            {
-                // Qe is scaled to max euclidean delta_q or closest obstacle distance
-                std::vector<RS> endpoints = this->GetEndpoints(near_state, rand_states, std::min(d_closest, plan_parameters.delta_q));
-                // TRAVELLED DISTANCES ARE INDEED ALWAYS SMALLER THAN D_CLOSEST
-
-                // this->AddDenseBur(t_a);
-
-                for (unsigned int i = 0; i < endpoints.size(); ++i)
-                {
-                    auto q_t = endpoints[i];
-                    auto max_epsilon_separated_points = this->Densify(near_state, q_t, plan_parameters);
-                    int prev_idx = nearest_idx; // idx of q_near
-
-                    this->AddPointsExceptFirst(t_a, prev_idx, max_epsilon_separated_points);
-
-                    for (RS &point : max_epsilon_separated_points)
-                    {
-                        // Measure distance to goal if this is the starting tree
-                        if (t_a == t_start)
-                        {
-                            RS tmp_state = *t_start->Get(prev_idx);
-                            double tmp_dist = this->env->robot->EEDistance(tmp_state, goal_state);
-                            // double tmp_dist = this->GetDistToGoal(tmp_vec, ee_goal);
-
-                            if (tmp_dist < best_dist)
-                            {
-                                best_dist = tmp_dist;
-                                std::cout << "RBT best dist: " << best_dist << "\n";
-                                // q_best = tmp_vec;
-                                best_state = tmp_state;
-                            }
-                        }
-                    }
-                }
-            }
-
-            // It is either the one added through RRT, or in the bur
-            int last_node_idx = t_a->GetNumberOfNodes() - 1;
-            RS q_new = *t_a->Get(last_node_idx);
-            // VectorXd q_new = t_a->GetQ(last_node_idx);
-
-            auto [status, best_idx_t_b] = this->BurConnect(t_b, q_new, plan_parameters, goal_state, best_state, best_dist);
-            if (status == AlgorithmState::Reached)
-            {
-                int start_closest;
-                int goal_closest;
-                if (t_b == t_goal)
-                {
-                    goal_closest = best_idx_t_b;
-                    start_closest = last_node_idx;
-                }
-                else
-                { // t_b == t_start
-                    start_closest = best_idx_t_b;
-                    goal_closest = last_node_idx;
-                }
-                // `q_new` is in `t_a`
-                // `t_b` extends to `q_new` => it has a node near `q_new`
-
-                planning_result.distance_to_goal = 0.0;
-                planning_result.num_iterations = k;
-                planning_result.tree_size = t_start->GetNumberOfNodes() + t_goal->GetNumberOfNodes();
-                planning_result.success = true;
-
-                auto path = this->Path(t_start, start_closest, t_goal, goal_closest);
-                // std::cout << "path ";
-                if (plan_parameters.visualize_tree)
-                {
-                    this->tree_csv = this->TreePoints(t_start, 100);
-                }
-                return path;
-            }
-            // exit(1);
-            std::swap(t_a, t_b);
-        }
-
-        planning_result.num_iterations = plan_parameters.max_iters;
-        planning_result.tree_size = t_start->GetNumberOfNodes() + t_goal->GetNumberOfNodes();
-        planning_result.success = false;
-
-        int best_idx = t_start->Nearest(best_state);
-        // planning_result.distance_to_goal = this->GetDistToGoal(q_best, ee_goal);
-        planning_result.distance_to_goal = this->env->robot->EEDistance(best_state, goal_state);
-
-        if (plan_parameters.visualize_tree)
-        {
-            this->tree_csv = this->TreePoints(t_start, 100);
-        }
-        return this->ConstructPathFromTree(t_start, best_idx);
-    }
-
-    // NOT IN USE
-    std::vector<double>
-    RbtPlanner::AddDenseBur(std::shared_ptr<BurTree> tree, const int &idx_near, const std::vector<RS> &endpoints, JPlusRbtParameters &plan_params) const
-    {
-        RS near_state = *tree->Get(idx_near);
-        // VectorXd q_near = tree->GetQ(idx_near);
-        // std::cout << "end " << -1 << " : " << this->GetEEPose(q_near).p << "\n";
-        std::vector<double> distances(endpoints.size(), 1e10);
-        for (unsigned int i = 0; i < endpoints.size(); ++i)
-        {
-            auto &q_t = endpoints[i];
-            // std::cout << "end " << i << " : " << this->GetEEPose(q_t).p << "\n";
-            auto max_epsilon_separated_points = this->Densify(near_state, q_t, plan_params);
-            // for (unsigned int k = 0; k < max_epsilon_separated_points.size(); ++k)
-            // {
-            //     if (this->IsColliding(max_epsilon_separated_points[k]))
-            //     {
-            //         std::cout << "IS COLLIDING\n";
-            //     }
-            // }
-            int prev_idx = idx_near; // idx of q_near
-
-            int last_idx = this->AddPointsExceptFirst(tree, prev_idx, max_epsilon_separated_points);
-            // `last_idx` is the q_t, all the other points inbetween lead to `idx_near`
-            while (last_idx != idx_near)
-            {
-                // Get distance to goal from each
-                double tmp_dist = this->SetGraspClosestConfigs(plan_params, tree, last_idx);
-
-                if (tmp_dist < distances[i])
-                {
-                    distances[i] = tmp_dist;
-                }
-                last_idx = tree->GetParentIdx(last_idx);
-            }
-        }
-        return distances;
-    }
-
-    // NOT IN USE
-    int
-    RbtPlanner::AddPointsExceptFirst(std::shared_ptr<BurTree> t, const int &first_el_idx, const std::vector<RS> vec) const
-    {
-        int prev_id = first_el_idx;
-        for (unsigned int i = 1; i < vec.size(); ++i)
-        {
-            if (!this->InBounds(vec[i].config))
-            {
-                // Skip the q_t if it's out of bounds
-                continue;
-            }
-
-            // assert(!this->IsColliding(vec[i]));
-
-            // if (this->IsColliding(vec[i]))
-            // {
-            //     std::cout << "IS COLLIDING AT STEP " << i << " / " << (vec.size() - 1) << "\n";
-            //     std::cout << "distance travelled: " << this->env->robot->MaxDistance(vec[i], vec[0]) << "\n";
-            //     std::cout << "start to end distance: " << this->env->robot->MaxDistance(vec.back(), vec[0]) << "\n";
-            //     // std::cout << "diff: ";
-            //     // for (unsigned int l = 0; l < vec[i].frames.size(); ++l)
-            //     // {
-            //     //     std::cout << (vec[0].frames[l].p - vec.back().frames[l].p).Norm() << ", ";
-            //     // }
-            //     // std::cout << "config 0: \n " << vec[0].config.transpose() << "\n";
-            //     // std::cout << "config last: \n " << vec.back().config.transpose() << "\n";
-            //     exit(1);
-            // }
-
-            // std::cout << " vecs: " << t->Get(prev_id)->config.transpose() << ", " << vec[i].config.transpose();
-            // std::cout << " diff: " << (t->Get(prev_id)->config - vec[i].config).norm() << "\n";
-            // The below seems to have gone
-            // assert(!t->Get(prev_id)->config.isApprox(vec[i].config, 0.001));
-            prev_id = t->AddNode(prev_id, vec[i]);
-        }
-        return prev_id;
-    }
-
-    // NOT IN USE
-    std::vector<RS>
-    RbtPlanner::Densify(const RS &src, const RS &tgt, const RbtParameters &plan_params) const
-    {
-        // less than 2x upper distance between neighbouring positions
-        double upper_dist = plan_params.q_resolution * 0.5;
-
-        std::vector<RS> configs = {};
-        // return configs;
-        double maxdist = this->env->robot->MaxDistance(src, tgt);
-        // std::cout << "Densify: src and tgt dist: " << maxdist << "\n";
-        VectorXd delta_vec = tgt.config - src.config;
-
-        bool failed_distance = false;
-        int num_splits = maxdist / plan_params.q_resolution;
-        // configs.reserve(num_splits + 1);
-
-        configs.push_back(src);
-        for (int i = 1; i < num_splits; ++i)
-        {
-            VectorXd new_config(this->q_dim);
-            for (int j = 0; j < this->q_dim; ++j)
-            {
-                new_config(j) = src.config(j) + ((double)i) * delta_vec(j) / (double)num_splits;
-            }
-            RS ns = this->NewState(new_config);
-            double tmp_dist = this->env->robot->MaxDistance(src, ns);
-
-            if (maxdist < tmp_dist)
-            {
-                // std::cout << "halfway distance higher than final distance: " << tmp_dist << " > " << maxdist << "\n";
-                // // exit(1);
-                // std::cout << "ns: \n"
-                //           << ns.config.transpose() << "\n";
-                failed_distance = true;
-            }
-            else
-            {
-                // std::cout << "successfully added\n";
-                configs.push_back(ns);
-            }
-        }
-        // std::cout << "\n";
-        configs.push_back(tgt);
-        // for (int i = 0; i + 1 < configs.size();)
-        // {
-        //     VectorXd middle_config = (configs[i].config + configs[i + 1].config) * 0.5;
-        //     RS ns = this->NewState(middle_config);
-        //     double tmp_dist = this->env->robot->MaxDistance(configs[i], ns);
-
-        //     if (maxdist < tmp_dist)
-        //     {
-        //         std::cout << "halfway distance higher than final distance: " << maxdist << " < " << tmp_dist << "\n";
-        //         // exit(1);
-        //         failed_distance = true;
-        //     }
-        //     // double tmp_dist = this->MaxMovedDistance(configs[i], middle_config);
-
-        //     if (tmp_dist > upper_dist)
-        //     {
-        //         configs.insert(configs.begin() + i + 1, ns);
-        //     }
-        //     else
-        //     {
-        //         ++i;
-        //     }
-        // }
-
-        // if (failed_distance)
-        //     exit(1);
-        // if (failed_distance)
-        // {
-        //     std::cout << "start: \n"
-        //               << src.config.transpose() << "\n";
-        //     std::cout << "end: \n"
-        //               << tgt.config.transpose() << "\n";
-        //     std::cout << "num interpoints: " << configs.size() << "\n";
-        //     exit(1);
-        // }
-        return configs;
-    }
-
-    std::optional<std::vector<Eigen::VectorXd>>
-    RbtPlanner::TestCollisionVsDistanceTime(const VectorXd &q_start, const RbtParameters &plan_parameters, PlanningResult &planning_result)
-    {
-        struct rusage tt1, tt2;
-        // getTime(&tt1);
-        double totalCollideTime = 0.0;
-        double totalDistanceCheckTime = 0.0;
-        for (unsigned int k = 0; k < plan_parameters.max_iters; ++k)
-        {
-            RS rand_state = this->NewState(this->GetRandomQ(1));
-
-            getTime(&tt1);
-            this->IsColliding(rand_state);
-            getTime(&tt2);
-            totalCollideTime += getTime(tt1, tt2);
-
-            getTime(&tt1);
-            this->GetClosestDistance(rand_state);
-            getTime(&tt2);
-            totalDistanceCheckTime += getTime(tt1, tt2);
-        }
-        std::cout << "TOTAL COLLIDE TIME: " << totalCollideTime << "\n";
-        std::cout << "TOTAL DISTANCE CHECK TIME: " << totalDistanceCheckTime << "\n";
-        return {{q_start}};
     }
 
 }

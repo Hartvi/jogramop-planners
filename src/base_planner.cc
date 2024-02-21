@@ -12,12 +12,9 @@ namespace Burs
 
     BasePlanner::BasePlanner(std::string path_to_urdf_file) : MinPlanner()
     {
-        //   int q_dim, int max_iters, double epsilon_q, MatrixXd bounds}
         std::shared_ptr<BaseEnv> my_env = std::make_shared<BaseEnv>(path_to_urdf_file);
 
         this->SetEnv(my_env);
-        // this->epsilon_q = some random number
-        // this->max_iters = some random number
 
         std::vector<std::vector<double>>
             min_max_bounds = this->env->robot->GetMinMaxBounds();
@@ -34,9 +31,6 @@ namespace Burs
             }
         }
         this->bounds = minMaxBounds;
-
-        // this->myEnv = this->GetEnv<URDFEnv>();
-        // this->myRobot = this->myEnv->robot;
     }
 
     BasePlanner::BasePlanner() {}
@@ -44,22 +38,9 @@ namespace Burs
     double
     BasePlanner::GetDeltaTk(double phi_tk, double tk, const RS &end_state, const RS &k_state) const
     {
-        // VectorXd r_vec = this->radius_func(q_k);
-
-        // std::cout << "end state: " << end_state.frames.size() << "\n";
-        // std::cout << "end state: " << end_state.config << "\n";
-        // std::cout << "k state: " << k_state.config << "\n";
         double denominator = (end_state.config - k_state.config).cwiseAbs().dot(k_state.radii);
         return phi_tk * (1.0 - tk) / denominator;
     }
-    // double
-    // BasePlanner::GetDeltaTk(double phi_tk, double tk, const VectorXd &q_e, const VectorXd &q_k) const
-    // {
-    //     VectorXd r_vec = this->radius_func(q_k);
-
-    //     double denominator = (q_e - q_k).cwiseAbs().dot(r_vec);
-    //     return phi_tk * (1.0 - tk) / denominator;
-    // }
 
     std::vector<RS>
     BasePlanner::QToStates(const MatrixXd &Q) const
@@ -124,7 +105,6 @@ namespace Burs
             // 5 - 1 = 4 BUT we want 0.1, 0.2, 0.3, 0.4, not 0.0 0.1 0.2 0.3
             // std::cout << "final dist: " << final_dist << " resolution: " << q_resolution << "\n";
             int segments = (final_dist / q_resolution);
-            // std::cout << "num segments: " << segments << "\n";
             // 1 2 3 4
             for (unsigned int l = 1; l < segments; ++l) // segments = 5 => 1 2 3 4 OK
             {
@@ -132,12 +112,6 @@ namespace Burs
                 RS inter_state = this->NewState(q_k_tmp);
 
                 double tmp_max_dist = this->env->robot->MaxDistance(state_near, inter_state);
-                // if (tmp_max_dist > d_max)
-                // {
-                //     std::cout << "base_planner.cc: interstate exceeded max dist: " << tmp_max_dist << " > " << d_max << "\n";
-                //     exit(1);
-                // }
-                // std::cout << "dist: " << tmp_max_dist << "\n";
                 new_states[i].push_back(inter_state);
             }
             new_states[i].push_back(state_k);
@@ -149,19 +123,13 @@ namespace Burs
     std::vector<RS>
     BasePlanner::GetEndpoints(const RS &state_near, const std::vector<RS> &rand_states, double d_max) const
     {
-        // std::cout << "getendpoints state near: " << state_near.config.transpose() << "\n";
         double d_small = 0.1 * d_max;
 
         std::vector<RS> new_states;
         new_states.reserve(rand_states.size());
-        // MatrixXd endpoints = MatrixXd::Zero(this->q_dim, rand_Q.cols());
 
-        // std::cout << "start q: " << state_near.config.transpose() << "\n";
-        // std::cout << "finish q: " << rand_states[0].config.transpose() << "\n";
         for (int i = 0; i < rand_states.size(); ++i)
         {
-            // std::cout << "getendpoints rand state: " << rand_states[i].config.transpose() << "\n";
-            // // If this won't move further that it is allowed
             double maxPossibleDist = this->env->robot->MaxDistance(state_near, rand_states[i]);
             if (maxPossibleDist < d_max)
             {
@@ -174,19 +142,14 @@ namespace Burs
             // always start out from the center
             RS state_k = state_near;
             double phi_result = d_max;
-            // VectorXd q_k(q_near);
 
             const RS &end_state = rand_states[i];
-            // const VectorXd q_e = rand_Q.col(i);
 
             // They said 4-5 iterations to reach 0.1*closest_distance
             // So either:
             //  1. iterate until 0.1*dc
             //  2. 4-5 iterations
-            // for (unsigned int k = 0; k < 5; ++k)
-            for (unsigned int k = 0; k < 5 && phi_result > d_small; ++k)
-            // for (unsigned int k = 0; phi_result > d_small; ++k)
-            // while (phi_result > d_small)
+            for (unsigned int k = 0; phi_result > d_small; ++k)
             {
                 // CHECK: this is indeed PI away from q_near
 
@@ -199,45 +162,19 @@ namespace Burs
                     break;
                 }
                 // has actually never reached > 1
-                // if (tk > 1.0) // some tolerance
-                // {
-                //     q_k = q_e;
-                //     // std::runtime_error("t_k was greater than 1. This shouldn't happen.");
-                //     break;
-                // }
                 // q_k = q_near + tk * (q_e - q_near);
                 VectorXd q_k = state_near.config + tk * (end_state.config - state_near.config);
                 state_k = this->QToStates(q_k)[0];
-                // state_k = this->env->robot->FullFK(q_k);
                 phi_result = d_max - this->env->robot->MaxDistance(state_near, state_k);
-                // std::cout << "dist travelled at step " << k << ": " << (d_max - phi_result) << "\n";
-                // std::cout << q_k.transpose() << "\n";
-                // phi_result = d_max - this->MaxMovedDistance(q_near, q_k);
             }
             new_states.push_back(state_k);
-            // endpoints.col(i) = q_k;
-            // double max_moved_dist = this->env->robot->MaxMovedDistance(state_near, state_k);
-            // std::cout << "q_k: " << q_k.transpose() << "\n";
-            // std::cout << "maxmoved dist: " << max_moved_dist << " epsilon: " << d_max << "\n";
-            // if (max_moved_dist > d_max)
-            // {
-            //     std::cout << "MOVED MORE THAN SHOULD HAVE: " << max_moved_dist << " > " << d_max << "\n";
-            //     // exit(1);
-            // }
         }
-        // return endpoints;
-        // for (auto &s : new_states)
-        // {
-        //     std::cout << "s: " << s.config.transpose() << "\n";
-        // }
-        // assert(new_states.size() < 2);
         return new_states;
     }
 
     int
     BasePlanner::AddObstacle(std::string obstacle_file, Eigen::Matrix3d R, Eigen::Vector3d t)
     {
-        // std::cout << "JPlusRbtPlanner: adding obstacle " << obstacle_file << std::endl;
         return this->env->AddObstacle(obstacle_file, R, t);
     }
 
@@ -258,7 +195,6 @@ namespace Burs
 
         if (obstacles)
         {
-            // std::cout << "JPlusRbtPlanner: number of obstacles: " << env->obstacle_models.size() << std::endl;
             for (int i = 0; i < env->obstacle_models.size(); ++i)
             {
                 output << "obstacle," << i << std::endl;
@@ -335,34 +271,6 @@ namespace Burs
             ++i;
         }
         return output.str();
-    }
-
-    void
-    BasePlanner::ExampleFunctions(const VectorXd &q_start, const VectorXd &q_goal)
-    {
-
-        this->env->AddObstacle("path/to/obstacle.obj", Matrix3d::Identity(), Vector3d::Ones());
-
-        RS new_state = this->NewState(q_start);
-        // BurTree(VectorXd q_location, int q_dim);
-        std::shared_ptr<BurTree> t_a = std::make_shared<BurTree>(new_state, this->q_dim);
-        VectorXd Qe = this->GetRandomQ(1);
-
-        // q_near <- NEAREST(q_{e1}, T_a)
-        // int nearest_index = this->NearestIndex(t_a, Qe);
-
-        // const VectorXd q_near = t_a->GetQ(nearest_index);
-        const double some_delta_q = 0.1;
-        // VectorXd q_new = this->GetEndpoints(Qe, q_near, some_delta_q);
-
-        // if (!this->IsColliding(q_new))
-        // {
-        //     t_a->AddNode(nearest_index, q_new);
-        // }
-
-        // CLOSEST DISTANCE
-        // double d_closest = this->GetClosestDistance(q_near);
-        std::cout << "d < d_crit" << std::endl;
     }
 
 }

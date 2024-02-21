@@ -29,9 +29,6 @@ namespace Burs
         double
         GetDeltaTk(double phi_tk, double tk, const RS &end_state, const RS &k_state) const;
 
-        // double
-        // GetDeltaTk(double phi_tk, double tk, const VectorXd &q_e, const VectorXd &q_k) const;
-
         std::vector<RS>
         QToStates(const MatrixXd &Q) const;
 
@@ -40,13 +37,6 @@ namespace Burs
 
         std::vector<RS>
         GetEndpoints(const RS &state_near, const std::vector<RS> &rand_states, double d_max) const;
-
-        // EXAMPLE USAGE OF BASIC FUNCTIONS
-        void
-        ExampleFunctions(const VectorXd &q_start, const VectorXd &q_goal);
-
-        // double
-        // MaxMovedDistance(const VectorXd &q1, const VectorXd &q2) const;
 
         int
         AddObstacle(std::string obstacle_file, Eigen::Matrix3d R, Eigen::Vector3d t);
