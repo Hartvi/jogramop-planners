@@ -15,7 +15,9 @@ prefix = sys.argv[2]
 maxReportedTime = float(sys.argv[3])
  
 
-DTG = 70
+DTG = 60
+
+NORUNTIME = 20*maxReportedTime
 
 def val(x):
     return x[1][-1][1]
@@ -107,7 +109,7 @@ for plannerDir in glob.glob("{}/*/*".format(resultDir)):
                 if line.find("{") != -1 and line.find("}") != -1:
                     y = json.loads(line)
                     if y["time"] < 1e-3 or y["treesize"] == 0:
-                        y["time"] = 10*maxReportedTime
+                        y["time"] = NORUNTIME
                         y["dtg"] = 1e10
 
                     print("Loading ", line, "->", y)
@@ -117,6 +119,7 @@ for plannerDir in glob.glob("{}/*/*".format(resultDir)):
 
 
 for key in results:
+    print("Processing ", key)
     scenarioNum, plannerName, ikindex = key
 
     plt.clf()
@@ -153,17 +156,34 @@ for key in results:
     plt.savefig("{}.png".format(outfile))
 
 
+def getNumTargets(scenario): #scenario is "011", "021" etc
+    """ return number of ik-solutions for grasp and number of grasps """                              
+    scenarioDir = "jogramop/scenarios/{}/export/".format(scenario)
+    obstacleFile = "{}/obstacles.obj".format(scenarioDir)
+    startFile = "{}/robot_start_conf.csv".format(scenarioDir)
+    ikFile = "{}/grasp_IK_solutions.csv".format(scenarioDir)
+    graspFile = "{}/grasps.csv".format(scenarioDir)
+    f = open(ikFile, "rt")
+    numIk = 0
+    numGrasps = 0
+    with open(ikFile, "rt") as f:
+        for line in f:
+            if len(line) > 2:
+                numIk+=1
+    with open(graspFile, "rt") as f:
+        for line in f:
+            if len(line) > 2:
+                numGrasps+=1
+    return numIk, numGrasps
+
 def summary(key):
     if not key in results:
         print("Cannot find key!", key)
         quit()
     data = results[key]
     distances = [ item["dtg"] for item in data ]
-    times = [ item["time"]  for item in data ]
-    srCurve = getSRCurve( times, distances )
-
-    xvals = [ item[0] for item in srCurve if item[0] < maxReportedTime ]
-    yvals = [ item[1] for item in srCurve if item[0] < maxReportedTime ]
+    times = [ item["time"]  for item in data]
+    times = [ item for item in times if item != NORUNTIME ]
     avgTime = None
     stdDev = None
     sr = None
@@ -179,38 +199,49 @@ def summary(key):
     return avgTime, stdDev, sr
 
 
-maxIKreport = 6
+print("allIKS", allIKS)
 
 fot = open("table.tex", "wt")
-fot.write("\\begin{tabular}{lc" + "c"*maxIKreport + "}\n")
+fot.write("\\begin{tabular}{lccll}\n")
 fot.write("\\toprule\n")
-fot.write(" {\\bf Scenario } & {\\bf JRRT } & \\multicolumn{4}{c}{{\\bf IKRRT }} \\\\ \n")
-fot.write("       &      ");
-for i in range(maxIKreport):
-    fot.write(" & {} ".format(i))
-fot.write("\\\\ \n")    
+fot.write(" \\multicolumn{1}{c}{\\bf Scenario } & {\\bf \\#IKS } & {\\bf \\#GP} & \\multicolumn{1}{c}{{\\bf JRRT }} & \\multicolumn{1}{c}{{\\bf IKRRT }} \\\\ \n")
 
 scenes = list(allScenarios.keys())
 scenes.sort()
 for scene in scenes:
-    fot.write("\\\\\n \\midrule ")
-    fot.write("{\\bf " + str(scene) + "}  ")
+    if scene[-1] == "1":
+        fot.write("\\midrule\n")
+
+    numik, numgrasps = getNumTargets(scene)
+    fot.write("{\\bf " + str(scene) + "} & " + str(numik) + " & " + str(numgrasps) )
     
     key = (scene, "jrrt", 0)
     if not key in results:
         continue
     tavg,timedev,sr = summary(key)
 
-    fot.write(" & ${:.2f}/{:.2f} | {:.2f}\%$  ".format(tavg,timedev, sr))
+    #write time line
+    if tavg != None:
+        fot.write("  & {}\%: ${:.2f}/{:.2f}$  ".format(int(sr),tavg,timedev))
+    else:
+        fot.write("  & ---   ")
 
-    for ik in range(maxIKreport):
+    ikValues = []
+    for ik in range(numik):
         key = (scene, "ikrrt", ik)
-        if key in results:
-            tavg,timedev,sr = summary(key)
-            fot.write(" & ${:.2f}/{:.2f} | {:.2f}\%$  ".format(tavg,timedev, sr))
-        else:
-            fot.write(" & --- ")
-    fot.write("\\\\ \n")
+        if not key in results:
+            continue
+        tavg,timedev,sr = summary(key)
+        if tavg != None:
+            ikValues += [ [tavg, timedev, sr, ik ] ]
+    print("ikval", ikValues)            
+    #best time
+    ikValues.sort(key=lambda item: item[0])
+    if len(ikValues) > 0:
+        fot.write(" &  {}\%  : {:.2f}/{:.2f}".format(int(ikValues[0][2]), ikValues[0][3], ikValues[0][0], ikValues[0][1] ))
+    else:
+        fot.write(" & --- " )
+    fot.write("\\\\ \n ")
 
 fot.write("\n\\bottomrule\n")
 fot.write("\\end{tabular}\n")

@@ -24,7 +24,7 @@ fout = open("all-cmds.sh", "wt")
     
 
 
-rrtSize = 200 * 1000
+rrtSize = 400 * 1000
 distanceToGoal = 60.0  #should be 0.05!!
 dcrit = 0.11
 dcrit = 0.05
@@ -35,8 +35,8 @@ prob_steer = 0.01 #steer
 goalBiasProbability = 0.7 #goal bias neer the goal
     
 #urdfFile = "jogramop/robots/franka_panda/mobile_panda.urdf"
-#urdfFile = "jogramop/robots/franka_panda/mobile_panda_fingers.urdf"
-urdfFile = "jogramop/robots/franka_panda/mobile_panda_fingersSmallMesh.urdf"
+urdfFile = "jogramop/robots/franka_panda/mobile_panda_fingers.urdf"
+#urdfFile = "jogramop/robots/franka_panda/mobile_panda_fingersSmallMesh.urdf"
 seed = 1
 
 
@@ -60,7 +60,6 @@ for scenario in nameScenarios:
     ikFile = "{}/grasp_IK_solutions.csv".format(scenarioDir)
     graspFile = "{}/grasps.csv".format(scenarioDir)
 
-    
     for planner in planners:
         resultsDir = "{}/{}/{}".format(outputDir, scenario, planner)
         os.system("mkdir -p {}".format(resultsDir))
@@ -80,7 +79,7 @@ for scenario in nameScenarios:
                     print("Result ", outFile, " finished ")
                     continue
 
-                cmd = "timeout 60s ./burs_of_free_space test "
+                cmd = "timeout 120s ./burs_of_free_space test "
                 cmd += " -grasp {} -urdf {} -obstacle {} -start_config {}".format(graspFile, urdfFile, obstacleFile, startFile)
                 cmd += " -delta_q 3.14 -epsilon_q 0.1 -num_spikes 4  "
                 cmd += " -render 0 -vis_script scripts/animate_scene.py -cx -1 -cy 3 -cz 6 -groundLevel 0.00 -minColSegIdx 6 "
@@ -101,7 +100,14 @@ for scenario in nameScenarios:
                 cmd += " -bias_calculation 0 "
                 cmd += " -ik_index {} ".format(ikindex)
                 seed += 1
+
+                if scenario in ["025", "044", "045"]:
+                    print("increasing size ")
+                    cmd += " -max_iters {} ".format(rrtSize*100) 
+
                 fout.write("{} > {}.stdout \n".format( cmd, outFile ) )
+
+
 
 
 fout.close()        
