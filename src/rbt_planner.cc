@@ -15,11 +15,6 @@ namespace Burs
 {
     using namespace Eigen;
 
-    // RbtPlanner::RbtPlanner(int q_dim, ForwardKinematicsParallel f, int max_iters, double d_crit, double delta_q, double epsilon_q, Eigen::MatrixXd bounds, RadiusFuncParallel radius_func, int num_spikes)
-    //     : BasePlanner(q_dim, max_iters, epsilon_q, bounds), // Initialize the BasePlanner part of the object
-    //       forwardKinematicsParallel(f), d_crit(d_crit), delta_q(delta_q), radius_func(radius_func), num_spikes(num_spikes)
-    // {
-    // }
     RbtPlanner::RbtPlanner(std::string path_to_urdf_file)
         : RRTPlanner(path_to_urdf_file)
     {
@@ -28,34 +23,6 @@ namespace Burs
     RbtPlanner::RbtPlanner() : RRTPlanner()
     {
     }
-
-    // double
-    // RbtPlanner::RhoR(const VectorXd &q1, const VectorXd &q2) const
-    // {
-    //     double max_distance = 0.0;
-
-    //     auto res1 = this->forwardKinematicsParallel(q1);
-    //     auto res2 = this->forwardKinematicsParallel(q2);
-
-    //     for (unsigned int i = 0; i < res1.size(); ++i)
-    //     {
-    //         double tmp = (res1[i] - res2[i]).norm();
-    //         if (tmp > max_distance)
-    //         {
-    //             max_distance = tmp;
-    //         }
-    //     }
-    //     return max_distance;
-    // }
-
-    // double
-    // RbtPlanner::GetDeltaTk(double phi_tk, double tk, const VectorXd &q_e, const VectorXd &q_k) const
-    // {
-    //     VectorXd r_vec = this->radius_func(q_k);
-
-    //     double denominator = (q_e - q_k).cwiseAbs().dot(r_vec);
-    //     return phi_tk * (1.0 - tk) / denominator;
-    // }
 
     std::optional<std::vector<Eigen::VectorXd>>
     RbtPlanner::RbtConnectDenseBurs(const VectorXd &q_start, const VectorXd &q_goal, const RbtParameters &plan_parameters, PlanningResult &planning_result)
@@ -226,6 +193,206 @@ namespace Burs
         return this->ConstructPathFromTree(t_start, best_idx);
     }
 
+    std::pair<AlgorithmState, int>
+    RbtPlanner::BurConnect(std::shared_ptr<BurTree> t, const RS &q, const RbtParameters &plan_parameters, const RS &goal_state, RS &best_state, double &best_dist)
+    {
+        RS tmp_q = q;
+        int n_idx = t->Nearest(tmp_q);
+        RS q_n = *t->Get(n_idx);
+        const RS q_0 = q_n;
+
+        double initial_distance = this->env->robot->MaxDistance(q_0, q) - 1e-6; // small tolerance
+
+        double delta_s = 1e14;
+        double threshold = 1e-2;
+        int previous_step = n_idx;
+
+        while (delta_s >= plan_parameters.delta_q)
+        {
+            double d_closest = this->GetClosestDistance(q_n);
+
+            if (d_closest > plan_parameters.d_crit)
+            {
+                // if q_n is within the collision free bur of q, then we finish, game over
+                // RS q_t = this->GetEndpoints(q_n, {q}, d_closest)[0];
+                std::vector<RS> q_t = this->GetEndpointsInterstates(q_n, {q}, d_closest, plan_parameters.q_resolution)[0];
+
+                delta_s = (q_t.back().config - q_n.config).norm();
+
+                // previous_step = this->AddPointsExceptFirst(t, previous_step, configs);
+                for (unsigned int i = 0; i < q_t.size(); ++i)
+                {
+                    previous_step = t->AddNode(previous_step, q_t[i]);
+                }
+                q_n = q_t.back();
+
+                if (this->env->robot->MaxDistance(q, q_n) < plan_parameters.epsilon_q)
+                {
+                    std::cout << "RBT reached\n";
+                    return {AlgorithmState::Reached, previous_step};
+                }
+            }
+            else
+            {
+                RS q_t = this->GetEndpoints(q_n, {q}, plan_parameters.epsilon_q)[0];
+
+                if (this->IsColliding(q_t))
+                {
+                    return {AlgorithmState::Trapped, -1};
+                }
+                else
+                { // not colliding
+                    previous_step = t->AddNode(previous_step, q_t);
+                    q_n = q_t;
+
+                    double tmp_dist = this->env->robot->EEDistance(q_n, goal_state);
+                    if (tmp_dist < best_dist)
+                    {
+                        best_dist = tmp_dist;
+                        best_state = q_n;
+                    }
+                }
+                // if ((q_n - q_0).norm() >= (q - q_0).norm())
+                double qnq0_dist = this->env->robot->MaxDistance(q_n, q_0);
+                if (qnq0_dist >= initial_distance)
+                {
+                    std::cout << "RRT reached\n";
+                    return {AlgorithmState::Reached, previous_step};
+                }
+            }
+        }
+        return {AlgorithmState::Trapped, -1};
+    }
+
+    void
+    RbtPlanner::InitGraspClosestConfigs(JPlusRbtParameters &planner_parameters, std::shared_ptr<BurTree> t, const int &start_idx) const
+    {
+        auto &tgts = planner_parameters.target_poses;
+        KDL::Frame ee = this->env->robot->GetEEFrame(*t->Get(start_idx));
+
+        for (unsigned int i = 0; i < tgts.size(); ++i)
+        {
+            auto &tgt = tgts[i];
+            auto &goal = tgt.frame;
+            auto [dist_to_goal, f] = this->BasicDistanceMetric(ee, goal, planner_parameters.rotation_dist_ratio);
+            // double dist_to_goal = (goal.p - ee.p).Norm();
+            tgt.best_dist = dist_to_goal;
+            tgt.best_state = start_idx;
+            // std::cout << "q: " << q.config << "\n";
+        }
+    }
+
+    double
+    RbtPlanner::SetGraspClosestConfigs(JPlusRbtParameters &planner_parameters, std::shared_ptr<BurTree> t, const int &state_idx) const
+    {
+        auto &tgts = planner_parameters.target_poses;
+        // auto ee_q = this->GetEEPose(q);
+        KDL::Frame ee = this->env->robot->GetEEFrame(*t->Get(state_idx));
+
+        double tmp_dist = 1e10;
+        for (unsigned int i = 0; i < tgts.size(); ++i)
+        {
+            auto &tgt = tgts[i];
+            auto &goal = tgt.frame;
+            auto [dist_to_goal, f] = this->BasicDistanceMetric(ee, goal, planner_parameters.rotation_dist_ratio);
+            // std::cout << "dist: " << dist_to_goal << "\n";
+            // double dist_to_goal = (goal.p - ee.p).Norm();
+            if (dist_to_goal < tgt.best_dist)
+            {
+                // std::cout << "new best dist: " << dist_to_goal << "\n";
+                tgt.best_dist = dist_to_goal;
+                tgt.best_state = state_idx;
+            }
+            if (dist_to_goal < tmp_dist)
+            {
+                dist_to_goal = tmp_dist;
+            }
+        }
+        return tmp_dist;
+    }
+
+    unsigned int
+    RbtPlanner::GetBestGrasp(JPlusRbtParameters &planner_parameters) const
+    {
+        auto &tgts = planner_parameters.target_poses;
+        double best_dist = 1e14;
+        int best_idx = -1;
+
+        for (unsigned int i = 0; i < tgts.size(); ++i)
+        {
+            auto &tgt = tgts[i];
+            auto &goal = tgt.frame;
+            // std::cout << "current dist: " << tgt.best_dist << "\n";
+            if (tgt.best_dist < best_dist)
+            {
+                best_dist = tgt.best_dist;
+                best_idx = i;
+            }
+        }
+        return best_idx;
+    }
+
+    std::pair<double, KDL::Frame>
+    RbtPlanner::BasicDistanceMetric(const KDL::Frame &ee, const KDL::Frame &tgt, const double &angle_ratio) const
+    {
+        // units [meters]
+        double dist = (ee.p - tgt.p).Norm() * 1000;
+        KDL::Rotation ee_inv = ee.M.Inverse();
+
+        auto [changed_rot, closest_grasp_rot] = this->GetClosestSymmetricGrasp(tgt.M, ee.M);
+        KDL::Rotation r = tgt.M * ee_inv;
+        double angle_dist = acos((r(0, 0) + r(1, 1) + r(2, 2) - 1.0) * 0.5) * rad_to_deg;
+        // if the symmetric rotation is a different one
+        if (changed_rot)
+        {
+            KDL::Rotation r2 = closest_grasp_rot * ee_inv;
+            double angle_dist2 = acos((r2(0, 0) + r2(1, 1) + r2(2, 2) - 1.0) * 0.5) * rad_to_deg;
+            // take the smaller of the two distances
+            if (angle_dist2 < angle_dist)
+            {
+                angle_dist = angle_dist2;
+            }
+            else
+            {
+            }
+        }
+
+        // 2 * cos + 1 on diagonal *always*
+        // units: [degrees / 1000] to make it equivalent to [mm * deg]
+        KDL::Frame f(r, tgt.p);
+        return {(1.0 - angle_ratio) * dist + angle_ratio * angle_dist, f};
+    }
+
+    std::pair<bool, KDL::Rotation>
+    RbtPlanner::GetClosestSymmetricGrasp(const KDL::Rotation &rotMatGrasp, const KDL::Rotation &rotMatEE) const
+    {
+        // Extract the Y-axis (second column) from both rotation matrices
+        KDL::Vector yGrasp = KDL::Vector(rotMatGrasp(0, 1), rotMatGrasp(1, 1), rotMatGrasp(2, 1));
+        KDL::Vector yEE = KDL::Vector(rotMatEE(0, 1), rotMatEE(1, 1), rotMatEE(2, 1));
+
+        // Initialize the closest grasp rotation matrix to the input grasp rotation matrix
+        KDL::Rotation closestGrasp(rotMatGrasp);
+
+        // Check if the dot product of the Y-axes is negative, indicating opposing directions
+        double dot_product = (yGrasp(0) * yEE(0) + yGrasp(1) * yEE(1) + yGrasp(2) * yEE(2));
+        bool changed_rot = dot_product < 0;
+        if (changed_rot)
+        {
+            // Need to flip both the X (first column) and Y-axis (second column)
+            closestGrasp(0, 0) = -closestGrasp(0, 0); // Flip X-axis
+            closestGrasp(1, 0) = -closestGrasp(1, 0); // Flip X-axis
+            closestGrasp(2, 0) = -closestGrasp(2, 0); // Flip X-axis
+            closestGrasp(0, 1) = -closestGrasp(0, 1); // Flip Y-axis
+            closestGrasp(1, 1) = -closestGrasp(1, 1); // Flip Y-axis
+            closestGrasp(2, 1) = -closestGrasp(2, 1); // Flip Y-axis
+        }
+
+        return {changed_rot, closestGrasp};
+    }
+
+    // BELOW NOT IN USE - only used for experimenting/validating //////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    // NOT IN USE
     std::optional<std::vector<Eigen::VectorXd>>
     RbtPlanner::RbtConnect(const VectorXd &q_start, const VectorXd &q_goal, const RbtParameters &plan_parameters, PlanningResult &planning_result)
     {
@@ -389,109 +556,7 @@ namespace Burs
         return this->ConstructPathFromTree(t_start, best_idx);
     }
 
-    std::pair<AlgorithmState, int>
-    RbtPlanner::BurConnect(std::shared_ptr<BurTree> t, const RS &q, const RbtParameters &plan_parameters, const RS &goal_state, RS &best_state, double &best_dist)
-    {
-        // std::cout << "\n\ninitq: " << q.config.transpose() << "\n";
-        int debugcounter = 0;
-
-        RS tmp_q = q;
-        int n_idx = t->Nearest(tmp_q);
-        RS q_n = *t->Get(n_idx);
-        const RS q_0 = q_n;
-
-        double initial_distance = this->env->robot->MaxDistance(q_0, q) - 1e-6; // small tolerance
-
-        double delta_s = 1e14;
-        double threshold = 1e-2;
-        int previous_step = n_idx;
-
-        while (delta_s >= plan_parameters.delta_q)
-        {
-            double d_closest = this->GetClosestDistance(q_n);
-            // std::cout << "BC CLOSE: " << d_closest << "\n";
-
-            if (d_closest > plan_parameters.d_crit)
-            {
-                // if q_n is within the collision free bur of q, then we finish, game over
-                // RS q_t = this->GetEndpoints(q_n, {q}, d_closest)[0];
-                std::vector<RS> q_t = this->GetEndpointsInterstates(q_n, {q}, d_closest, plan_parameters.q_resolution)[0];
-
-                delta_s = (q_t.back().config - q_n.config).norm();
-
-                // std::vector<RS> configs = this->Densify(q_n, q_t, plan_parameters);
-
-                // for (unsigned int i = 1; i < configs.size(); ++i)
-                // {
-                //     double tmp_dist = this->env->robot->EEDistance(configs[i], goal_state);
-                //     if (tmp_dist < best_dist)
-                //     {
-                //         best_dist = tmp_dist;
-                //         best_state = configs[i];
-                //     }
-                // }
-
-                // previous_step = this->AddPointsExceptFirst(t, previous_step, configs);
-                for (unsigned int i = 0; i < q_t.size(); ++i)
-                {
-                    previous_step = t->AddNode(previous_step, q_t[i]);
-                }
-                q_n = q_t.back();
-
-                // if (q_n.isApprox(q, threshold))
-                if (this->env->robot->MaxDistance(q, q_n) < plan_parameters.epsilon_q)
-                {
-                    std::cout << "RBT reached\n";
-                    return {AlgorithmState::Reached, previous_step};
-                }
-            }
-            else
-            {
-                RS q_t = this->GetEndpoints(q_n, {q}, plan_parameters.epsilon_q)[0];
-                // std::cout << "prev: " << t->Get(previous_step)->frames.back().p << "\n";
-
-                if (this->IsColliding(q_t))
-                {
-                    // std::cout << "RRT trapped\n";
-                    return {AlgorithmState::Trapped, -1};
-                }
-                else
-                { // not colliding
-                    previous_step = t->AddNode(previous_step, q_t);
-                    // std::cout << "q_0: " << q_0.frames.back().p << "\n";
-                    // std::cout << "prev: " << q_n.frames.back().p << "\n";
-                    q_n = q_t;
-                    // std::cout << "next: " << q_t.frames.back().p << "\n";
-
-                    double tmp_dist = this->env->robot->EEDistance(q_n, goal_state);
-                    if (tmp_dist < best_dist)
-                    {
-                        best_dist = tmp_dist;
-                        best_state = q_n;
-                    }
-                }
-                // if (debugcounter > 5)
-                // {
-                //     exit(1);
-                // }
-                // debugcounter++;
-
-                // if ((q_n - q_0).norm() >= (q - q_0).norm())
-                double qnq0_dist = this->env->robot->MaxDistance(q_n, q_0);
-                // std::cout << "init dist: " << initial_distance << " qnq0 dist: " << qnq0_dist << "\n";
-                if (qnq0_dist >= initial_distance)
-                {
-                    // std::vector<RS> configs = this->Densify(q_n, q, plan_parameters);
-                    // std::vector<VectorXd> configs = this->Densify(q_n, q, plan_parameters);
-                    // previous_step = this->AddPointsExceptFirst(t, previous_step, configs);
-                    std::cout << "RRT reached\n";
-                    return {AlgorithmState::Reached, previous_step};
-                }
-            }
-        }
-        return {AlgorithmState::Trapped, -1};
-    }
-
+    // NOT IN USE
     std::vector<double>
     RbtPlanner::AddDenseBur(std::shared_ptr<BurTree> tree, const int &idx_near, const std::vector<RS> &endpoints, JPlusRbtParameters &plan_params) const
     {
@@ -530,6 +595,7 @@ namespace Burs
         return distances;
     }
 
+    // NOT IN USE
     int
     RbtPlanner::AddPointsExceptFirst(std::shared_ptr<BurTree> t, const int &first_el_idx, const std::vector<RS> vec) const
     {
@@ -568,6 +634,7 @@ namespace Burs
         return prev_id;
     }
 
+    // NOT IN USE
     std::vector<RS>
     RbtPlanner::Densify(const RS &src, const RS &tgt, const RbtParameters &plan_params) const
     {
@@ -649,74 +716,6 @@ namespace Burs
         return configs;
     }
 
-    void
-    RbtPlanner::InitGraspClosestConfigs(JPlusRbtParameters &planner_parameters, std::shared_ptr<BurTree> t, const int &start_idx) const
-    {
-        auto &tgts = planner_parameters.target_poses;
-        KDL::Frame ee = this->env->robot->GetEEFrame(*t->Get(start_idx));
-
-        for (unsigned int i = 0; i < tgts.size(); ++i)
-        {
-            auto &tgt = tgts[i];
-            auto &goal = tgt.frame;
-            auto [dist_to_goal, f] = this->BasicDistanceMetric(ee, goal, planner_parameters.rotation_dist_ratio);
-            // double dist_to_goal = (goal.p - ee.p).Norm();
-            tgt.best_dist = dist_to_goal;
-            tgt.best_state = start_idx;
-            // std::cout << "q: " << q.config << "\n";
-        }
-    }
-
-    double
-    RbtPlanner::SetGraspClosestConfigs(JPlusRbtParameters &planner_parameters, std::shared_ptr<BurTree> t, const int &state_idx) const
-    {
-        auto &tgts = planner_parameters.target_poses;
-        // auto ee_q = this->GetEEPose(q);
-        KDL::Frame ee = this->env->robot->GetEEFrame(*t->Get(state_idx));
-
-        double tmp_dist = 1e10;
-        for (unsigned int i = 0; i < tgts.size(); ++i)
-        {
-            auto &tgt = tgts[i];
-            auto &goal = tgt.frame;
-            auto [dist_to_goal, f] = this->BasicDistanceMetric(ee, goal, planner_parameters.rotation_dist_ratio);
-            // std::cout << "dist: " << dist_to_goal << "\n";
-            // double dist_to_goal = (goal.p - ee.p).Norm();
-            if (dist_to_goal < tgt.best_dist)
-            {
-                // std::cout << "new best dist: " << dist_to_goal << "\n";
-                tgt.best_dist = dist_to_goal;
-                tgt.best_state = state_idx;
-            }
-            if (dist_to_goal < tmp_dist)
-            {
-                dist_to_goal = tmp_dist;
-            }
-        }
-        return tmp_dist;
-    }
-
-    unsigned int
-    RbtPlanner::GetBestGrasp(JPlusRbtParameters &planner_parameters) const
-    {
-        auto &tgts = planner_parameters.target_poses;
-        double best_dist = 1e14;
-        int best_idx = -1;
-
-        for (unsigned int i = 0; i < tgts.size(); ++i)
-        {
-            auto &tgt = tgts[i];
-            auto &goal = tgt.frame;
-            // std::cout << "current dist: " << tgt.best_dist << "\n";
-            if (tgt.best_dist < best_dist)
-            {
-                best_dist = tgt.best_dist;
-                best_idx = i;
-            }
-        }
-        return best_idx;
-    }
-
     std::optional<std::vector<Eigen::VectorXd>>
     RbtPlanner::TestCollisionVsDistanceTime(const VectorXd &q_start, const RbtParameters &plan_parameters, PlanningResult &planning_result)
     {
@@ -743,83 +742,4 @@ namespace Burs
         return {{q_start}};
     }
 
-    std::pair<double, KDL::Frame>
-    RbtPlanner::BasicDistanceMetric(const KDL::Frame &ee, const KDL::Frame &tgt, const double &angle_ratio) const
-    {
-        // units [meters]
-        double dist = (ee.p - tgt.p).Norm() * 1000;
-        KDL::Rotation ee_inv = ee.M.Inverse();
-
-        auto [changed_rot, closest_grasp_rot] = this->GetClosestSymmetricGrasp(tgt.M, ee.M);
-        KDL::Rotation r = tgt.M * ee_inv;
-        double angle_dist = acos((r(0, 0) + r(1, 1) + r(2, 2) - 1.0) * 0.5) * rad_to_deg;
-        // if the symmetric rotation is a different one
-        if (changed_rot)
-        {
-            KDL::Rotation r2 = closest_grasp_rot * ee_inv;
-            double angle_dist2 = acos((r2(0, 0) + r2(1, 1) + r2(2, 2) - 1.0) * 0.5) * rad_to_deg;
-            // take the smaller of the two distances
-            if (angle_dist2 < angle_dist)
-            {
-                // std::cout << "symmetric has smaller angle: " << angle_dist2 << " < " << angle_dist << "\n";
-                angle_dist = angle_dist2;
-                // r = r2;
-            }
-            else
-            {
-                // std::cout << "default was smaller: " << angle_dist << " < " << angle_dist2 << "\n";
-            }
-        }
-        // KDL::Rotation invm = tgt.M * ee_inv.Inverse();
-        // KDL::Rotation r = (tgt.M * ee.M);
-        // KDL::Rotation r2 = (closest_grasp_rot.Inverse() * ee.M);
-        // if (acos((r(0, 0) + r(1, 1) + r(2, 2) - 1.0) * 0.5) <= acos((r2(0, 0) + r2(1, 1) + r2(2, 2) - 1.0) * 0.5))
-        // {
-        // std::cout << "default angle dist: " << acos((r(0, 0) + r(1, 1) + r(2, 2) - 1.0) * 0.5) << "\n";
-        // std::cout << "symmetr angle dist: " << acos((r2(0, 0) + r2(1, 1) + r2(2, 2) - 1.0) * 0.5) << "\n";
-        // std::cout << "reverse def angle dist: " << acos((invm(0, 0) + invm(1, 1) + invm(2, 2) - 1.0) * 0.5) << "\n";
-        // std::cout << "reverse sym angle dist: " << acos((invm2(0, 0) + invm2(1, 1) + invm2(2, 2) - 1.0) * 0.5) << "\n";
-        // std::cout << "\n";
-        // }
-        // assert(acos((r(0, 0) + r(1, 1) + r(2, 2) - 1.0) * 0.5) <= acos((r2(0, 0) + r2(1, 1) + r2(2, 2) - 1.0) * 0.5));
-
-        // 2 * cos + 1 on diagonal *always*
-        // units: [degrees / 1000] to make it equivalent to [mm * deg]
-        KDL::Frame f(r, tgt.p);
-        // std::cout << "ratio: " << angle_ratio << " metric: " << dist << " angular: " << angle_dist << " total: " << (1.0 - angle_ratio) * dist + angle_ratio * angle_dist << "\n";
-        return {(1.0 - angle_ratio) * dist + angle_ratio * angle_dist, f};
-    }
-
-    std::pair<bool, KDL::Rotation>
-    RbtPlanner::GetClosestSymmetricGrasp(const KDL::Rotation &rotMatGrasp, const KDL::Rotation &rotMatEE) const
-    {
-        // Extract the Y-axis (second column) from both rotation matrices
-        KDL::Vector yGrasp = KDL::Vector(rotMatGrasp(0, 1), rotMatGrasp(1, 1), rotMatGrasp(2, 1));
-        KDL::Vector yEE = KDL::Vector(rotMatEE(0, 1), rotMatEE(1, 1), rotMatEE(2, 1));
-
-        // Initialize the closest grasp rotation matrix to the input grasp rotation matrix
-        KDL::Rotation closestGrasp(rotMatGrasp);
-
-        // Check if the dot product of the Y-axes is negative, indicating opposing directions
-        double dot_product = (yGrasp(0) * yEE(0) + yGrasp(1) * yEE(1) + yGrasp(2) * yEE(2));
-        // std::cout << "dot product: " << dot_product << "\n";
-        // std::cout << "arccos dot product: " << acos(dot_product) << "\n";
-        // std::cout << "closest: \n"
-        //           << closestGrasp << "\n";
-        // std::cout << "rot mat: \n"
-        //           << rotMatGrasp << "\n";
-        bool changed_rot = dot_product < 0;
-        if (changed_rot)
-        {
-            // Need to flip both the X (first column) and Y-axis (second column)
-            closestGrasp(0, 0) = -closestGrasp(0, 0); // Flip X-axis
-            closestGrasp(1, 0) = -closestGrasp(1, 0); // Flip X-axis
-            closestGrasp(2, 0) = -closestGrasp(2, 0); // Flip X-axis
-            closestGrasp(0, 1) = -closestGrasp(0, 1); // Flip Y-axis
-            closestGrasp(1, 1) = -closestGrasp(1, 1); // Flip Y-axis
-            closestGrasp(2, 1) = -closestGrasp(2, 1); // Flip Y-axis
-        }
-
-        return {changed_rot, closestGrasp};
-    }
 }
