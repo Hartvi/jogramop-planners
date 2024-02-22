@@ -12,13 +12,13 @@ git clone git@github.com:Hartvi/Burs.git
 ```
 git clone git@github.com:GammaUNC/PQP.git
 ```
-3. Install the following libraries  `urdfdom` and `KDL`:
-```
-sudo apt-get install liburdfdom-dev
-sudo apt-get install libkdl-parser-dev
-```
-  - Install eigen if you don't have it: ```sudo apt install libeigen3-dev```
-    - The version used was libeigen3-dev/focal,focal,now 3.3.7-2 all [installed,automatic]
+3. Install the following libraries  `` and `KDL`:
+- **urdfdom** - `sudo apt-get install liburdfdom-dev`
+- **KDL** - `sudo apt-get install libkdl-parser-dev`
+- **Eigen** if you don't have it: ```sudo apt install libeigen3-dev```
+  - The version used is 3.3.7-2
+- **FLANN** https://github.com/flann-lib/flann, `sudo apt install libflann-dev`
+- **LZ4** https://github.com/lz4/lz4, `sudo apt install liblz4-dev`
 4. Clone [jogramop](https://github.com/mrudorfer/jogramop) into the Burs directory
 ```
 cd Burs
@@ -34,7 +34,7 @@ make
 5. Run planners using one of the `P{i}_{planner}.sh` scripts. There you can set parameters as you need.
 6. Run `./show_options.sh` to show all parameters options and their meanings
 
-The code was tested on Ubuntu 22.04 and 
+The code was tested on Ubuntu 20.04
 
 ## Output format
  `.try`, `.vis`, `.txt`
