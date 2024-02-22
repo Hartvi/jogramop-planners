@@ -54,7 +54,7 @@ target_include_directories(burs_of_free_space PRIVATE ${kdl_parser_INCLUDE_DIRS}
 # target_link_libraries(burs_of_free_space ${kdl_parser_LIBRARIES} ${orocos_kdl_LIBRARIES})
 target_link_libraries(burs_of_free_space ${kdl_parser_LIBRARIES})
 
-target_link_libraries(burs_of_free_space ${PYTHON_LIBRARIES})
+# target_link_libraries(burs_of_free_space ${PYTHON_LIBRARIES})
 
 # Link against PQP and other required libraries
 target_link_libraries(burs_of_free_space PQP flann lz4)
