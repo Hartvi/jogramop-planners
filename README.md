@@ -18,6 +18,6 @@ cd build
 cmake ..
 make
 ```
-5. Run using one of the `P{i}_planner.sh` scripts
-
+5. Run planners using one of the `P{i}_planner.sh` scripts. There you can set parameters as you need.
+6. Run `./show_options.sh` to show all parameters options and their meanings
 
