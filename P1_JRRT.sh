@@ -1,8 +1,8 @@
 ./build/burs_of_free_space \
--grasp /home/hartvi/Documents/CVUT/diploma_thesis/burs_of_free_space/jogramop/scenarios/011/export/grasps.csv \
--urdf /home/hartvi/Documents/CVUT/diploma_thesis/burs_of_free_space/jogramop/robots/franka_panda/mobile_panda_fingersSmallMesh.urdf \
--obstacle /home/hartvi/Documents/CVUT/diploma_thesis/burs_of_free_space/jogramop/scenarios/011/export/obstacles.obj \
--start_config /home/hartvi/Documents/CVUT/diploma_thesis/burs_of_free_space/jogramop/scenarios/011/export/robot_start_conf.csv \
+-grasp jogramop/scenarios/011/export/grasps.csv \
+-urdf jogramop/robots/franka_panda/mobile_panda_fingersSmallMesh.urdf \
+-obstacle jogramop/scenarios/011/export/obstacles.obj \
+-start_config jogramop/scenarios/011/export/robot_start_conf.csv \
 -planner 0 \
 -max_iters 10000 \
 -d_crit 0.1 \
@@ -17,6 +17,6 @@
 -rot_ratio 0.5 \
 -groundLevel 0.0 \
 -minColSegIdx 6 \
--target_prefix /home/hartvi/Documents/CVUT/diploma_thesis/burs_of_free_space/lel \
--target_configs /home/hartvi/Documents/CVUT/diploma_thesis/burs_of_free_space/jogramop/scenarios/011/export/grasp_IK_solutions.csv \
+-target_prefix lel \
+-target_configs jogramop/scenarios/011/export/grasp_IK_solutions.csv \
 -ik_index 0 \
