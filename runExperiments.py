@@ -18,25 +18,25 @@ planners = {}
 
 planners["jrrt"] = "-planner 3 -d_crit 100000 " #rrt, alternating random expansion + goal bias 
 planners["ikrrt"] = "-planner 5 -d_crit 100000 "  #goal is IK solution, goes to only single goal
-#planners["jrbtNew"] = "-planner 8 -epsilon_q 0.1 -preheat_ratio 0.0 " #burs rrt + j+ expand
 
 fout = open("all-cmds.sh", "wt")
     
 
 
-rrtSize = 400 * 1000
+rrtSize = 400 * 1000 #400 for all scenarios except 045
 distanceToGoal = 60.0  #should be 0.05!!
 dcrit = 0.11
 dcrit = 0.05
 
-goalBiasRadius = 25
+goalBiasRadius = 30  #was 25
 goalBiasProbability = 0.5 #goal bias neer the goal
+
 prob_steer = 0.01 #steer
 goalBiasProbability = 0.7 #goal bias neer the goal
     
 #urdfFile = "jogramop/robots/franka_panda/mobile_panda.urdf"
-urdfFile = "jogramop/robots/franka_panda/mobile_panda_fingers.urdf"
-#urdfFile = "jogramop/robots/franka_panda/mobile_panda_fingersSmallMesh.urdf"
+#urdfFile = "jogramop/robots/franka_panda/mobile_panda_fingers.urdf"
+urdfFile = "jogramop/robots/franka_panda/mobile_panda_fingersSmallMesh.urdf"
 seed = 1
 
 
@@ -79,7 +79,7 @@ for scenario in nameScenarios:
                     print("Result ", outFile, " finished ")
                     continue
 
-                cmd = "timeout 120s ./burs_of_free_space test "
+                cmd = "timeout 900s ./burs_of_free_space test "
                 cmd += " -grasp {} -urdf {} -obstacle {} -start_config {}".format(graspFile, urdfFile, obstacleFile, startFile)
                 cmd += " -delta_q 3.14 -epsilon_q 0.1 -num_spikes 4  "
                 cmd += " -render 0 -vis_script scripts/animate_scene.py -cx -1 -cy 3 -cz 6 -groundLevel 0.00 -minColSegIdx 6 "
@@ -101,9 +101,12 @@ for scenario in nameScenarios:
                 cmd += " -ik_index {} ".format(ikindex)
                 seed += 1
 
-                if scenario in ["025", "044", "045"]:
-                    print("increasing size ")
-                    cmd += " -max_iters {} ".format(rrtSize*100) 
+#                if scenario in ["025", "044", "045"]:
+#                    print("increasing size ")
+#                    cmd += " -max_iters {} ".format(rrtSize*20) 
+                if scenario in "045":
+                    print("increasing size2 ")
+                    cmd += " -max_iters {} ".format(rrtSize*10) 
 
                 fout.write("{} > {}.stdout \n".format( cmd, outFile ) )
 

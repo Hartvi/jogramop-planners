@@ -12,25 +12,17 @@ plt.rcParams["figure.figsize"] = (12,8)
 
 resultDir = sys.argv[1].replace("/","")
 prefix = sys.argv[2]
-maxReportedTime = float(sys.argv[3])
+MaxReportedTime = float(sys.argv[3])
  
 
 DTG = 60
 
-NORUNTIME = 20*maxReportedTime
-
-def val(x):
-    return x[1][-1][1]
-
-def val2(x):
-    return areaUnderCurve(x[1], maxReportedTime)
-
-def val3(x):
-    return rankSRCurve(x[1])
+#NORUNTIME = 120 for all except 045
+NORUNTIME = 900 #for 045
 
 
 
-def getSRCurve(values, distances):
+def getSRCurve(values, distances, maxReportedTime):
     if len(values) == 0 or len(distances) == 0:
         return []
 
@@ -118,42 +110,56 @@ for plannerDir in glob.glob("{}/*/*".format(resultDir)):
                     results[key] += [y]
 
 
-for key in results:
-    print("Processing ", key)
-    scenarioNum, plannerName, ikindex = key
+print("allIKS", allIKS)
 
-    plt.clf()
-    plt.xlabel("time [s]")
-    plt.ylabel("sucess rate")
-    srCurves = []
+for planner in sorted(allPlanners):
+    for scenePrefix in ["01", "02", "03", "04"]:
+        plt.clf()
+        plt.xlabel("time [s]")
+        plt.ylabel("sucess rate")
+        plt.figure(figsize=(10,4))
+        #for scenePrefix in allScenarios:
+        for i in range(1,6):
+            scene = "{}{}".format(scenePrefix, i)
+            srCurves = []
+            for ik in allIKS:
+                key = (scene, planner, ik)
+                print("scene", scene, key, key in results)
+                if not key in results:
+                    continue
+                data = results[key]
+                distances = [ item["dtg"] for item in data ]
+                times = [ item["time"]  for item in data ]
+                treesize = [ item["treesize"]  for item in data ]
+                if len(times) == 0:
+                    continue
+                meantime = sum(times) / len(times)
+                srCurve = getSRCurve( times, distances, MaxReportedTime )
+                srCurves.append( [srCurve, meantime ] )
 
-    data = results[key]
-    distances = [ item["dtg"] for item in data ]
-    times = [ item["time"]  for item in data ]
-    srCurve = getSRCurve( times, distances )
+                srCurve = getSRCurve( treesize, distances, 1e10 ) #for treesizes do not use MaxReportedTime
+#                srCurves.append( [srCurve, meantime ] )
 
-    xvals = [ item[0] for item in srCurve if item[0] < maxReportedTime ]
-    yvals = [ item[1] for item in srCurve if item[0] < maxReportedTime ]
-
-    if len(times) > 0:
-        avgTime = sum(times) /len(times)
-        stdDev = sum( [ (i-avgTime)**2 for i in times ] ) / len(times)
-        stdDev = stdDev**(0.5)
-
-    if len(distances) > 0:
-        goodTrials = [ 1 for item in distances if item <= DTG ]
-        sr = len(goodTrials ) / len(distances)
-            
-    if len(srCurve) != 0:
-        srCurves.append([plannerName, srCurve])
-
-    line = plt.plot( xvals, yvals, label="{}".format(plannerName) )
-
+            srCurves.sort(key = lambda item: item[1]) #sort by time
+            print("Sorted times", [ item[1] for item in srCurves ] )
+            if len(srCurves) != 0:
+                srCurve = srCurves[0][0]
+                xvals = [ item[0] for item in srCurve if item[0] < MaxReportedTime ]
+                yvals = [ item[1] for item in srCurve if item[0] < MaxReportedTime ]
+                xvals = [ item[0] for item in srCurve  ]
+                yvals = [ item[1] for item in srCurve  ]
+                line = plt.plot( xvals, yvals, label="{}".format(scene) )
         
-    plt.legend()
-    ikindex = int(ikindex)
-    outfile = "{}-scenario{}-ik{:02d}-{}.png".format(prefix, scenarioNum, ikindex, plannerName)
-    plt.savefig("{}.png".format(outfile))
+#        plt.xlim([0, maxReportedTime])
+        plt.legend()
+        plt.grid(axis='both', color='0.95')
+#        plt.xlabel("Iterations")
+        plt.xlabel("Runtime [s]")
+        plt.ylabel("Probability of finding solution")
+        ikindex = int(ikindex)
+        outfile = "{}-scenario{}-planner{}-time.eps".format(prefix, scenePrefix, planner) 
+        plt.savefig("{}".format(outfile))
+
 
 
 def getNumTargets(scenario): #scenario is "011", "021" etc
@@ -183,7 +189,9 @@ def summary(key):
     data = results[key]
     distances = [ item["dtg"] for item in data ]
     times = [ item["time"]  for item in data]
-    times = [ item for item in times if item != NORUNTIME ]
+#    times = [ item for item in times if item != NORUNTIME ]
+    print("runtimes", key, ",", times)
+
     avgTime = None
     stdDev = None
     sr = None
@@ -195,7 +203,7 @@ def summary(key):
     if len(distances) > 0:
         goodTrials = [ 1 for item in distances if item <= DTG ]
         sr = 100*len(goodTrials ) / len(distances)
-                    
+    print("RES", avgTime, sr)                
     return avgTime, stdDev, sr
 
 
@@ -213,7 +221,21 @@ for scene in scenes:
         fot.write("\\midrule\n")
 
     numik, numgrasps = getNumTargets(scene)
-    fot.write("{\\bf " + str(scene) + "} & " + str(numik) + " & " + str(numgrasps) )
+
+    ikValues = []
+    for ik in range(numik+1):
+        key = (scene, "ikrrt", ik)
+        if not key in results:
+            continue
+        tavg,timedev,sr = summary(key)
+        if tavg != None:
+            ikValues += [ [tavg, timedev, sr, ik ] ]
+    if numik == 0:
+        ikValues = []            
+    print("ikval", ikValues)            
+    #best time
+
+    fot.write("{\\bf " + str(scene) + "} & " + str(numik) + "/" + str(len(ikValues)) + " & " + str(numgrasps) )
     
     key = (scene, "jrrt", 0)
     if not key in results:
@@ -226,19 +248,11 @@ for scene in scenes:
     else:
         fot.write("  & ---   ")
 
-    ikValues = []
-    for ik in range(numik):
-        key = (scene, "ikrrt", ik)
-        if not key in results:
-            continue
-        tavg,timedev,sr = summary(key)
-        if tavg != None:
-            ikValues += [ [tavg, timedev, sr, ik ] ]
-    print("ikval", ikValues)            
-    #best time
+
     ikValues.sort(key=lambda item: item[0])
+
     if len(ikValues) > 0:
-        fot.write(" &  {}\%  : {:.2f}/{:.2f}".format(int(ikValues[0][2]), ikValues[0][3], ikValues[0][0], ikValues[0][1] ))
+        fot.write(" &  {}\%  : {:.2f}/{:.2f}".format(int(ikValues[0][2]), ikValues[0][0], ikValues[0][1],  ))
     else:
         fot.write(" & --- " )
     fot.write("\\\\ \n ")
