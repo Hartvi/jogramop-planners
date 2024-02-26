@@ -1,77 +1,63 @@
 # Burs
 
-## How to run
-Assuming you have CMake setup for this project:
-- requires PQP library in directory next to `burs_of_free_space/` and others installed according to the `CMakeLists.txt`
-  - `burs_of_free_space/`, `PQP/`
+## Installation
 
+1. Clone this repository into a directory
 ```
-find_package(urdfdom REQUIRED)
-# find_package(orocos_kdl REQUIRED)
-find_package(kdl_parser REQUIRED)
-
-find_package(PythonLibs REQUIRED)
-include_directories(${PYTHON_INCLUDE_DIRS})
-
-
-# Include directories
-include_directories(include /usr/local/include /usr/include /usr/local/include/eigen3)
-
-# Add subdirectory for PQP
-add_subdirectory(../PQP PQP_build)
+git clone git@github.com:Hartvi/Burs.git
 ```
-- also install libraries:
+2. Clone [PQP](https://github.com/GammaUNC/PQP) into the same directory
+  - because in `CMakeLists.txt` there is: `add_subdirectory(../PQP PQP_build)` 
+  - or move it where you like and change the `CMakeLists.txt` as well
 ```
-sudo apt-get install liburdfdom-dev
-sudo apt-get install libkdl-parser-dev
+git clone git@github.com:GammaUNC/PQP.git
 ```
-- then you can build it
-
+3. Install the following libraries:
+- **urdfdom** - `sudo apt-get install liburdfdom-dev`
+- **KDL** - `sudo apt-get install libkdl-parser-dev`
+- **Eigen** https://gitlab.com/libeigen/eigen/ / `sudo apt install libeigen3-dev`
+  - The version used is 3.3.7-2
+- **FLANN** https://github.com/flann-lib/flann / `sudo apt install libflann-dev`
+- **LZ4** https://github.com/lz4/lz4 / `sudo apt install liblz4-dev`
+4. Clone [jogramop](https://github.com/mrudorfer/jogramop) into the Burs directory
+```
+cd Burs
+git clone git@github.com:mrudorfer/jogramop.git
+```
+4. Then you can build it
 ```
 mkdir build
 cd build
 cmake ..
 make
 ```
+5. Run planners using one of the `P{i}_{planner}.sh` scripts. There you can set parameters as you need.
+6. Run `./show_options.sh` to show all parameters options and their meanings
 
-- Run test: `./burs_of_free_space test`
+The code was tested on Ubuntu 20.04, with C++17.
 
+## Output format
+The planner outputs three files (with a prefix specified by -target_prefix PREFIX
+- `PREFIX.try` - this the trajectory, a list of configurations on each line
+- `PREFIX.vis` - the file containing the Frame of the obstacles and sobot segments to visualize the path in 3D
+- `PREFIX.txt` - this file contains measurements. Success, distance to target, time, number of iterations, tree size. e.g. { "sr":1,"dtg":43.0474,"time":0.130713,"iters":118,"treesize": 120}
 
-## TODO:
-- send to martin many files with configurations for each scenario
-- Extend algorithm to use two trees when provided with target configuration
-  - Add Connect usage when the target config is known
-- visualize grasp in blender using a point
-- Done: RRT switch 
-  - with J+
-  - without J+
-- Done: always save best config
-- Done: result measurement prefix
-  - e.g. ahoj => ahoj.txt measurement, ahoj.try configuration list, ahoj.vis R and t for visualization
+## How to run experiments
 
+For statistical evaluation of the planners, it's necessary to run the planners several time (on each scene or for each planner settings).
+The basic testing can be achieved in this way:
 
-- Verify correctness of algorithm
-- Test `JPlusRbtPlanner` that it runs and finishes
-- Add measurements from `include/planning_result.h`
-- `bur_related/bur_tree.h`: 
-  - Update only changed parts of tree
-  - Prevent double deletion
-  - Maybe use smart pointers instead of basic `new` and `delete`
-- Add pseudo-inverse Jacobian-directed bur creation
-- The `radius` mentioned in the bur paper is probably just the max of the jacobian for a given joint
-- Test it with jogramop environment
+> python3 runExperiments.py  
 
-### Done:
-- Done: Already doing this: use relative steps in q because of different min-max values for each joint
-- Done: interpolate path by small steps
-- Done: create python binding
-  - expose:
-    - robot class: `robot_class(urdf_path)`, `add_obstacle(path, R, t)`, `plan(start, goal)`
+The script will create all-cmds.sh, which contains command lines for each planner/scenario. 
+The planners can be run either sequentially (i.e., running `sh all-cmds.sh`), or by parallel
 
-- Done: add function to accept `model path`, `R`, `t` to add as a scenario
-- Done: formalize correctly the forward kinematic functions
-  - this should enable me to check if the algorithm has been implemented correctly
+> parallel < all-cmds.sh
+
+After experiments finish, the resuls are in the results/ directory.
+Basic processing (drawing success rate curves into png) can be realized by>
+
+> python3 makeSucessRate
 
 
 
-`./burs_of_free_space ../../Models/stick_robot.obj ../../Models/cube.obj 5 5 5 ../jogramop/robots/franka_panda/panda.urdf `
