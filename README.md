@@ -43,6 +43,7 @@ The planner outputs three files (with a prefix specified by -target_prefix PREFI
 - `PREFIX.txt` - this file contains measurements. Success, distance to target, time, number of iterations, tree size. e.g. { "sr":1,"dtg":43.0474,"time":0.130713,"iters":118,"treesize": 120}
 
 ## How to run experiments
+- **NOTE**: At the moment only available on the `master` branch (main branch coming soon). Run `git checkout master` to perform experiments.
 
 For statistical evaluation of the planners, it's necessary to run the planners several time (on each scene or for each planner settings).
 The basic testing can be achieved in this way:
