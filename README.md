@@ -37,7 +37,27 @@ make
 The code was tested on Ubuntu 20.04, with C++17.
 
 ## Output format
-The planner outputs three files
-- `.try` - this the trajectory, a list of configurations on each line
-- `.vis` - the file containing the Frame of the obstacles and sobot segments to visualize the path in 3D
-- `.txt` - this file contains measurements. Success, distance to target, time, number of iterations, tree size. e.g. { "sr":1,"dtg":43.0474,"time":0.130713,"iters":118,"treesize": 120}
+The planner outputs three files (with a prefix specified by -target_prefix PREFIX
+- `PREFIX.try` - this the trajectory, a list of configurations on each line
+- `PREFIX.vis` - the file containing the Frame of the obstacles and sobot segments to visualize the path in 3D
+- `PREFIX.txt` - this file contains measurements. Success, distance to target, time, number of iterations, tree size. e.g. { "sr":1,"dtg":43.0474,"time":0.130713,"iters":118,"treesize": 120}
+
+## How to run experiments
+
+For statistical evaluation of the planners, it's necessary to run the planners several time (on each scene or for each planner settings).
+The basic testing can be achieved in this way:
+
+> python3 runExperiments.py  
+
+The script will create all-cmds.sh, which contains command lines for each planner/scenario. 
+The planners can be run either sequentially (i.e., running `sh all-cmds.sh`), or by parallel
+
+> parallel < all-cmds.sh
+
+After experiments finish, the resuls are in the results/ directory.
+Basic processing (drawing success rate curves into png) can be realized by>
+
+> python3 makeSucessRate
+
+
+

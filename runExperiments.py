@@ -18,7 +18,6 @@ planners = {}
 
 planners["jrrt"] = "-planner 3 -d_crit 100000 " #rrt, alternating random expansion + goal bias 
 planners["ikrrt"] = "-planner 5 -d_crit 100000 "  #goal is IK solution, goes to only single goal
-#planners["jrbtNew"] = "-planner 8 -epsilon_q 0.1 -preheat_ratio 0.0 " #burs rrt + j+ expand
 
 fout = open("all-cmds.sh", "wt")
     
@@ -39,9 +38,6 @@ goalBiasProbability = 0.7 #goal bias neer the goal
 urdfFile = "jogramop/robots/franka_panda/mobile_panda_fingersSmallMesh.urdf"
 seed = 1
 
-
-
-# urdfFile = "/home/hartvi/Documents/CVUT/diploma_thesis/burs_of_free_space/jogramop/robots/franka_panda/mobile_panda_fingersSmallMesh.urdf"
 seed = -1
 preheat_ratio=0.0
 
