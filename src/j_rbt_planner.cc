@@ -74,6 +74,11 @@ namespace Burs
                           << ", totalGetClosestDistTime: " << totalGetClosestDistTime << ", totalRunTime: " << totalRunTime << "\n";
                 std::cout.flush();
             }
+            if (this->globalTrigger) {
+                std::cerr << "Terminating planner as globalTrigger=" << globalTrigger << "\n";
+                std::cout << "Terminating planner as globalTrigger=" << globalTrigger << "\n";
+                break;
+            }
             // END LOGGING
 
             MatrixXd Qe = this->GetRandomQ(planner_parameters.num_spikes);
@@ -286,6 +291,14 @@ namespace Burs
             }
             // END LOGGING
 
+            if (this->globalTrigger) {
+                std::cerr << "Terminating planner as globalTrigger=" << globalTrigger << "\n";
+                std::cout << "Terminating planner as globalTrigger=" << globalTrigger << "\n";
+                break;
+            }
+
+
+
             MatrixXd Qe = this->GetRandomQ(planner_parameters.num_spikes);
             std::vector<RS> Qe_states = this->NewStates(Qe);
 
@@ -460,6 +473,14 @@ namespace Burs
                 std::cout.flush();
             }
             // END LOGGING
+
+            if (this->globalTrigger) {
+                std::cerr << "Terminating planner as globalTrigger=" << globalTrigger << "\n";
+                std::cout << "Terminating planner as globalTrigger=" << globalTrigger << "\n";
+                break;
+            }
+
+
 
             MatrixXd Qe = this->GetRandomQ(planner_parameters.num_spikes);
             std::vector<RS> Qe_states = this->NewStates(Qe);

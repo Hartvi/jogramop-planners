@@ -63,6 +63,13 @@ namespace Burs
                 std::cout.flush();
             }
             // END LOGGING
+            if (this->globalTrigger) {
+                std::cerr << "Terminating planner as globalTrigger=" << globalTrigger << "\n";
+                std::cout << "Terminating planner as globalTrigger=" << globalTrigger << "\n";
+                break;
+            }
+
+
 
             VectorXd q_rand = this->GetRandomQ(1);
             RS tmp_state = this->NewState(q_rand);

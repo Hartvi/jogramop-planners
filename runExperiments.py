@@ -23,7 +23,7 @@ fout = open("all-cmds.sh", "wt")
     
 
 
-rrtSize = 400 * 1000 #400 for all scenarios except 045
+rrtSize = 40 * 1000 #400 for all scenarios except 045
 distanceToGoal = 60.0  #should be 0.05!!
 dcrit = 0.11
 dcrit = 0.05
@@ -79,7 +79,7 @@ for scenario in nameScenarios:
                     print("Result ", outFile, " finished ")
                     continue
 
-                cmd = "timeout 900s ./burs_of_free_space test "
+                cmd = "timeout 10s ./burs_of_free_space test "
                 cmd += " -grasp {} -urdf {} -obstacle {} -start_config {}".format(graspFile, urdfFile, obstacleFile, startFile)
                 cmd += " -delta_q 3.14 -epsilon_q 0.1 -num_spikes 4  "
                 cmd += " -render 0 -vis_script scripts/animate_scene.py -cx -1 -cy 3 -cz 6 -groundLevel 0.00 -minColSegIdx 6 "

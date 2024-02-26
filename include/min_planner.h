@@ -77,6 +77,10 @@ namespace Burs
         int q_dim;
         // 2 columns: min column and max column
         MatrixXd bounds;
+
+        //this variable is set when catching signal and planners should (periodically) check it.
+        // if nonzero, planners should terminate and return results (if possible) immediately
+        int globalTrigger;
     };
 
     template <typename T>

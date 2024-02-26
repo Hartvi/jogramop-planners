@@ -20,8 +20,33 @@
 #include "ut.h"
 // #include "j_plus_rbt_planner.h"
 
+#include <signal.h>
+
 using namespace std;
 using namespace Burs;
+
+
+/* for catching signal when planner needs to be turned off
+*/
+static int *signalVariable = NULL;
+void catchSignal(int sig) {
+    std::cerr << "Catched signal " << sig << "\n";
+    if (sig == SIGTERM) {
+        std::cerr << "Terminating due to catched SIGTERM\n";
+        if (signalVariable) {
+            (*signalVariable)++;
+            std::cerr << "Increasing signal variable to " << (int)(*signalVariable) << "\n";
+        }
+    }
+}
+
+void registerSignal(int &signalVar) {
+    signalVariable = &signalVar;
+    std::cerr << "Registering catching of signal " << SIGTERM << "\n";
+    signal(SIGTERM, catchSignal);
+}   
+
+
 
 std::string joinWithCurrentDirectory(const std::string &filename)
 {
@@ -231,6 +256,10 @@ int main(int argc, char **argv)
             ofs << planning_result.toJSON() << "\n";
             ofs.close();
         }
+
+        // register signal and signal variable (if this sigman coms, the variable is increased and planners should terminate
+        jprbt->globalTrigger = 0;
+        registerSignal(jprbt->globalTrigger);
 
         switch (plannerType)
         {
@@ -449,6 +478,12 @@ int main(int argc, char **argv)
             break;
         }
         } // end switch
+
+        if (jprbt->globalTrigger == 0) {
+            std::cerr << "Planning finished in time\n";
+            std::cout << "Planning finished in time\n";
+            planning_result.finished_in_time = 1;
+        }
 
         char fname[2000];
         {

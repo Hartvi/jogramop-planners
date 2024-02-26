@@ -6,7 +6,7 @@
 namespace Burs
 {
 
-    PlanningResult::PlanningResult() : success(false), distance_to_goal(0), time_taken(0), num_iterations(0), tree_size(0) {}
+    PlanningResult::PlanningResult() : success(false), distance_to_goal(0), time_taken(0), num_iterations(0), tree_size(0), max_runtime(0), finished_in_time(0) {}
 
     PlanningResult::PlanningResult(bool _success, double _distance_to_goal, double _time_taken, int _num_iterations, int _tree_size)
         : success(_success), distance_to_goal(_distance_to_goal), time_taken(_time_taken), num_iterations(_num_iterations), tree_size(_tree_size) {}
@@ -32,7 +32,9 @@ namespace Burs
            << "\"dtg\":" << this->distance_to_goal << ","
            << "\"time\":" << this->time_taken << ","
            << "\"iters\":" << this->num_iterations << ","
-           << "\"treesize\": " << this->tree_size;
+           << "\"treesize\": " << this->tree_size << ","
+           << "\"maxRuntime\": " << this->max_runtime << ","
+           << "\"finishedInTime\": " << this->finished_in_time;
         ss << "}\n";
         return ss.str();
     }

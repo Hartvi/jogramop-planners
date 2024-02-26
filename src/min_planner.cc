@@ -11,11 +11,12 @@ namespace Burs
     using namespace Eigen;
 
     MinPlanner::MinPlanner(int q_dim, MatrixXd bounds)
-        : q_dim(q_dim), bounds(bounds)
+        : q_dim(q_dim), bounds(bounds), globalTrigger(0)
     {
     }
 
     MinPlanner::MinPlanner()
+        : globalTrigger(0)
     {
     }
 

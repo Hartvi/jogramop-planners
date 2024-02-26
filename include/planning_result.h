@@ -15,6 +15,8 @@ namespace Burs
         double time_taken;
         int num_iterations;
         int tree_size;
+        double max_runtime;
+        double finished_in_time;
 
         PlanningResult();
         PlanningResult(bool _success, double _distance_to_goal, double _time_taken, int _num_iterations, int _tree_size);
