@@ -1,10 +1,10 @@
-# Burs
+# Baseline planners
 
 ## Installation
 
 1. Clone this repository into a directory
 ```
-git clone git@github.com:Hartvi/Burs.git
+git clone git@github.com:Hartvi/jogramop-planners.git
 ```
 2. Clone [PQP](https://github.com/GammaUNC/PQP) into the same directory
   - because in `CMakeLists.txt` there is: `add_subdirectory(../PQP PQP_build)` 
@@ -19,9 +19,9 @@ git clone git@github.com:GammaUNC/PQP.git
   - The version used is 3.3.7-2
 - **FLANN** https://github.com/flann-lib/flann / `sudo apt install libflann-dev`
 - **LZ4** https://github.com/lz4/lz4 / `sudo apt install liblz4-dev`
-4. Clone [jogramop](https://github.com/mrudorfer/jogramop) into the Burs directory
+4. Clone [jogramop](https://github.com/mrudorfer/jogramop) into this directory
 ```
-cd Burs
+cd jogramop-planners
 git clone git@github.com:mrudorfer/jogramop.git
 ```
 4. Then you can build it
