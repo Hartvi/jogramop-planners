@@ -1,10 +1,10 @@
-# Burs
+# Baseline planners
 
 ## Installation
 
 1. Clone this repository into a directory
 ```
-git clone git@github.com:Hartvi/Burs.git
+git clone git@github.com:Hartvi/jogramop-planners.git
 ```
 2. Clone [PQP](https://github.com/GammaUNC/PQP) into the same directory
   - because in `CMakeLists.txt` there is: `add_subdirectory(../PQP PQP_build)` 
@@ -19,9 +19,9 @@ git clone git@github.com:GammaUNC/PQP.git
   - The version used is 3.3.7-2
 - **FLANN** https://github.com/flann-lib/flann / `sudo apt install libflann-dev`
 - **LZ4** https://github.com/lz4/lz4 / `sudo apt install liblz4-dev`
-4. Clone [jogramop](https://github.com/mrudorfer/jogramop) into the Burs directory
+4. Clone [jogramop](https://github.com/mrudorfer/jogramop) into this directory
 ```
-cd Burs
+cd jogramop-planners
 git clone git@github.com:mrudorfer/jogramop.git
 ```
 4. Then you can build it
@@ -43,6 +43,7 @@ The planner outputs three files (with a prefix specified by -target_prefix PREFI
 - `PREFIX.txt` - this file contains measurements. Success, distance to target, time, number of iterations, tree size. e.g. { "sr":1,"dtg":43.0474,"time":0.130713,"iters":118,"treesize": 120}
 
 ## How to run experiments
+- **NOTE**: At the moment only available on the `master` branch (main branch coming soon). Run `git checkout master` to perform experiments.
 
 For statistical evaluation of the planners, it's necessary to run the planners several time (on each scene or for each planner settings).
 The basic testing can be achieved in this way:
