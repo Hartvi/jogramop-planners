@@ -63,13 +63,12 @@ namespace Burs
                 std::cout.flush();
             }
             // END LOGGING
-            if (this->globalTrigger) {
+            if (this->globalTrigger)
+            {
                 std::cerr << "Terminating planner as globalTrigger=" << globalTrigger << "\n";
                 std::cout << "Terminating planner as globalTrigger=" << globalTrigger << "\n";
                 break;
             }
-
-
 
             VectorXd q_rand = this->GetRandomQ(1);
             RS tmp_state = this->NewState(q_rand);
@@ -253,50 +252,32 @@ namespace Burs
             // Max dist => epsilon_q
             double dist_to_move = std::min(metric_dist, planner_parameters.epsilon_q);
             RS new_state;
-            if (planner_parameters.bias_calculation_type == 1)
+            MatrixXd p_inv = this->env->robot->JPlus(near_state);
+            // .completeOrthogonalDecomposition().pseudoInverse();
+            VectorXd delta_frame(6);
+            delta_frame(0) = delta_pos(0);
+            delta_frame(1) = delta_pos(1);
+            delta_frame(2) = delta_pos(2);
+            if (use_rotation)
             {
-                // /*
-                KDL::Twist twist = this->GetTwist(f_tgt, p_near, dist_to_move, use_rotation);
-                // if (this->rng->getRandomReal() < 0.01)
-                // {
-                //     // std::cout << "distance metric: " << delta_p << " use rot: " << use_rotation << " metric dist: " << metric_dist << "\n";
-                //     std::cout << "twist: " << twist << "\n";
-                // }
-
-                KDL::JntArray q_dot = this->env->robot->ForwardJPlus(near_state, twist);
-                VectorXd delta_q = q_dot.data;
-                new_state = this->NewState(near_state.config + delta_q);
-                // */
+                double x, y, z;
+                (f_tgt.M * p_near.M.Inverse()).GetEulerZYX(z, y, x);
+                // RPY and euler return the same angle
+                delta_frame(3) = x;
+                delta_frame(4) = y;
+                delta_frame(5) = z;
             }
             else
             {
-                MatrixXd p_inv = this->env->robot->JPlus(near_state);
-                // .completeOrthogonalDecomposition().pseudoInverse();
-                VectorXd delta_frame(6);
-                delta_frame(0) = delta_pos(0);
-                delta_frame(1) = delta_pos(1);
-                delta_frame(2) = delta_pos(2);
-                if (use_rotation)
-                {
-                    double x, y, z;
-                    (f_tgt.M * p_near.M.Inverse()).GetEulerZYX(z, y, x);
-                    // RPY and euler return the same angle
-                    delta_frame(3) = x;
-                    delta_frame(4) = y;
-                    delta_frame(5) = z;
-                }
-                else
-                {
-                    delta_frame(3) = 0;
-                    delta_frame(4) = 0;
-                    delta_frame(5) = 0;
-                }
-                // std::cout << "pinv: " << p_inv.rows() << ", " << p_inv.cols() << "\n";
-                // std::cout << "delta_frame: " << delta_frame.transpose() << "\n";
-                VectorXd delta_q = p_inv * delta_frame;
-
-                new_state = this->NewState(near_state.config + delta_q);
+                delta_frame(3) = 0;
+                delta_frame(4) = 0;
+                delta_frame(5) = 0;
             }
+            // std::cout << "pinv: " << p_inv.rows() << ", " << p_inv.cols() << "\n";
+            // std::cout << "delta_frame: " << delta_frame.transpose() << "\n";
+            VectorXd delta_q = p_inv * delta_frame;
+
+            new_state = this->NewState(near_state.config + delta_q);
             // if (!planner_parameters.use_platform)
             // {
             //     delta_q(0) = 0;

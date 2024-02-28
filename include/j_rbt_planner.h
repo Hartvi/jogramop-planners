@@ -19,11 +19,11 @@ namespace Burs
     public:
         JRbtPlanner(std::string urdf_file);
 
-        std::optional<std::vector<Eigen::VectorXd>>
-        JRbt(const VectorXd &q_start, JPlusRbtParameters &planner_parameters, PlanningResult &planning_result);
+        // std::optional<std::vector<Eigen::VectorXd>>
+        // JRbt(const VectorXd &q_start, JPlusRbtParameters &planner_parameters, PlanningResult &planning_result);
 
-        std::optional<std::vector<Eigen::VectorXd>>
-        JRbtS(const VectorXd &q_start, JPlusRbtParameters &planner_parameters, PlanningResult &planning_result);
+        // std::optional<std::vector<Eigen::VectorXd>>
+        // JRbtS(const VectorXd &q_start, JPlusRbtParameters &planner_parameters, PlanningResult &planning_result);
 
         std::optional<std::vector<VectorXd>>
         JRbtBasic(const VectorXd &q_start, JPlusRbtParameters &planner_parameters, PlanningResult &plan_result);

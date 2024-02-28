@@ -1,1 +1,0 @@
-python3.10 scripts/animate_scene.py lel.vis -3 3 4 jogramop/scenarios/004/export/grasps.csv lel.tree

@@ -25,28 +25,29 @@
 using namespace std;
 using namespace Burs;
 
-
 /* for catching signal when planner needs to be turned off
-*/
+ */
 static int *signalVariable = NULL;
-void catchSignal(int sig) {
+void catchSignal(int sig)
+{
     std::cerr << "Catched signal " << sig << "\n";
-    if (sig == SIGTERM) {
+    if (sig == SIGTERM)
+    {
         std::cerr << "Terminating due to catched SIGTERM\n";
-        if (signalVariable) {
+        if (signalVariable)
+        {
             (*signalVariable)++;
             std::cerr << "Increasing signal variable to " << (int)(*signalVariable) << "\n";
         }
     }
 }
 
-void registerSignal(int &signalVar) {
+void registerSignal(int &signalVar)
+{
     signalVariable = &signalVar;
     std::cerr << "Registering catching of signal " << SIGTERM << "\n";
     signal(SIGTERM, catchSignal);
-}   
-
-
+}
 
 std::string joinWithCurrentDirectory(const std::string &filename)
 {
@@ -263,73 +264,11 @@ int main(int argc, char **argv)
 
         switch (plannerType)
         {
-        case 0: // rbt
-        {
-            std::cout << "PLANNING BLIND RBT\n";
-            // only difference is that it doesnt use probability_to_steer_to_target
-            params.probability_to_steer_to_target = 0.0;
-            params.goal_bias_probability = 0.0;
-
-            struct rusage t1, t2;
-            getTime(&t1);
-            path = jprbt->JRbt(start_config, params, planning_result);
-            getTime(&t2);
-            planning_result.time_taken = getTime(t1, t2);
-
-            final_path = path.value();
-            break;
-        }
-        case 1: // j+rbt
-        {
-            std::cout << "PLANNING J+RBT\n";
-            // extended with steer towards
-
-            // JPlusRbtParameters params(max_iters, d_crit, delta_q, epsilon_q, num_spikes, p_close_enough, probability_to_steer_to_target, grasp_frames);
-            // JPlusRbtParameters params(max_iters, d_crit, delta_q, epsilon_q, num_spikes, p_close_enough, probability_to_steer_to_target, grasp_frames, goal_bias_radius, goal_bias_probability);
-
-            struct rusage t1, t2;
-            getTime(&t1);
-            path = jprbt->JRbt(start_config, params, planning_result);
-
-            getTime(&t2);
-            planning_result.time_taken = getTime(t1, t2);
-            final_path = path.value();
-
-            break;
-        }
-        case 2: // BASIC RRT
-        {
-            std::cout << "PLANNING BASIC RRT\n";
-
-            // JPlusRbtParameters params(max_iters, 1e10, delta_q, epsilon_q, num_spikes, p_close_enough, 0.0, grasp_frames);
-            // JPlusRbtParameters params(max_iters, 1e10, delta_q, epsilon_q, num_spikes, p_close_enough, 0.0, grasp_frames, goal_bias_radius, goal_bias_probability);
-            // d_crit is infinite => always RRT
-            // probability to steer with J+ => 0
-            params.d_crit = 1e10;
-            params.probability_to_steer_to_target = 0.0;
-            params.goal_bias_probability = 0.0;
-
-            struct rusage t1,
-                t2;
-            getTime(&t1);
-            path = jprbt->JRRT(start_config, params, planning_result);
-            getTime(&t2);
-
-            planning_result.time_taken = getTime(t1, t2);
-            final_path = path.value();
-
-            break;
-        }
-        case 3: // J+RRT
+        case 0: // J+RRT
         {
             std::cout << "PLANNING J+ BIASED RRT\n";
             // extended with steer towards
 
-            // JPlusRbtParameters params(max_iters, 1e10, delta_q, epsilon_q, num_spikes, p_close_enough, probability_to_steer_to_target, grasp_frames);
-            // JPlusRbtParameters params(max_iters, 1e10, delta_q, epsilon_q, num_spikes, p_close_enough, probability_to_steer_to_target, grasp_frames, goal_bias_radius, goal_bias_probability);
-            // only RRT switch:
-            // params.d_crit = 1e10;
-
             struct rusage t1, t2;
             getTime(&t1);
             path = jprbt->JRRT(start_config, params, planning_result);
@@ -340,46 +279,24 @@ int main(int argc, char **argv)
 
             break;
         }
-        case 4:
+        case 1:
         {
-            std::cout << "PLANNING IK RBT\n";
-            // only difference is that it doesnt use probability_to_steer_to_target
-
-            // JPlusRbtParameters params(max_iters, d_crit, delta_q, epsilon_q, num_spikes, p_close_enough, 0.0, grasp_frames);
-            // JPlusRbtParameters params(max_iters, 1e10, delta_q, epsilon_q, num_spikes, p_close_enough, probability_to_steer_to_target, grasp_frames, goal_bias_radius, goal_bias_probability);
-
-            std::vector<Eigen::VectorXd> goals = RobotBase::parseCSVToVectors(targetConfigsFile);
+            std::cout << "PLANNING J+RBT basic\n";
 
             struct rusage t1, t2;
             getTime(&t1);
-            // auto path = jprbt->RbtConnect(start_config, goals[0], params);
-            // auto path = jprbt->RbtMultiGoal(start_config, goals, params, planning_result, max_iter_for_all_ik);
-            // for (auto &g : goals)
-            // {
-            //     std::cout << "goal: " << g.transpose() << "\n";
-            // }
-            // std::cout << "TARGET IK IDX: " << ik_index_in_target_configs << "\n";
-            // std::cout << "selected goal: " << goals[ik_index_in_target_configs].transpose() << "\n";
-            // exit(1);
-            if (goals.size() == 0)
-            {
-                std::cout << "NO INVERSE KINEMATICS SOLUTIONS PRESENT\n\n";
-                exit(1);
-            }
-            path = jprbt->RbtConnectDenseBurs(start_config, goals[ik_index_in_target_configs], params, planning_result);
+            path = jprbt->JRbtBasic(start_config, params, planning_result);
+
             getTime(&t2);
             planning_result.time_taken = getTime(t1, t2);
             final_path = path.value();
 
             break;
         }
-        case 5:
+        case 2:
         {
             std::cout << "PLANNING IK RRT\n";
             // only difference is that it doesnt use probability_to_steer_to_target
-
-            // JPlusRbtParameters params(max_iters, d_crit, delta_q, epsilon_q, num_spikes, p_close_enough, 0.0, grasp_frames);
-            // JPlusRbtParameters params(max_iters, d_crit, delta_q, epsilon_q, num_spikes, p_close_enough, probability_to_steer_to_target, grasp_frames, goal_bias_radius, goal_bias_probability);
 
             std::vector<Eigen::VectorXd> goals = RobotBase::parseCSVToVectors(targetConfigsFile);
 
@@ -397,52 +314,21 @@ int main(int argc, char **argv)
 
             break;
         }
-        case 6:
-        {
-            std::cout << "PLANNING J+RBTS\n";
-            // extended with steer towards
-
-            // JPlusRbtParameters params(max_iters, d_crit, delta_q, epsilon_q, num_spikes, p_close_enough, probability_to_steer_to_target, grasp_frames);
-            // JPlusRbtParameters params(max_iters, d_crit, delta_q, epsilon_q, num_spikes, p_close_enough, probability_to_steer_to_target, grasp_frames, goal_bias_radius, goal_bias_probability);
-
-            struct rusage t1, t2;
-            getTime(&t1);
-            path = jprbt->JRbtS(start_config, params, planning_result);
-
-            getTime(&t2);
-            planning_result.time_taken = getTime(t1, t2);
-            final_path = path.value();
-
-            break;
-        }
-        case 7:
+        case 3:
         {
             std::cout << "PLANNING IK RBT\n";
 
             std::vector<Eigen::VectorXd> goals = RobotBase::parseCSVToVectors(targetConfigsFile);
+
+            struct rusage t1, t2;
+            getTime(&t1);
 
             if (goals.size() == 0)
             {
                 std::cout << "NO INVERSE KINEMATICS SOLUTIONS PRESENT\n\n";
                 exit(1);
             }
-            struct rusage t1, t2;
-            getTime(&t1);
             path = jprbt->RbtConnectDenseBurs(start_config, goals[ik_index_in_target_configs], params, planning_result);
-            getTime(&t2);
-            planning_result.time_taken = getTime(t1, t2);
-            final_path = path.value();
-
-            break;
-        }
-        case 8:
-        {
-            std::cout << "PLANNING J+RBT basic\n";
-
-            struct rusage t1, t2;
-            getTime(&t1);
-            path = jprbt->JRbtBasic(start_config, params, planning_result);
-
             getTime(&t2);
             planning_result.time_taken = getTime(t1, t2);
             final_path = path.value();
@@ -479,7 +365,8 @@ int main(int argc, char **argv)
         }
         } // end switch
 
-        if (jprbt->globalTrigger == 0) {
+        if (jprbt->globalTrigger == 0)
+        {
             std::cerr << "Planning finished in time\n";
             std::cout << "Planning finished in time\n";
             planning_result.finished_in_time = 1;
