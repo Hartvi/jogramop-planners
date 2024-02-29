@@ -13,8 +13,8 @@ git clone git@github.com:Hartvi/jogramop-planners.git
 git clone git@github.com:GammaUNC/PQP.git
 ```
 3. Install the following libraries:
-- **urdfdom** - `sudo apt-get install liburdfdom-dev`
-- **KDL** - `sudo apt-get install libkdl-parser-dev`
+- **urdfdom** - `sudo apt-get install liburdfdom-dev` and `liburdf-dev`
+- **KDL** - `sudo apt-get install libkdl-parser-dev` and `liborocos-kdl-dev`
 - **Eigen** https://gitlab.com/libeigen/eigen/ / `sudo apt install libeigen3-dev`
   - The version used is 3.3.7-2
 - **FLANN** https://github.com/flann-lib/flann / `sudo apt install libflann-dev`
