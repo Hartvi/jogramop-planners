@@ -19,10 +19,10 @@ git clone git@github.com:GammaUNC/PQP.git
   - The version used is 3.3.7-2
 - **FLANN** https://github.com/flann-lib/flann / `sudo apt install libflann-dev`
 - **LZ4** https://github.com/lz4/lz4 / `sudo apt install liblz4-dev`
-4. Clone [jogramop](https://github.com/mrudorfer/jogramop) into this directory
+4. Clone https://github.com/mrudorfer/jogramop-framework into this directory
 ```
 cd jogramop-planners
-git clone git@github.com:mrudorfer/jogramop.git
+git clone git@github.com:mrudorfer/jogramop-framework.git
 ```
 4. Then you can build it
 ```
