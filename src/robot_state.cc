@@ -15,15 +15,22 @@ namespace Burs
         // std::cout << "config: " << this->config << "\n";
         // assert(this->config.size() > 1);
         assert(config.size() > 1);
+        this->has_radii = true;
     }
 
-    RS::RS(const VectorXd &config, const std::vector<KDL::Frame> &frames, const KDL::Jacobian &jac)
-        : config(config), frames(frames), jac(jac)
+    RS::RS(const VectorXd &config, const std::vector<KDL::Frame> &frames)
+        : config(config), frames(frames)
     {
-        // std::cout << "config: " << this->config << "\n";
-        // assert(this->config.size() > 1);
-        assert(config.size() > 1);
+        this->has_radii = false;
     }
+
+    // RS::RS(const VectorXd &config, const std::vector<KDL::Frame> &frames, const KDL::Jacobian &jac)
+    //     : config(config), frames(frames), jac(jac)
+    // {
+    //     // std::cout << "config: " << this->config << "\n";
+    //     // assert(this->config.size() > 1);
+    //     assert(config.size() > 1);
+    // }
 
     // VectorXd
     // RS::GetRadii(const std::vector<KDL::Jacobian> &jacs)

@@ -52,13 +52,12 @@ namespace Burs
                 std::cout << "tree: " << (t_start->GetNumberOfNodes() + t_goal->GetNumberOfNodes()) << "\n";
             }
 
-            if (this->globalTrigger) {
+            if (this->globalTrigger)
+            {
                 std::cerr << "Terminating planner as globalTrigger=" << globalTrigger << "\n";
                 std::cout << "Terminating planner as globalTrigger=" << globalTrigger << "\n";
                 break;
             }
-
-
 
             // Get random configuration
             VectorXd q_rand = this->GetRandomQ(1);

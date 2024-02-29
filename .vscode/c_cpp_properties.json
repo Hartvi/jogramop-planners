@@ -9,8 +9,8 @@
                 "${workspaceFolder}/../PQP/include/",
                 "/usr/include/SDL2",
                 "/usr/include/cairo",
-                "/usr/include/eigen3",
-                "/usr/include/python3.8"
+                "/usr/local/**",
+                "/usr/include/**"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/gcc",

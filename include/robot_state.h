@@ -21,6 +21,7 @@ namespace Burs
         VectorXd config;
         // Frame of every segment
         std::vector<KDL::Frame> frames;
+        bool has_radii = false;
         // Every step in RRT requires the jacobian & frames of each segment
         KDL::Jacobian jac;
         // std::vector<KDL::Jacobian> jacs;
@@ -31,7 +32,8 @@ namespace Burs
         // RS(const VectorXd &config, const std::vector<KDL::Frame> &frames, const std::vector<KDL::Jacobian> &jacs);
         RS() = default;
         RS(const VectorXd &config, const std::vector<KDL::Frame> &frames, const KDL::Jacobian &jac, const VectorXd &radii);
-        RS(const VectorXd &config, const std::vector<KDL::Frame> &frames, const KDL::Jacobian &jac);
+        RS(const VectorXd &config, const std::vector<KDL::Frame> &frames);
+        // RS(const VectorXd &config, const std::vector<KDL::Frame> &frames, const KDL::Jacobian &jac);
 
         // Copy constructor
         // RS(const RS &other)
