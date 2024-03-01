@@ -12,8 +12,8 @@ find_package(urdfdom REQUIRED)
 # find_package(orocos_kdl REQUIRED)
 find_package(kdl_parser REQUIRED)
 
-find_package(PythonLibs REQUIRED)
-include_directories(${PYTHON_INCLUDE_DIRS})
+# find_package(PythonLibs REQUIRED)
+# include_directories(${PYTHON_INCLUDE_DIRS})
 
 
 # Include directories
