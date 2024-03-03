@@ -15,47 +15,12 @@ namespace Burs
 {
     using namespace Eigen;
 
-    // RbtPlanner::RbtPlanner(int q_dim, ForwardKinematicsParallel f, int max_iters, double d_crit, double delta_q, double epsilon_q, Eigen::MatrixXd bounds, RadiusFuncParallel radius_func, int num_spikes)
-    //     : BasePlanner(q_dim, max_iters, epsilon_q, bounds), // Initialize the BasePlanner part of the object
-    //       forwardKinematicsParallel(f), d_crit(d_crit), delta_q(delta_q), radius_func(radius_func), num_spikes(num_spikes)
-    // {
-    // }
     RbtPlanner::RbtPlanner(std::string path_to_urdf_file)
         : RRTPlanner(path_to_urdf_file)
     {
     }
 
-    RbtPlanner::RbtPlanner() : RRTPlanner()
-    {
-    }
-
-    // double
-    // RbtPlanner::RhoR(const VectorXd &q1, const VectorXd &q2) const
-    // {
-    //     double max_distance = 0.0;
-
-    //     auto res1 = this->forwardKinematicsParallel(q1);
-    //     auto res2 = this->forwardKinematicsParallel(q2);
-
-    //     for (unsigned int i = 0; i < res1.size(); ++i)
-    //     {
-    //         double tmp = (res1[i] - res2[i]).norm();
-    //         if (tmp > max_distance)
-    //         {
-    //             max_distance = tmp;
-    //         }
-    //     }
-    //     return max_distance;
-    // }
-
-    // double
-    // RbtPlanner::GetDeltaTk(double phi_tk, double tk, const VectorXd &q_e, const VectorXd &q_k) const
-    // {
-    //     VectorXd r_vec = this->radius_func(q_k);
-
-    //     double denominator = (q_e - q_k).cwiseAbs().dot(r_vec);
-    //     return phi_tk * (1.0 - tk) / denominator;
-    // }
+    RbtPlanner::RbtPlanner() : RRTPlanner() {}
 
     std::optional<std::vector<Eigen::VectorXd>>
     RbtPlanner::RbtConnectDenseBurs(const VectorXd &q_start, const VectorXd &q_goal, const RbtParameters &plan_parameters, PlanningResult &planning_result)

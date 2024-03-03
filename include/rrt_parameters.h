@@ -19,6 +19,7 @@ namespace Burs
         int max_iters;
         double epsilon_q;
         double q_resolution;
+        double collision_resolution;
 
         RRTParameters(int max_iters, double epsilon_q)
             : max_iters(max_iters), epsilon_q(epsilon_q), q_resolution(0)
@@ -40,7 +41,9 @@ namespace Burs
         {
             std::ostringstream oss;
             oss << "max_iters: " << max_iters
-                << ", epsilon_q: " << epsilon_q;
+                << ", epsilon_q: " << epsilon_q
+                << ", q_resolution: " << q_resolution
+                << ", collision_resolution: " << collision_resolution;
             return oss.str();
         }
     };

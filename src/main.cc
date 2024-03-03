@@ -120,6 +120,8 @@ int main(int argc, char **argv)
     int biasCalculationType;
     int preheat_type;
 
+    double collisionResolution;
+
     {
         CmdOptions o;
 
@@ -141,16 +143,11 @@ int main(int argc, char **argv)
         o.addOption(Option<int>("minColSegIdx", &minColSegmentIdx, "segment id from which it can collide with ground"));
 
         o.addOption(Option<int>("ik_index", &ik_index_in_target_configs, 0, "max iters for all ik solutions")); // default value is 0
-        o.addOption(Option<double>("goal_bias_radius", &goal_bias_radius, "radius to start turning towards goal"));
-        o.addOption(Option<double>("goal_bias_prob", &goal_bias_probability, "probability to turn to goal when close to goal"));
         o.addOption(Option<double>("q_resolution", &q_resolution, "resolution of individual steps in rbt"));
 
         o.addOption(Option<int>("use_rot", &useRotation, 0, "rotation bias threshold when to start using it (mm+deg)"));
         o.addOption(Option<double>("rot_ratio", &rotationDistRatio, 0.5, "ratio of rotation in distance metric (mm+deg)"));
-        o.addOption(Option<int>("bias_calculation", &biasCalculationType, 0, "type of J+ bias calculation 0 - pseudoinverse; 1 - Twist"));
 
-        o.addOption(Option<double>("preheat_ratio", &preheat_ratio, 0.1, "ratio of iterations to use for preheating"));
-        o.addOption(Option<int>("preheat_type", &preheat_type, 0, "type of preheating options 0, 1 so far"));
         o.addOption(Option<char *>("target_prefix", &targetPrefixFile, "file in which to save measurements, separated by keywords"));
 
         o.addOption(Option<int>("render", &renderVideo, "whether to render video"));
@@ -162,8 +159,8 @@ int main(int argc, char **argv)
         o.addOption(Option<int>("seed", &seed, -1, "random seed or time (if seed = -1)")); // default value is -1 -> seed is from time
 
         o.addOption(Option<int>("render_tree", &render_tree, 0, "whether to render the tree")); // default value is 0
-        // int super_duper_long_argument;
-        // o.addOption(Option<int>("super_duper_long_argument_to_crash_this", &super_duper_long_argument, "super duper long argument that should normally work")); // default value is 0
+
+        o.addOption(Option<double>("collision_resolution", &collisionResolution, 0.006, "ground z coodinate"));
 
         if (!o.parse(argc, argv))
         {
@@ -245,6 +242,7 @@ int main(int argc, char **argv)
         params.use_rotation = useRotation;
         params.rotation_dist_ratio = rotationDistRatio;
         params.bias_calculation_type = biasCalculationType;
+        params.collision_resolution = collisionResolution;
 
         // END COMMON SETTINGS ------------------------------------------------------------------------------------------------------------
 
@@ -335,6 +333,26 @@ int main(int argc, char **argv)
 
             break;
         }
+        case 4:
+        {
+            std::cout << "PLANNING RRT detailed\n";
+
+            std::vector<Eigen::VectorXd> goals = RobotBase::parseCSVToVectors(targetConfigsFile);
+
+            struct rusage t1, t2;
+            getTime(&t1);
+            if (goals.size() == 0)
+            {
+                std::cout << "NO INVERSE KINEMATICS SOLUTIONS PRESENT\n\n";
+                exit(1);
+            }
+            path = jprbt->RRTConnectQStep(start_config, goals[ik_index_in_target_configs], params, planning_result);
+            getTime(&t2);
+            planning_result.time_taken = getTime(t1, t2);
+            final_path = path.value();
+
+            break;
+        }
         case 98:
         {
             std::cout << "TEST COLLISION VS DISTANCE SPEED\n";
@@ -346,7 +364,6 @@ int main(int argc, char **argv)
         case 99:
         {
             std::cout << "TEST SAMPLING RANDOM CONFIGS\n";
-            // only difference is that it doesnt use probability_to_steer_to_target
 
             std::vector<Eigen::VectorXd> goals = RobotBase::parseCSVToVectors(targetConfigsFile);
 
