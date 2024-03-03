@@ -165,7 +165,6 @@ namespace Burs
                 planning_result.success = true;
 
                 auto path = this->Path(t_start, start_closest, t_goal, goal_closest);
-                // std::cout << "path ";
                 if (plan_parameters.visualize_tree > 0)
                 {
                     this->tree_csv = this->TreePoints(t_start, plan_parameters.visualize_tree);
@@ -180,7 +179,6 @@ namespace Burs
         planning_result.success = false;
 
         int best_idx = t_start->Nearest(best_state);
-        // planning_result.distance_to_goal = this->GetDistToGoal(q_best, ee_goal);
         planning_result.distance_to_goal = this->env->robot->EEDistance(best_state, goal_state);
 
         if (plan_parameters.visualize_tree > 0)

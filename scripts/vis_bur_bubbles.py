@@ -70,12 +70,13 @@ class LineRobot:
     
     def scatter_distance_configs(self, q: np.ndarray, max_dist, ax: plt.axes, color) -> list[list[float]]:
         epsilon_q = 0.05
-        rotation_resolution = 20
+        rotation_resolution = 7
         self.scatter_config(q, ax, color)
         tmp_configs = list()
         for i in range(rotation_resolution):
             dist = 0
-            rand_dir = np.array([math.cos(i * 2 * np.pi / rotation_resolution), math.sin(i * 2 * np.pi / rotation_resolution)])
+            # rand_dir = np.array([math.cos(i * 2 * np.pi / rotation_resolution), math.sin(i * 2 * np.pi / rotation_resolution)])
+            rand_dir = np.array([math.cos(np.random.random() * 2 * np.pi), math.sin(np.random.random() * 2 * np.pi)])
             # slight change ==> PI
             tmp_q = q
             padded_dir = np.concatenate([rand_dir, np.zeros(len(q)-len(rand_dir))])
@@ -194,7 +195,7 @@ class Env:
 
 
 if __name__ == "__main__":
-    plot_thing = 0
+    plot_thing = 1
     robot = LineRobot([1, 1])
     # test_config = [1.57/2, 1.57/2]
     test_config = [0, -1.57/2]
@@ -206,6 +207,7 @@ if __name__ == "__main__":
 
     env.plot_obstacles()
     
+    np.random.seed(59)
     if plot_thing == 0:
         env.plot_bur(np.array([-1, 1.5]), (0.8, 0, 0.8))
         env.plot_bur(np.array([-1.65, 1.5]), (1, 0, 0))
@@ -213,11 +215,10 @@ if __name__ == "__main__":
         env.plot_bur(np.array([-2.55, 1.5]), (0.9, 0.9, 0))
         env.plot_bur(np.array([-0.35, 1.5]), (0, 0, 1))
     elif plot_thing == 1:
-        np.random.seed(59)
         num_burs = 15
         for i in range(0, num_burs):
-            # rand_config = (2 * np.pi * np.random.random((len(test_config),)) - np.pi)*0.9
-            rand_config = (2 * np.pi * np.array([i/num_burs, 0.75]) - np.pi)*0.9
+            rand_config = (2 * np.pi * np.random.random((len(test_config),)) - np.pi)*0.9
+            # rand_config = (2 * np.pi * np.array([i/num_burs, 0.75]) - np.pi)*0.9
             th = 2 * np.pi * i / num_burs
             # rand_config = np.array([th, 7*th]) % (2*np.pi) - np.pi
             rand_color = (np.random.random(), np.random.random(), np.random.random())
