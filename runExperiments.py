@@ -41,7 +41,6 @@ seed = 1
 
 
 
-# urdfFile = "/home/hartvi/Documents/CVUT/diploma_thesis/burs_of_free_space/jogramop/robots/franka_panda/mobile_panda_fingersSmallMesh.urdf"
 seed = -1
 preheat_ratio=0.0
 
@@ -79,7 +78,7 @@ for scenario in nameScenarios:
                     print("Result ", outFile, " finished ")
                     continue
 
-                cmd = "timeout 10s ./burs_of_free_space test "
+                cmd = "timeout 10s ./jogramop-planners test "
                 cmd += " -grasp {} -urdf {} -obstacle {} -start_config {}".format(graspFile, urdfFile, obstacleFile, startFile)
                 cmd += " -delta_q 3.14 -epsilon_q 0.1 -num_spikes 4  "
                 cmd += " -render 0 -vis_script scripts/animate_scene.py -cx -1 -cy 3 -cz 6 -groundLevel 0.00 -minColSegIdx 6 "

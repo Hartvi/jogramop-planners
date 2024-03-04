@@ -17,8 +17,6 @@ namespace Burs
     int
     RRTPlanner::RRTStep(std::shared_ptr<BurTree> t, int node_idx, const RS &rand_state, const Meters &epsilon_q) const
     {
-        // VectorXd rand_q = this->GetRandomQ(1);
-        // std::cout << "parent node: " << t->GetQ(node_idx).transpose() << "\n";
         RS new_state = this->GetEndpoints(*t->Get(node_idx), {rand_state}, epsilon_q)[0];
 
         if (!this->IsColliding(new_state) && this->InBounds(new_state.config))
@@ -150,14 +148,9 @@ namespace Burs
             // if stepped in tree: new node added and crashless
             // if finished: return result
             RS step_state = *t_a->Get(step_result);
-            // VectorXd step_q = t_a->GetQ(step_result);
             double max_dist = this->env->robot->MaxDistance(step_state, rand_state);
-            // double max_dist = this->MaxMovedDistance(step_q, rand_q);
-            // std::cout << "step to random: " << max_dist << "\n";
-            // std::cout << "rand: " << rand_q.transpose() << " step: " << step_q.transpose() << "\n";
 
             double tmp_dist = this->env->robot->EEDistance(step_state, goal_state);
-            // double tmp_dist = this->GetDistToGoal(step_q, goal_ee);
 
             if (tmp_dist < best_dist)
             {
@@ -177,6 +170,7 @@ namespace Burs
         return AlgorithmState::Trapped;
     }
 
+    // BELOW NOT IN USE
     std::optional<std::vector<VectorXd>>
     RRTPlanner::TestSampling(const VectorXd &q_start, const RRTParameters &plan_parameters, PlanningResult &planning_result)
     {
@@ -205,35 +199,4 @@ namespace Burs
         }
     }
 
-    // AlgorithmState
-    // RRTPlanner::GreedyExtend(std::shared_ptr<BurTree> t_a, std::shared_ptr<BurTree> t_b, VectorXd q_a, const RRTParameters &planner_parameters)
-    // {
-    //     // Get closest point in tree b to point q_a from tree a
-    //     int nearest_in_b = t_b->Nearest(q_a.data());
-    //     VectorXd rand_q = t_b->GetQ(nearest_in_b);
-
-    //     VectorXd new_q = this->GetEndpoints(rand_q, q_a, planner_parameters.epsilon_q);
-    //     while (!this->IsColliding(new_q))
-    //     {
-    //         // Check if new point isn't too close to already existing points in the tree
-    //         auto [n_a, d_a] = t_a->NearestIdxAndDist(new_q.data());
-    //         // TODO CONVERT EPSILONQ TO SQUARED AS WELL TO COMPARE WITH THE KDTREE DISTANCES
-    //         // if (d_a > planner_parameters.epsilon_q)
-    //         // {
-    //         //     t_a->AddNode(n_a, new_q);
-    //         // }
-    //         // else
-    //         // {
-    //         //     new_q = t_a->GetQ(n_a);
-    //         // }
-    //         t_a->AddNode(n_a, new_q);
-    //         // If close enough to target, finish
-    //         if ((new_q - rand_q).norm() <= planner_parameters.epsilon_q)
-    //         {
-    //             return AlgorithmState::Reached;
-    //         }
-    //         new_q = this->GetEndpoints(rand_q, new_q, planner_parameters.epsilon_q);
-    //     }
-    //     return AlgorithmState::Trapped;
-    // }
 }

@@ -1,13 +1,13 @@
-./build/burs_of_free_space test \
+./build/jogramop-planners test \
 -grasp jogramop/scenarios/011/export/grasps.csv \
 -urdf jogramop/robots/franka_panda/mobile_panda_fingersSmallMesh.urdf \
 -obstacle jogramop/scenarios/011/export/obstacles.obj \
 -start_config jogramop/scenarios/011/export/robot_start_conf.csv \
 -planner 3 \
 -max_iters 10000 \
--d_crit 0.1 \
+-d_crit 0.03 \
 -delta_q 3.1415 \
--epsilon_q 0.1 \
+-epsilon_q 0.03 \
 -num_spikes 7 \
 -p_close_enough 50.0 \
 -prob_steer 0.01 \

@@ -28,7 +28,6 @@ namespace Burs
         auto tree = std::make_shared<BurTree>(start_state, q_start.size());
 
         // Random numbers
-        // std::cout << "target poses: " << planner_parameters.target_poses.size() << "\n";
         this->rng = std::make_shared<RandomNumberGenerator>(planner_parameters.seed, planner_parameters.target_poses.size());
 
         // To prevent uninitialized vectors in planner_parameters
@@ -190,17 +189,11 @@ namespace Burs
         // Get shuffled integer vector
         auto non_repeating_ints = this->rng->getNonRepeatingInts();
 
-        // for (unsigned int i = 0; i < planner_parameters.num_spikes; ++i)
-        // {
-        //     std::cout << "int: " << non_repeating_ints[i] << " ";
-        // }
-        // std::cout << "\n";
         for (unsigned int i = 1; i < planner_parameters.num_spikes; ++i)
         {
             // i-th element from shuffled vector
             // unsigned int rand_int = *std::next(non_repeating_ints, i);
             unsigned int rand_int = non_repeating_ints[i];
-            // std::cout << "rand int: " << rand_int << "\n";
             if (rand_int == best_grasp_idx)
             {
                 // rand_int == best_idx => choose index 0 because we started at "i = 1"
@@ -210,7 +203,6 @@ namespace Burs
             {
                 grasps[i] = planner_parameters.target_poses[rand_int];
             }
-            // std::cout << "grasp: " << grasps[i].frame.p << "\n";
         }
         return grasps;
     }
@@ -240,7 +232,6 @@ namespace Burs
             RS *best_state = tree->Get(best_state_idx);
 
             // STEP 2.
-            // int idx_near = tree->Nearest(best_state_idx);
             delta_p = best_grasp.best_dist;
             double best_dist = best_grasp.best_dist;
 
@@ -256,8 +247,8 @@ namespace Burs
             MatrixXd target_configs = MatrixXd(this->q_dim, num_extensions);
 
             KDL::Frame ee_frame = this->env->robot->GetEEFrame(*best_state);
-            // double distance_to_move = too_close ? planner_parameters.epsilon_q : closest_dist;
-            double distance_to_move = closest_dist;
+            double distance_to_move = too_close ? planner_parameters.epsilon_q : closest_dist;
+            // double distance_to_move = closest_dist;
 
             for (unsigned int i = 0; i < num_extensions; ++i)
             {
@@ -294,7 +285,6 @@ namespace Burs
             for (unsigned int i = 0; i < bur_endpoints.size(); ++i)
             {
                 std::vector<RS> line = bur_endpoints[i];
-                // std::cout << "line: " << i << "\n";
                 int prev_idx = best_state_idx;
                 for (unsigned int j = 0; j < line.size(); ++j)
                 {
@@ -305,7 +295,6 @@ namespace Burs
                             return AlgorithmState::Trapped;
                         }
                     }
-                    // std::cout << "point: " << j << "\n";
                     prev_idx = tree->AddNode(prev_idx, line[j]);
                     this->SetGraspClosestConfigs(planner_parameters, tree, prev_idx);
                 }
@@ -349,13 +338,9 @@ namespace Burs
         closest_dist = this->GetClosestDistance(*near_state);
 
         // SWITCH TO RRT IF OBSTACLE TOO CLOSE
-        // bool too_close = false;
         bool too_close = closest_dist < planner_parameters.d_crit;
         unsigned int num_extensions = too_close ? 1 : planner_parameters.num_spikes;
         double distance_to_move = too_close ? planner_parameters.epsilon_q : closest_dist;
-        // std::cout << "closest dist: " << closest_dist << " dist to move: " << distance_to_move << "\n";
-
-        // closest_dist = this->GetClosestDistance(q_near);
 
         // Target configs to extend to gained from the jacobian
         MatrixXd target_configs = MatrixXd(this->q_dim, num_extensions);
@@ -365,7 +350,6 @@ namespace Burs
         {
             // Max dist => closest_dist / dist to goal (maybe better to have distance to goal since it can be farther)
             KDL::Frame tgt_frame = tgt_grasps[i].frame;
-            // KDL::Frame ee_frame = best_grasp.best_frame;
 
             // From ee_frame (best config)
             // To tgt_frame (one of the randomly chosen goals)
@@ -386,12 +370,6 @@ namespace Burs
         // END DEBUG
         // Iterate max `closest_dist` to `target_config`
         std::vector<RS> bur_endpoints = this->GetEndpoints(*near_state, target_states, distance_to_move);
-        // std::vector<double> distances(bur_endpoints.size());
-        // for (unsigned int i = 0; i < bur_endpoints.size(); ++i)
-        // {
-        //     double tmpdist = this->env->robot->MaxDistance(*best_state, bur_endpoints[i]);
-        //     std::cout << "max dist " << i << " in extend: " << tmpdist << "\n";
-        // }
 
         // If closest obstacle was too close => check collisions for the RRT step
         if (too_close)
@@ -400,8 +378,6 @@ namespace Burs
             {
                 if (this->IsColliding(bur_endpoints[i]))
                 {
-                    // std::cout << "JRBT COLLIDED IN RRT EXTEND\n";
-                    // break;
                     return {};
                 }
             }
