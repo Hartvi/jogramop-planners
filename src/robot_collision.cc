@@ -40,6 +40,7 @@ namespace Burs
         }
         this->numberOfModels = numModels;
 
+        // std::cout << "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n";
         // std::cout << "num models: " << this->numberOfModels << "\n";
         auto movablejoints = this->MovableJoints();
         this->segmentToJntCausality = movablejoints;
@@ -48,7 +49,7 @@ namespace Burs
         // {
         //     std::cout << "segment " << i << ": " << movablejoints[i] << "\n";
         // }
-        // exit(1);
+        // exit(0);
         // std::cout << "Initialized RobotCollision. Number of models: " << this->numberOfModels << std::endl;
     }
 
@@ -76,10 +77,8 @@ namespace Burs
         // TODO create a mask for each case so that when I generate random samples I can zero out joints that aren't supposed to be moved
         // each segment denotes joint ids that affect the segment
         // segment 1 => joints 0,1,2 affect it => 2
-        // this->numberOfModels
         std::vector<VectorXd> segmentToJointVector(this->numberOfModels, VectorXd::Ones(this->kdl_chain.getNrOfJoints()));
         std::vector<int> segmentToJointCausality;
-        // lastInactiveSegment is the id of the segment that had the distance too close
         // It is only from the set of segments that have models:
         int joint = 0;
         /*
@@ -108,7 +107,6 @@ namespace Burs
             {
                 ++joint;
             }
-            // std::cout << "segment " << this->kdl_chain.getSegment(i).getName() << " joints: " << joint << " type: " << this->kdl_chain.getSegment(i).getJoint().getTypeName() << " has model: ";
             if (this->segmentIdToModel[i])
             {
                 for (int l = k; l < segmentToJointVector.size(); ++l)
@@ -118,84 +116,16 @@ namespace Burs
                         segmentToJointVector[l](m) = 0.0;
                     }
                 }
+                std::cout << "i: " << i << " joint: " << joint << " mask vector: " << segmentToJointVector[k].transpose() << "\n";
                 segmentToJointCausality.push_back(joint);
                 ++k;
-
-                // std::cout << "true\n";
             }
             else
             {
-
-                // std::cout << "false\n";
             }
         }
-        // for (unsigned int i = 0; i < this->numberOfModels; ++i)
-        // {
-        //     std::cout << segmentToJointVector[i].transpose() << "\n";
-        // }
-        // exit(1);
         return segmentToJointVector;
     }
-
-    // // ForwardQ returns N rotations and translation, but we have M <= N objects, select only transforms relevant to existing meshes
-    // std::tuple<std::vector<Matrix3d>, std::vector<Vector3d>>
-    // RobotCollision::SelectedForwardQ(const RS &state)
-    // {
-    //     assert(this->segmentIdToModel.size() == state.frames.size());
-    //     assert(this->numberOfModels == state.frames.size());
-
-    //     std::vector<Matrix3d> Rs;
-    //     Rs.reserve(this->numberOfModels);
-    //     std::vector<Vector3d> ts;
-    //     ts.reserve(this->numberOfModels);
-
-    //     for (unsigned int i = 0; i < state.frames.size(); ++i)
-    //     {
-    //         if (this->segmentIdToModel[i])
-    //         {
-    //             KDL::Frame f = state.frames[i];
-    //             auto rt = this->KDLFrameToEigen(f);
-    //             Rs.push_back(rt.first);
-    //             ts.push_back(rt.second);
-    //         }
-    //     }
-    //     // this->ForwardPass()
-    //     // std::tuple<std::vector<Matrix3d>, std::vector<Vector3d>> rawRts = this->ForwardQ(q_in);
-
-    //     // std::vector<Matrix3d>
-    //     //     rawRotations = std::get<0>(rawRts);
-    //     // std::vector<Vector3d> rawTranslations = std::get<1>(rawRts);
-
-    //     // std::vector<Matrix3d> Rs(this->numberOfModels);
-    //     // std::vector<Vector3d> ts(this->numberOfModels);
-
-    //     // int k = 0;
-    //     // for (int i = 0; i < this->segmentIdToModel.size(); ++i)
-    //     // {
-    //     //     if (this->segmentIdToModel[i])
-    //     //     {
-    //     //         ts[k] = rawTranslations[i];
-    //     //         Rs[k] = rawRotations[i];
-    //     //         k++;
-    //     //     }
-    //     // }
-
-    //     // if (k != this->numberOfModels)
-    //     // {
-    //     //     throw std::runtime_error("Number of models in forward doesn't match initialized number of models. ");
-    //     // }
-    //     return make_tuple(Rs, ts);
-    // }
-
-    // ForwardRtKDL
-    // RobotCollision::GetSelectedForwardRtFunc()
-    // {
-    //     ForwardRtKDL srt = [this](const RS &state) -> std::tuple<std::vector<Matrix3d>, std::vector<Vector3d>>
-    //     {
-    //         return this->SelectedForwardQ(state);
-    //     };
-    //     return srt;
-    // }
 
     std::vector<std::shared_ptr<RtModels::RtModel>> RobotCollision::GetModels()
     {
@@ -224,11 +154,32 @@ namespace Burs
         return state.frames.back();
     }
 
+    std::pair<int, std::vector<double>>
+    RobotCollision::MaxDistances(const RS &state1, const RS &state2) const
+    {
+        auto f1 = state1.frames;
+        auto f2 = state2.frames;
+
+        double max_dist = 0;
+        int max_idx = -1;
+        std::vector<double> dists(f1.size());
+        for (unsigned int i = 0; i < f1.size(); ++i)
+        {
+            // dist is in meters
+            double dist = (f1[i].p - f2[i].p).Norm();
+            dists[i] = dist;
+            if (dist > max_dist)
+            {
+                max_dist = dist;
+                max_idx = i;
+            }
+        }
+        return {max_idx, dists};
+    }
+
     double
     RobotCollision::MaxDistance(const RS &state1, const RS &state2) const
     {
-
-        // std::cout << "q1: " << q1.transpose() << " q2: " << q2.transpose() << "\n";
         auto f1 = state1.frames;
         auto f2 = state2.frames;
 
@@ -243,23 +194,6 @@ namespace Burs
             }
         }
         return max_dist;
-
-        // auto fk1 = this->GetForwardPointParallel(q1);
-        // // std::cout << "fk1: " << fk1.size() << "\n";
-        // auto fk2 = this->GetForwardPointParallel(q2);
-        // // std::cout << "fk2: " << fk2.size() << "\n";
-
-        // double max_dist = 0;
-        // for (unsigned int i = 0; i < fk1.size(); ++i)
-        // {
-        //     // dist is in meters
-        //     double dist = (fk2[i] - fk1[i]).norm();
-        //     if (dist > max_dist)
-        //     {
-        //         max_dist = dist;
-        //     }
-        // }
-        // return max_dist;
     }
 
     std::pair<Matrix3d, Vector3d>

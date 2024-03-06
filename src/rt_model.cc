@@ -131,19 +131,6 @@ namespace RtModels
         // std::cout << "INSIDE SET TRANSLATE: this->translation: " << Vector3d(this->translation).transpose() << std::endl;
     }
 
-    Eigen::Vector3d
-    RtModel::GetGlobalPositionFromVector(Eigen::Vector3d p) const
-    {
-        return this->t + this->R * p;
-    }
-
-    Eigen::Vector3d
-    RtModel::GetGlobalPositionFromPointer(PQP_REAL p[3]) const
-    {
-        Eigen::Map<Eigen::Matrix<PQP_REAL, 3, 1>> pVector(p);
-        return this->t + this->R * pVector;
-    }
-
     void
     RtModel::CheckDistanceStatic(PQP_DistanceResult *result, PQP_REAL rel_err, PQP_REAL abs_err, RtModel *m1, RtModel *m2)
     {

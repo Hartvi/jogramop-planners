@@ -40,38 +40,18 @@ namespace Burs
         std::vector<VectorXd>
         MovableJoints() const;
 
-        // ForwardQ returns N rotations and translation, but we have M <= N objects, select only transforms relevant to existing meshes
-        // std::tuple<std::vector<Matrix3d>, std::vector<Vector3d>>
-        // SelectedForwardQ(const RS &q_in);
-
-        // ForwardRtKDL
-        // GetSelectedForwardRtFunc();
-
         std::vector<std::shared_ptr<RtModels::RtModel>>
         GetModels();
 
-        // std::vector<Eigen::Vector3d>
-        // GetForwardPointParallel(const RS &state);
-
-        // ForwardKinematicsParallelKDL
-        // GetForwardPointParallelFunc();
-
-        // RadiusFuncParallelKDL
-        // GetRadiusFunc();
-
-        // double
-        // DistanceToGoal(const KDL::Frame &goal, const KDL::Frame &current) const;
-
-        // double
-        // GetDistToGoal(const VectorXd &q, const KDL::Frame &goal_pos) const;
         double
         EEDistance(const RS &state1, const RS &state2) const;
 
         KDL::Frame
         GetEEFrame(const RS &state) const;
 
-        // double
-        // MaxMovedDistance(const VectorXd &q1, const VectorXd &q2) const;
+        std::pair<int, std::vector<double>>
+        MaxDistances(const RS &state1, const RS &state2) const;
+
         double
         MaxDistance(const RS &state1, const RS &state2) const;
 

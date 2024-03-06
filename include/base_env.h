@@ -53,6 +53,9 @@ namespace Burs
         // void
         // SetForwardRt(Burs::ForwardRt forwardRt);
 
+        std::tuple<double, std::vector<std::vector<double>>, std::vector<std::vector<std::pair<Vector3d, Vector3d>>>>
+        GetClosestDistancesAndPoints() const;
+
         std::pair<int, std::vector<double>>
         GetClosestDistances() const;
 
