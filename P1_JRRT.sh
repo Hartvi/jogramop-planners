@@ -1,4 +1,4 @@
-./build/burs_of_free_space test \
+./build/jogramop-planners test \
 -grasp jogramop/scenarios/011/export/grasps.csv \
 -urdf jogramop/robots/franka_panda/mobile_panda_fingersSmallMesh.urdf \
 -obstacle jogramop/scenarios/011/export/obstacles.obj \

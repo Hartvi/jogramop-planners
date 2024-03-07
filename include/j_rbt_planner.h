@@ -2,7 +2,8 @@
 #define J_RBT_PLANNER_H
 
 #include "rand_nums.h"
-#include "j_rrt_planner.h"
+// #include "j_rrt_planner.h"
+#include "ik_rrt_planner.h"
 #include "robot_base.h"
 #include "bur_tree.h"
 #include "j_plus_rbt_parameters.h"
@@ -13,7 +14,7 @@
 namespace Burs
 {
 
-    class JRbtPlanner : public JRRTPlanner
+    class JRbtPlanner : public IKRRTPlanner
     {
 
     public:

@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.2.0)
 
-project(burs_of_free_space)
+project(jogramop-planners)
 
 # Set C++17 Standard
 set(CMAKE_CXX_STANDARD 17)
@@ -42,25 +42,25 @@ file(GLOB_RECURSE SOURCES "src/*.cc")
 
 
 # Create the executable
-add_executable(burs_of_free_space ${SOURCES})
+add_executable(jogramop-planners ${SOURCES})
 
 # Include and link urdfdom
-target_include_directories(burs_of_free_space PRIVATE ${urdfdom_INCLUDE_DIRS})
-target_link_libraries(burs_of_free_space ${urdfdom_LIBRARIES})
+target_include_directories(jogramop-planners PRIVATE ${urdfdom_INCLUDE_DIRS})
+target_link_libraries(jogramop-planners ${urdfdom_LIBRARIES})
 
 # Include and link kdl_parser and orocos_kdl
-# target_include_directories(burs_of_free_space PRIVATE ${kdl_parser_INCLUDE_DIRS} ${orocos_kdl_INCLUDE_DIRS})
-target_include_directories(burs_of_free_space PRIVATE ${kdl_parser_INCLUDE_DIRS})
-# target_link_libraries(burs_of_free_space ${kdl_parser_LIBRARIES} ${orocos_kdl_LIBRARIES})
-target_link_libraries(burs_of_free_space ${kdl_parser_LIBRARIES})
+# target_include_directories(jogramop-planners PRIVATE ${kdl_parser_INCLUDE_DIRS} ${orocos_kdl_INCLUDE_DIRS})
+target_include_directories(jogramop-planners PRIVATE ${kdl_parser_INCLUDE_DIRS})
+# target_link_libraries(jogramop-planners ${kdl_parser_LIBRARIES} ${orocos_kdl_LIBRARIES})
+target_link_libraries(jogramop-planners ${kdl_parser_LIBRARIES})
 
-target_link_libraries(burs_of_free_space ${PYTHON_LIBRARIES})
+target_link_libraries(jogramop-planners ${PYTHON_LIBRARIES})
 
 # Link against PQP and other required libraries
-target_link_libraries(burs_of_free_space PQP flann lz4)
+target_link_libraries(jogramop-planners PQP flann lz4)
 
 # Find and link the filesystem library if necessary
 find_library(FILESYSTEM_LIBRARY NAMES stdc++fs)
 if(FILESYSTEM_LIBRARY)
-    target_link_libraries(burs_of_free_space ${FILESYSTEM_LIBRARY})
+    target_link_libraries(jogramop-planners ${FILESYSTEM_LIBRARY})
 endif()

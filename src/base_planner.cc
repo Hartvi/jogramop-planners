@@ -149,19 +149,14 @@ namespace Burs
     std::vector<RS>
     BasePlanner::GetEndpoints(const RS &state_near, const std::vector<RS> &rand_states, double d_max) const
     {
-        // std::cout << "getendpoints state near: " << state_near.config.transpose() << "\n";
         double d_small = 0.1 * d_max;
 
         std::vector<RS> new_states;
         new_states.reserve(rand_states.size());
-        // MatrixXd endpoints = MatrixXd::Zero(this->q_dim, rand_Q.cols());
 
-        // std::cout << "start q: " << state_near.config.transpose() << "\n";
-        // std::cout << "finish q: " << rand_states[0].config.transpose() << "\n";
         for (int i = 0; i < rand_states.size(); ++i)
         {
-            // std::cout << "getendpoints rand state: " << rand_states[i].config.transpose() << "\n";
-            // // If this won't move further that it is allowed
+            // If this won't move further that it is allowed
             double maxPossibleDist = this->env->robot->MaxDistance(state_near, rand_states[i]);
             if (maxPossibleDist < d_max)
             {
@@ -174,10 +169,8 @@ namespace Burs
             // always start out from the center
             RS state_k = state_near;
             double phi_result = d_max;
-            // VectorXd q_k(q_near);
 
             const RS &end_state = rand_states[i];
-            // const VectorXd q_e = rand_Q.col(i);
 
             // They said 4-5 iterations to reach 0.1*closest_distance
             // So either:
@@ -185,11 +178,7 @@ namespace Burs
             //  2. 4-5 iterations
             // for (unsigned int k = 0; k < 5; ++k)
             for (unsigned int k = 0; k < 5 && phi_result > d_small; ++k)
-            // for (unsigned int k = 0; phi_result > d_small; ++k)
-            // while (phi_result > d_small)
             {
-                // CHECK: this is indeed PI away from q_near
-
                 double delta_tk = this->GetDeltaTk(phi_result, tk, end_state, state_k);
 
                 tk = tk + delta_tk;
@@ -199,38 +188,13 @@ namespace Burs
                     break;
                 }
                 // has actually never reached > 1
-                // if (tk > 1.0) // some tolerance
-                // {
-                //     q_k = q_e;
-                //     // std::runtime_error("t_k was greater than 1. This shouldn't happen.");
-                //     break;
-                // }
                 // q_k = q_near + tk * (q_e - q_near);
                 VectorXd q_k = state_near.config + tk * (end_state.config - state_near.config);
                 state_k = this->QToStates(q_k)[0];
-                // state_k = this->env->robot->FullFK(q_k);
                 phi_result = d_max - this->env->robot->MaxDistance(state_near, state_k);
-                // std::cout << "dist travelled at step " << k << ": " << (d_max - phi_result) << "\n";
-                // std::cout << q_k.transpose() << "\n";
-                // phi_result = d_max - this->MaxMovedDistance(q_near, q_k);
             }
             new_states.push_back(state_k);
-            // endpoints.col(i) = q_k;
-            // double max_moved_dist = this->env->robot->MaxMovedDistance(state_near, state_k);
-            // std::cout << "q_k: " << q_k.transpose() << "\n";
-            // std::cout << "maxmoved dist: " << max_moved_dist << " epsilon: " << d_max << "\n";
-            // if (max_moved_dist > d_max)
-            // {
-            //     std::cout << "MOVED MORE THAN SHOULD HAVE: " << max_moved_dist << " > " << d_max << "\n";
-            //     // exit(1);
-            // }
         }
-        // return endpoints;
-        // for (auto &s : new_states)
-        // {
-        //     std::cout << "s: " << s.config.transpose() << "\n";
-        // }
-        // assert(new_states.size() < 2);
         return new_states;
     }
 
@@ -337,6 +301,7 @@ namespace Burs
         return output.str();
     }
 
+    // BELOW NOT IN USE /////////////////////////////////////////////////////////////////////////////////////
     void
     BasePlanner::ExampleFunctions(const VectorXd &q_start, const VectorXd &q_goal)
     {

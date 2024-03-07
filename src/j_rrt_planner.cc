@@ -7,12 +7,12 @@ namespace Burs
 {
     using namespace Eigen;
 
-    JRRTPlanner::JRRTPlanner(std::string urdf_file) : RbtPlanner(urdf_file)
+    JRRTPlanner::JRRTPlanner(std::string urdf_file) : RbtePlanner(urdf_file)
     {
         this->rng = std::make_shared<RandomNumberGenerator>(1, 1); // temporary seed is one, the proper seed is set from planner parameters
     }
 
-    JRRTPlanner::JRRTPlanner() : RbtPlanner()
+    JRRTPlanner::JRRTPlanner() : RbtePlanner()
     {
         this->rng = std::make_shared<RandomNumberGenerator>(1, 1); // temporary seed is one, the proper seed is set from planner parameters
     }

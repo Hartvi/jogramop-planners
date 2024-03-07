@@ -3,7 +3,7 @@
 #define J_RRT_PLANNER_H
 
 #include "rand_nums.h"
-#include "rbt_planner.h"
+#include "rbte_planner.h"
 #include "robot_base.h"
 // #include "bur_tree.h"
 #include "planning_result.h"
@@ -14,7 +14,7 @@
 namespace Burs
 {
 
-    class JRRTPlanner : public RbtPlanner
+    class JRRTPlanner : public RbtePlanner
     {
     public:
         std::shared_ptr<RandomNumberGenerator> rng;

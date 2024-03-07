@@ -143,7 +143,7 @@ int main(int argc, char **argv)
         o.addOption(Option<int>("minColSegIdx", &minColSegmentIdx, "segment id from which it can collide with ground"));
 
         o.addOption(Option<int>("ik_index", &ik_index_in_target_configs, 0, "max iters for all ik solutions")); // default value is 0
-        o.addOption(Option<double>("q_resolution", &q_resolution, "resolution of individual steps in rbt"));
+        o.addOption(Option<double>("q_resolution", &q_resolution, 0.006, "resolution of collision of individual steps"));
 
         o.addOption(Option<int>("use_rot", &useRotation, 0, "rotation bias threshold when to start using it (mm+deg)"));
         o.addOption(Option<double>("rot_ratio", &rotationDistRatio, 0.5, "ratio of rotation in distance metric (mm+deg)"));
@@ -347,6 +347,21 @@ int main(int argc, char **argv)
                 exit(1);
             }
             path = jprbt->RRTConnectQStep(start_config, goals[ik_index_in_target_configs], params, planning_result);
+            getTime(&t2);
+            planning_result.time_taken = getTime(t1, t2);
+            final_path = path.value();
+
+            break;
+        }
+        case 5:
+        {
+            std::cout << "PLANNING IKRRT detailed\n";
+
+            std::vector<Eigen::VectorXd> goals = RobotBase::parseCSVToVectors(targetConfigsFile);
+
+            struct rusage t1, t2;
+            getTime(&t1);
+            path = jprbt->IKRRT(start_config, params, planning_result);
             getTime(&t2);
             planning_result.time_taken = getTime(t1, t2);
             final_path = path.value();

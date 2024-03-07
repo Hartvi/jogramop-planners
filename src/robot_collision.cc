@@ -217,130 +217,16 @@ namespace Burs
         return {R, t};
     }
 
-    // std::vector<Vector3d>
-    // RobotCollision::GetForwardPointParallel(const RS &robot_state)
-    // {
-    //     auto fk_res = this->ForwardPass(q_in);
-    //     unsigned int nrSegments = this->kdl_chain.getNrOfSegments();
-
-    //     std::vector<Vector3d> segment_positions(nrSegments);
-
-    //     // typedef enum { RotAxis,RotX,RotY,RotZ,TransAxis,TransX,TransY,TransZ,None} JointType;
-    //     for (unsigned int i = 0; i < nrSegments; ++i)
-    //     {
-    //         auto segment_pose = fk_res[i].p;
-    //         // Convert KDL position to Eigen vector
-    //         Vector3d position(segment_pose.x(), segment_pose.y(), segment_pose.z());
-    //         segment_positions[i] = position;
-    //     }
-
-    //     return segment_positions;
-    // }
-
-    // ForwardKinematicsParallelKDL
-    // RobotCollision::GetForwardPointParallelFunc()
-    // {
-    //     ForwardKinematicsParallelKDL fpf = [this](const RS &robot_state) -> std::vector<Vector3d>
-    //     {
-    //         return this->GetForwardPointParallel(robot_state);
-    //     };
-    //     return fpf;
-    // }
-
-    // VectorXd
-    // RobotCollision::GetRadii(const VectorXd &q_in)
-    // {
-    //     auto fk_res = this->ForwardPass(q_in);
-    //     VectorXd radii(q_in.size());
-    //     unsigned int nrSegments = this->kdl_chain.getNrOfSegments();
-
-    //     unsigned int j = 0;
-    //     for (unsigned int i = 0; i < nrSegments - 1; ++i)
-    //     {
-    //         auto segment_pose = fk_res[i];
-    //         Vector3d position(segment_pose.p.x(), segment_pose.p.y(), segment_pose.p.z());
-
-    //         // Local axis: https://docs.ros.org/en/indigo/api/orocos_kdl/html/classKDL_1_1Joint.html#a57c97b32765b0caeb84b303d66a96a1b
-    //         auto joint = this->kdl_chain.getSegment(i).getJoint();
-    //         KDL::Vector joint_axis_local = joint.JointAxis();
-
-    //         // typedef enum { RotAxis,RotX,RotY,RotZ,TransAxis,TransX,TransY,TransZ,None} JointType;
-    //         // std::cout << "Joint: " << joint.getTypeName() << " Axis: " << joint.JointAxis() << std::endl;
-
-    //         if (joint.getType() == KDL::Joint::JointType::None)
-    //         {
-    //             continue;
-    //         }
-
-    //         /*
-    //         The expression \sum^n_{i=1} r_i |y_i − q_i| is a conservative upper bound on the displacement of any point on the manipulator
-    //           when the configuration changes from q = (q_1 . . . q_n)T to y = (y_1 . . . y_n)^T .
-
-    //         In short: it is the first order derivative of the mapping from configuration value q_i to euclidean space
-
-    //         Ergo: translational joints: d(distance)/dq = 1
-    //         rotational joints: d(phi*r)/dphi = r - the radius
-    //         */
-
-    //         double radius = 0.0;
-    //         switch (joint.getType())
-    //         {
-    //         case KDL::Joint::JointType::TransAxis:
-    //         case KDL::Joint::JointType::TransX:
-    //         case KDL::Joint::JointType::TransY:
-    //         case KDL::Joint::JointType::TransZ:
-    //         {
-    //             radius = 1;
-    //             break;
-    //         }
-    //         default:
-    //         {
-    //             break;
-    //         }
-    //         }
-
-    //         for (unsigned int k = i + 1; k < nrSegments; ++k)
-    //         {
-    //             KDL::Frame next_segment_pose = fk_res[k];
-    //             KDL::Vector next_segment_kdl = next_segment_pose.p;
-    //             Vector3d next_segment(next_segment_kdl.x(), next_segment_kdl.y(), next_segment_kdl.z());
-
-    //             // Transform the local joint axis to the world reference frame
-    //             KDL::Vector joint_axis_world = segment_pose.M * joint_axis_local;
-    //             // std::cout << "GetRadius axis: " << joint_axis_world << std::endl;
-    //             Vector3d joint_axis(joint_axis_world.x(), joint_axis_world.y(), joint_axis_world.z());
-
-    //             Vector3d diff = next_segment - position;
-    //             // Project the end effector onto the plane defined by the joint axis
-    //             double dot_product = diff.dot(joint_axis);
-
-    //             // joint_axis has norm = 1 => NO NORMALIZATION NECESSARY
-    //             Vector3d projection = diff - dot_product * joint_axis;
-
-    //             // Update the radius
-    //             // std::cout << "Radius distance " << ith_distal_point << ": " << projection.norm() << std::endl;
-    //             double tmp_radius = projection.norm();
-    //             if (tmp_radius > radius)
-    //             {
-    //                 radius = tmp_radius;
-    //             }
-    //         }
-
-    //         radii(j) = radius;
-    //         ++j;
-    //     }
-    //     return radii;
-    // }
-
-    // RadiusFuncParallel
-    // RobotCollision::GetRadiusFunc()
-    // {
-    //     RadiusFuncParallel rf = [this](const VectorXd &configuration) -> VectorXd
-    //     {
-    //         // return this->GetRadius(ith_distal_point, configuration);
-    //         return this->GetRadii(configuration);
-    //     };
-    //     return rf;
-    // }
+    std::optional<VectorXd>
+    RobotCollision::GetInverseKinematics(KDL::ChainIkSolverPos_LMA &solver, const KDL::JntArray &q_init, const KDL::Frame &tgt)
+    {
+        KDL::JntArray res(q_init.rows());
+        // KDL::ChainIkSolverPos_LMA::E_NOERROR
+        if (solver.CartToJnt(q_init, tgt, res) >= 0)
+        {
+            return res.data;
+        }
+        return {};
+    }
 
 }

@@ -10,7 +10,7 @@ namespace Burs
 {
     using namespace Eigen;
 
-    JRbtPlanner::JRbtPlanner(std::string urdf_file) : JRRTPlanner(urdf_file)
+    JRbtPlanner::JRbtPlanner(std::string urdf_file) : IKRRTPlanner(urdf_file)
     {
         this->rng = std::make_shared<RandomNumberGenerator>(1, 1); // temporary seed is one, the proper seed is set at the begiging of JPlusRbt
     }

@@ -9,6 +9,8 @@
 #include "robot_base.h"
 #include "rt_model.h"
 
+#include <kdl/chainiksolverpos_lma.hpp>
+
 namespace Burs
 {
     using namespace Eigen;
@@ -57,6 +59,9 @@ namespace Burs
 
         std::pair<Matrix3d, Vector3d>
         KDLFrameToEigen(const KDL::Frame &f);
+
+        std::optional<VectorXd>
+        GetInverseKinematics(KDL::ChainIkSolverPos_LMA &solver, const KDL::JntArray &q_init, const KDL::Frame &tgt);
     };
 
     /* Accept the three functions from outside. Link the URDF to the bur-planning algorithm. */

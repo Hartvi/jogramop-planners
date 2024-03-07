@@ -45,9 +45,6 @@ namespace Burs
         void
         ExampleFunctions(const VectorXd &q_start, const VectorXd &q_goal);
 
-        // double
-        // MaxMovedDistance(const VectorXd &q1, const VectorXd &q2) const;
-
         int
         AddObstacle(std::string obstacle_file, Eigen::Matrix3d R, Eigen::Vector3d t);
 
