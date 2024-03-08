@@ -17,7 +17,7 @@ namespace Burs
     int
     RRTPlanner::RRTStepInQ(std::shared_ptr<BurTree> t, int node_idx, const RS &rand_state, const Qunit &epsilon_q, const Meters &p_step) const
     {
-        // p_step in the bur paper is roughly
+        // p_step in the bur paper is roughly 0.006
         RS near_state = *t->Get(node_idx);
         // shifted in configuration space
         VectorXd new_config = near_state.config + epsilon_q * (rand_state.config - near_state.config);
@@ -26,10 +26,10 @@ namespace Burs
         double max_dist = this->env->robot->MaxDistance(new_state, near_state);
 
         // interpolate base on workspace distance
-        for (unsigned int i = 1; i < (unsigned int)(max_dist / p_step + 1.0); ++i)
+        for (unsigned int i = 1; i < (unsigned int)(max_dist / p_step + 2.0); ++i)
         {
             VectorXd interconfig = near_state.config + ((double)i) * p_step * (new_state.config - near_state.config);
-            RS interstate(new_state.config, this->env->robot->ForwardPass(interconfig));
+            RS interstate(interconfig, this->env->robot->ForwardPass(interconfig));
             if (this->IsColliding(interstate))
             {
                 return -1;

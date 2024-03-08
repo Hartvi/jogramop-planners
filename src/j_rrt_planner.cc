@@ -353,49 +353,50 @@ namespace Burs
         return tree;
     }
 
-    void JRRTPlanner::PreheatNTrees(std::shared_ptr<BurTree> tree, VectorXd q_start, JPlusRbtParameters &plan_params)
-    {
-        int iters = (int)(plan_params.preheat_ratio * plan_params.max_iters);
-        int num_points = 20;
-        int sub_iters = iters / num_points;
+    // void
+    // JRRTPlanner::PreheatNTrees(std::shared_ptr<BurTree> tree, VectorXd q_start, JPlusRbtParameters &plan_params)
+    // {
+    //     int iters = (int)(plan_params.preheat_ratio * plan_params.max_iters);
+    //     int num_points = 20;
+    //     int sub_iters = iters / num_points;
 
-        for (int i = 0; i < num_points; ++i)
-        {
-            // double theta = i * 2 * M_PI / num_points;
-            // std::cout << "theta: " << theta << "\n";
+    //     for (int i = 0; i < num_points; ++i)
+    //     {
+    //         // double theta = i * 2 * M_PI / num_points;
+    //         // std::cout << "theta: " << theta << "\n";
 
-            VectorXd v = MatrixXd::Random(3, 1);
-            v.row(0).array() *= 2;
-            v.row(1).array() *= 2;
-            v.row(2).array() += 1;
-            v.row(2).array() *= 0.5;
-            // Vector3d v(2 * std::cos(theta), 2 * std::sin(theta), 0.1);
+    //         VectorXd v = MatrixXd::Random(3, 1);
+    //         v.row(0).array() *= 2;
+    //         v.row(1).array() *= 2;
+    //         v.row(2).array() += 1;
+    //         v.row(2).array() *= 0.5;
+    //         // Vector3d v(2 * std::cos(theta), 2 * std::sin(theta), 0.1);
 
-            Grasp g(v);
-            JPlusRbtParameters tmp_params;
-            tmp_params.d_crit = plan_params.d_crit;
-            tmp_params.epsilon_q = plan_params.epsilon_q;
-            tmp_params.use_rotation = 0;
-            tmp_params.preheat_ratio = plan_params.preheat_ratio;
-            tmp_params.p_close_enough = plan_params.p_close_enough;
-            tmp_params.probability_to_steer_to_target = plan_params.probability_to_steer_to_target;
-            tmp_params.goal_bias_probability = plan_params.goal_bias_probability;
-            tmp_params.goal_bias_radius = plan_params.goal_bias_radius;
-            tmp_params.target_poses = {g};
-            tmp_params.mean_target = v;
-            tmp_params.max_iters = sub_iters;
-            tmp_params.delta_q = plan_params.delta_q;
-            tmp_params.seed = plan_params.seed;
-            tmp_params.num_spikes = plan_params.num_spikes;
-            tmp_params.visualize_tree = plan_params.visualize_tree;
-            tmp_params.q_resolution = plan_params.q_resolution;
-            tmp_params.use_platform = false;
+    //         Grasp g(v);
+    //         JPlusRbtParameters tmp_params;
+    //         tmp_params.d_crit = plan_params.d_crit;
+    //         tmp_params.epsilon_q = plan_params.epsilon_q;
+    //         tmp_params.use_rotation = 0;
+    //         tmp_params.preheat_ratio = plan_params.preheat_ratio;
+    //         tmp_params.p_close_enough = plan_params.p_close_enough;
+    //         tmp_params.probability_to_steer_to_target = plan_params.probability_to_steer_to_target;
+    //         tmp_params.goal_bias_probability = plan_params.goal_bias_probability;
+    //         tmp_params.goal_bias_radius = plan_params.goal_bias_radius;
+    //         tmp_params.target_poses = {g};
+    //         tmp_params.mean_target = v;
+    //         tmp_params.max_iters = sub_iters;
+    //         tmp_params.delta_q = plan_params.delta_q;
+    //         tmp_params.seed = plan_params.seed;
+    //         tmp_params.num_spikes = plan_params.num_spikes;
+    //         tmp_params.visualize_tree = plan_params.visualize_tree;
+    //         tmp_params.q_resolution = plan_params.q_resolution;
+    //         tmp_params.use_platform = false;
 
-            std::shared_ptr<BurTree> t = this->JRRTPreheat(q_start, sub_iters, tmp_params);
-            std::cout << "tree nodes: " << t->GetNumberOfNodes() << "\n";
-            this->CopyTree(t, tree);
-        }
-    }
+    //         std::shared_ptr<BurTree> t = this->JRRTPreheat(q_start, sub_iters, tmp_params);
+    //         std::cout << "tree nodes: " << t->GetNumberOfNodes() << "\n";
+    //         this->CopyTree(t, tree);
+    //     }
+    // }
 
     void JRRTPlanner::CopyTree(std::shared_ptr<BurTree> src, std::shared_ptr<BurTree> tgt)
     {

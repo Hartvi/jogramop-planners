@@ -195,7 +195,6 @@ int main(int argc, char **argv)
 
     // run: make clean && make && valgrind --leak-check=full ./load_obj_test ../Models/cube.obj ../Models/cube.obj out.txt
 
-    // std::cout << "Arg 1: " << argv[1] << std::endl;
     std::string arg1 = std::string(argv[1]);
     if (arg1 == "test")
     {
@@ -205,43 +204,28 @@ int main(int argc, char **argv)
         // 2. Setup parameters
         // 3. Plan
         auto &env = jprbt->env;
-        // std::cout << "REMOVED OBSTACLE TEMPORARILY\n";
         env->AddObstacle(obstacleFile);
         env->SetGroundLevel(groundLevel, minColSegmentIdx);
 
         std::string grasp_path(graspFile);
 
         std::vector<Grasp> grasps = Grasp::LoadGrasps(grasp_path);
-        // std::cout << "grasps: " << grasps.size() << std::endl;
-        // for (unsigned int i = 0; i < grasps.size(); ++i)
-        // {
-        //     std::cout << "Grasp:\n"
-        //               << grasps[i].frame << std::endl;
-        // }
 
         Eigen::VectorXd start_config = RobotBase::parseCSVToVectorXd(startConfigFile);
         std::cout << "start config " << start_config.transpose() << "\n";
-
-        // auto grasp_frames = Grasp::GraspsToFrames(grasps);
 
         PlanningResult planning_result;
 
         std::optional<std::vector<Eigen::VectorXd>> path;
         std::vector<Eigen::VectorXd> final_path;
 
-        // distance metric is euclidean squared
-        // double p_close_sqr = p_close_enough * p_close_enough;
-        // double goal_bias_radius_sqr = goal_bias_radius * goal_bias_radius;
-
-        JPlusRbtParameters params(max_iters, d_crit, delta_q, epsilon_q, num_spikes, p_close_enough, probability_to_steer_to_target, grasps, goal_bias_radius, goal_bias_probability, q_resolution);
+        JPlusRbtParameters params(max_iters, d_crit, delta_q, epsilon_q, num_spikes, p_close_enough, probability_to_steer_to_target, grasps, q_resolution);
         params.visualize_tree = render_tree;
         params.seed = usedSeed;
-        params.preheat_ratio = preheat_ratio;
         params.preheat_type = preheat_type;
 
         params.use_rotation = useRotation;
         params.rotation_dist_ratio = rotationDistRatio;
-        params.bias_calculation_type = biasCalculationType;
         params.collision_resolution = collisionResolution;
 
         // END COMMON SETTINGS ------------------------------------------------------------------------------------------------------------
@@ -438,21 +422,11 @@ int main(int argc, char **argv)
             //     std::cout << line << '\n';
             // }
         }
-        // std::cout << "\nvisualization: \n"
-        //   << jprbt->StringifyPath(final_path) << "\n\n";
 
         if (renderVideo)
         {
             // ROBOT:
             std::string vis_file_name = std::string(targetPrefixFile) + ".vis";
-
-            // std::ofstream vis_file(vis_file_name);
-
-            // if (vis_file.is_open())
-            // {
-            //     vis_file << jprbt->StringifyPath(final_path);
-            //     vis_file.close();
-            // }
 
             std::string path_name = joinWithCurrentDirectory(vis_file_name);
 
@@ -489,8 +463,6 @@ int main(int argc, char **argv)
         }
 
         std::cout << "planning result " << planning_result.toCSVString() << "\n";
-        // std::cout << "argc: ";
-        // std::cout << argc;
         std::cout << "\n";
     }
     else if (arg1 == "rotation")
@@ -510,28 +482,18 @@ int main(int argc, char **argv)
         Eigen::VectorXd start_config = RobotBase::parseCSVToVectorXd(startConfigFile);
         std::cout << "start config " << start_config.transpose() << "\n";
 
-        // auto grasp_frames = Grasp::GraspsToFrames(grasps);
-
         PlanningResult planning_result;
 
         std::optional<std::vector<Eigen::VectorXd>> path;
         std::vector<Eigen::VectorXd> final_path;
 
-        // distance metric is euclidean squared
-        // double p_close_sqr = p_close_enough * p_close_enough;
-        // double goal_bias_radius_sqr = goal_bias_radius * goal_bias_radius;
-
-        JPlusRbtParameters params(max_iters, d_crit, delta_q, epsilon_q, num_spikes, p_close_enough, probability_to_steer_to_target, grasps, goal_bias_radius, goal_bias_probability, q_resolution);
+        JPlusRbtParameters params(max_iters, d_crit, delta_q, epsilon_q, num_spikes, p_close_enough, probability_to_steer_to_target, grasps, q_resolution);
         params.visualize_tree = render_tree;
         params.seed = usedSeed;
-        params.preheat_ratio = preheat_ratio;
         // END COMMON SETTINGS ------------------------------------------------------------------------------------------------------------
 
         std::cout << "ROTATION TESTING\n";
         // extended with steer towards
-
-        // JPlusRbtParameters params(max_iters, d_crit, delta_q, epsilon_q, num_spikes, p_close_enough, probability_to_steer_to_target, grasp_frames);
-        // JPlusRbtParameters params(max_iters, d_crit, delta_q, epsilon_q, num_spikes, p_close_enough, probability_to_steer_to_target, grasp_frames, goal_bias_radius, goal_bias_probability);
 
         struct rusage t1, t2;
         getTime(&t1);
@@ -567,14 +529,6 @@ int main(int argc, char **argv)
             // ROBOT:
             std::string vis_file_name = std::string(targetPrefixFile) + ".vis";
 
-            // std::ofstream vis_file(vis_file_name);
-
-            // if (vis_file.is_open())
-            // {
-            //     vis_file << jprbt->StringifyPath(final_path);
-            //     vis_file.close();
-            // }
-
             std::string path_name = joinWithCurrentDirectory(vis_file_name);
 
             // needs `pip install bpy` for python 3.10, numpy
@@ -586,7 +540,6 @@ int main(int argc, char **argv)
                 std::string tree_file_name = std::string(targetPrefixFile) + ".tree";
 
                 std::ofstream tree_file(tree_file_name);
-                // std::cout << "tree csv: " << jprbt->tree_csv << "\n";
 
                 if (tree_file.is_open())
                 {

@@ -21,7 +21,7 @@
 -target_configs jogramop/scenarios/011/export/grasp_IK_solutions.csv \
 -ik_index 0 \
 -bias_calculation 0 \
--render 1 \
+-render 0 \
 -vis_script scripts/animate_scene.py \
 -cx -3 \
 -cy 3 \

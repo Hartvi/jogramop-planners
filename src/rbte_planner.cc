@@ -174,9 +174,45 @@ namespace Burs
     }
 
     std::vector<RS>
-    RbtePlanner::CreateExtendedBur()
+    RbtePlanner::CreateExtendedBur(RS &near_state, const JPlusRbtParameters &plan_parameters)
     {
-        return {};
+        if (near_state.closest_distance_idx < 0)
+        {
+            throw std::runtime_error("RbtePlanner: CreateExtendedBur: near_state should have closest distance already computed.");
+        }
+        /*
+        tmp_q = self.extend_in_direction(q, q_r, max_dists[min_idx], epsilon_q)
+        */
+        MatrixXd Qe = this->GetRandomQ(plan_parameters.num_spikes);
+        std::vector<RS> rand_states = this->NewStates(Qe);
+        double closest_dist = near_state.closest_dists[near_state.closest_distance_idx];
+        std::vector<RS> endpoints = this->GetEndpoints(near_state, rand_states, closest_dist);
+
+        /*
+        for k in range(min_idx+1, q.size):
+            q_r *= self.causality_mask[k-1]
+            q_r /= np.linalg.norm(q_r)
+            tmp_q = self.extend_in_direction(tmp_q, q_r, max_dists[k] - max_dists[k-1], epsilon_q)
+        */
+        // BEGIN EXTENDED BUR
+        for (unsigned int k = 0; k < plan_parameters.num_spikes; ++k)
+        {
+            for (unsigned int i = near_state.closest_distance_idx + 1; i < near_state.config.size(); ++i)
+            {
+                // has already moved dc, now it wants to move from dc to dc(i), where dc(i) >= dc
+                // therefore the distance budget left to move is dc(i) - dc >= 0
+                double delta_dist = near_state.closest_dists[i] - closest_dist;
+                if (delta_dist < plan_parameters.d_crit)
+                {
+                    continue;
+                }
+                VectorXd limited_config = rand_states[k].config.cwiseProduct(this->env->robot->segmentToJntCausality[i]);
+                RS tmp_tgt(limited_config, this->env->robot->ForwardPass(limited_config));
+                endpoints[k] = this->GetEndpoints(endpoints[k], {tmp_tgt}, delta_dist)[0];
+            }
+        }
+
+        return endpoints;
     }
 
 }

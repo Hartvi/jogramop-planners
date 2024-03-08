@@ -20,17 +20,12 @@ namespace Burs
         int use_rotation;
         double rotation_dist_ratio;
 
-        int bias_calculation_type;
-
-        double preheat_ratio;
         double p_close_enough;
         double probability_to_steer_to_target;
 
         std::vector<Grasp> target_poses;
 
         Eigen::Vector3d mean_target;
-        double goal_bias_radius;
-        double goal_bias_probability;
 
         void
         GetMeanTranslation(std::vector<Grasp> &target_poses)
@@ -73,12 +68,10 @@ namespace Burs
                            double p_close_enough,
                            double probability_to_steer_to_target,
                            std::vector<Grasp> target_poses_input,
-                           double goal_bias_radius,
-                           double goal_bias_probability,
                            double q_resolution)
 
             : RbtParameters(max_iters, d_crit, delta_q, epsilon_q, num_spikes, q_resolution),
-              p_close_enough(p_close_enough), probability_to_steer_to_target(probability_to_steer_to_target), goal_bias_radius(goal_bias_radius), goal_bias_probability(goal_bias_probability)
+              p_close_enough(p_close_enough), probability_to_steer_to_target(probability_to_steer_to_target)
         {
             if (!target_poses_input.empty())
             {
@@ -102,9 +95,7 @@ namespace Burs
                 << ", probability_to_steer_to_target: " << probability_to_steer_to_target
                 // Include additional information as needed, for example:
                 << ", mean_target: [" << mean_target.x() << ", " << mean_target.y() << ", " << mean_target.z() << "]"
-                << ", poses: " << target_poses.size()
-                << ", goal_bias_radius: " << goal_bias_radius
-                << "goal_bias_probability: " << goal_bias_probability;
+                << ", poses: " << target_poses.size();
             // If you want to include information about target_poses, you need to decide how to represent it as a string
             return oss.str();
         }

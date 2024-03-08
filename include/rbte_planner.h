@@ -32,7 +32,7 @@ namespace Burs
         TestFunctions();
 
         std::vector<RS>
-        CreateExtendedBur();
+        CreateExtendedBur(RS &near_state, const JPlusRbtParameters &plan_parameters);
     };
 
 }

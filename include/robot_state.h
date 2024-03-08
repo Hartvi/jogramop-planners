@@ -27,6 +27,9 @@ namespace Burs
         // std::vector<KDL::Jacobian> jacs;
         VectorXd radii;
 
+        int closest_distance_idx = -1;
+        std::vector<double> closest_dists;
+
     public:
         // Existing constructors
         // RS(const VectorXd &config, const std::vector<KDL::Frame> &frames, const std::vector<KDL::Jacobian> &jacs);

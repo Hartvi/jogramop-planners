@@ -294,7 +294,7 @@ class Env:
 
 if __name__ == "__main__":
     plot_thing = 2
-    robot = LineRobot([0.5, 1])
+    robot = LineRobot([1.0, 0.5])
     # test_config = [1.57/2, 1.57/2]
     test_config = [0, -1.57/2]
 
