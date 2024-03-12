@@ -5,13 +5,13 @@
 -start_config jogramop/scenarios/011/export/robot_start_conf.csv \
 -planner 3 \
 -max_iters 10000 \
--d_crit 0.1 \
+-d_crit 0.03 \
 -delta_q 3.1415 \
 -epsilon_q 0.1 \
 -num_spikes 7 \
 -p_close_enough 50.0 \
 -prob_steer 0.01 \
--q_resolution 0.1 \
+-q_resolution 0.0061 \
 -seed -1 \
 -use_rot 100 \
 -rot_ratio 0.5 \

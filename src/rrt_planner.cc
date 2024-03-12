@@ -15,18 +15,30 @@ namespace Burs
     }
 
     int
-    RRTPlanner::RRTStepInQ(std::shared_ptr<BurTree> t, int node_idx, const RS &rand_state, const Qunit &epsilon_q, const Meters &p_step) const
+    RRTPlanner::RRTStepInQ(std::shared_ptr<BurTree> t, int node_idx, const RS &rand_state, const Qunit &epsilon_q, const Meters &p_step, const bool &full_state) const
     {
         // p_step in the bur paper is roughly 0.006
         RS near_state = *t->Get(node_idx);
+
+        // std::cout << "near state: " << near_state.config.transpose() << "\n";
         // shifted in configuration space
-        VectorXd new_config = near_state.config + epsilon_q * (rand_state.config - near_state.config);
+        VectorXd new_config = near_state.config + epsilon_q * (rand_state.config - near_state.config).normalized();
         // end state
-        RS new_state(new_config, this->env->robot->ForwardPass(new_config));
+        RS new_state;
+        if (full_state)
+        {
+            new_state = this->NewState(new_config);
+        }
+        else
+        {
+            new_state = RS(new_config, this->env->robot->ForwardPass(new_config));
+        }
         double max_dist = this->env->robot->MaxDistance(new_state, near_state);
 
         // interpolate base on workspace distance
-        for (unsigned int i = 1; i < (unsigned int)(max_dist / p_step + 2.0); ++i)
+        unsigned int steps = (unsigned int)(max_dist / p_step + 2.0);
+        // std::cout << "collision checks in rrtqstep: " << steps << "\n";
+        for (unsigned int i = 1; i < 15; ++i)
         {
             VectorXd interconfig = near_state.config + ((double)i) * p_step * (new_state.config - near_state.config);
             RS interstate(interconfig, this->env->robot->ForwardPass(interconfig));
@@ -39,6 +51,7 @@ namespace Burs
         if (this->InBounds(new_state.config))
         {
             // The result is the INDEX of the new node => 0 to N-1
+            // std::cout << "new state: " << new_state.config.transpose() << "\n";
             return t->AddNode(node_idx, new_state);
         }
         return -1;
@@ -264,7 +277,7 @@ namespace Burs
     RRTPlanner::GreedyExtendRandomConfigInQ(std::shared_ptr<BurTree> t_a, RS rand_state, const RRTParameters &planner_parameters, const RS &goal_state, RS &best_state) const
     {
         int nearest_idx = t_a->Nearest(rand_state);
-        auto step_result = this->RRTStepInQ(t_a, nearest_idx, rand_state, planner_parameters.epsilon_q, planner_parameters.collision_resolution);
+        auto step_result = this->RRTStepInQ(t_a, nearest_idx, rand_state, planner_parameters.epsilon_q, planner_parameters.collision_resolution, false);
 
         double best_dist = this->env->robot->EEDistance(best_state, goal_state);
 
@@ -290,7 +303,7 @@ namespace Burs
             }
 
             // then step again from newly added node: step_result
-            step_result = this->RRTStepInQ(t_a, step_result, rand_state, planner_parameters.epsilon_q, planner_parameters.collision_resolution);
+            step_result = this->RRTStepInQ(t_a, step_result, rand_state, planner_parameters.epsilon_q, planner_parameters.collision_resolution, false);
         }
         return AlgorithmState::Trapped;
     }

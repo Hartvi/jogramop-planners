@@ -3,15 +3,15 @@
 -urdf jogramop/robots/franka_panda/mobile_panda_fingersSmallMesh.urdf \
 -obstacle jogramop/scenarios/011/scene.yaml \
 -start_config jogramop/scenarios/011/export/robot_start_conf.csv \
--planner 5 \
+-planner 97 \
 -max_iters 10000 \
--d_crit 0.03 \
+-d_crit 0.1 \
 -delta_q 3.1415 \
 -epsilon_q 0.1 \
 -num_spikes 7 \
 -p_close_enough 50.0 \
 -prob_steer 0.01 \
--q_resolution 0.0061 \
+-q_resolution 0.1 \
 -seed -1 \
 -use_rot 100 \
 -rot_ratio 0.5 \
@@ -21,7 +21,7 @@
 -target_configs jogramop/scenarios/011/export/grasp_IK_solutions.csv \
 -ik_index 0 \
 -bias_calculation 0 \
--render 1 \
+-render 0 \
 -vis_script scripts/animate_scene.py \
 -cx -3 \
 -cy 3 \

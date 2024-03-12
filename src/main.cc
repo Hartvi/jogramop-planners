@@ -6,7 +6,6 @@
 #include <ctime>
 #include <cstdlib>
 #include <iostream>
-// #include <stdio.h>
 #include <Eigen/Dense>
 #include "pqp_load.h"
 #include "rt_model.h"
@@ -14,11 +13,10 @@
 #include "printing.h"
 #include "bur_tree.h"
 #include "base_planner.h"
-// #include "test.h"
 #include "CParseArgs.h"
 #include "j_rbt_planner.h"
 #include "ut.h"
-// #include "j_plus_rbt_planner.h"
+#include "burg_scene_loader.h"
 
 #include <signal.h>
 
@@ -160,7 +158,7 @@ int main(int argc, char **argv)
 
         o.addOption(Option<int>("render_tree", &render_tree, 0, "whether to render the tree")); // default value is 0
 
-        o.addOption(Option<double>("collision_resolution", &collisionResolution, 0.006, "ground z coodinate"));
+        o.addOption(Option<double>("collision_resolution", &collisionResolution, 0.006, "resolution at which to check for collisions"));
 
         if (!o.parse(argc, argv))
         {
@@ -204,7 +202,27 @@ int main(int argc, char **argv)
         // 2. Setup parameters
         // 3. Plan
         auto &env = jprbt->env;
-        env->AddObstacle(obstacleFile);
+        if (strstr(obstacleFile, ".obj"))
+        {
+            env->AddObstacle(obstacleFile);
+        }
+        else
+        {
+            BurgLoader bburg = BurgLoader(std::string(obstacleFile));
+            auto obstacles = bburg.GetObstacles();
+            for (const auto &t : obstacles)
+            {
+                std::string n = std::get<0>(t);
+                Eigen::MatrixXd T = std::get<1>(t);
+                Eigen::Vector3d v = T.col(3).head<3>();
+                Eigen::Matrix3d R = T.block<3, 3>(0, 0);
+                env->AddObstacle(n, R, v);
+                std::cout << "added obstacle: " << n << "\nR:\n"
+                          << R << "\nt:\n"
+                          << v.transpose() << "\n";
+            }
+            ///////////////////// TODO PROCESS YAML SCENE FROM BURG
+        }
         env->SetGroundLevel(groundLevel, minColSegmentIdx);
 
         std::string grasp_path(graspFile);
@@ -310,7 +328,7 @@ int main(int argc, char **argv)
                 std::cout << "NO INVERSE KINEMATICS SOLUTIONS PRESENT\n\n";
                 exit(1);
             }
-            path = jprbt->RbtConnectDenseBurs(start_config, goals[ik_index_in_target_configs], params, planning_result);
+            path = jprbt->RbtConnect(start_config, goals[ik_index_in_target_configs], params, planning_result);
             getTime(&t2);
             planning_result.time_taken = getTime(t1, t2);
             final_path = path.value();
@@ -352,6 +370,37 @@ int main(int argc, char **argv)
 
             break;
         }
+        case 6:
+        {
+            std::cout << "PLANNING RBT extended\n";
+
+            std::vector<Eigen::VectorXd> goals = RobotBase::parseCSVToVectors(targetConfigsFile);
+
+            struct rusage t1, t2;
+            getTime(&t1);
+
+            if (goals.size() == 0)
+            {
+                std::cout << "NO INVERSE KINEMATICS SOLUTIONS PRESENT\n\n";
+                exit(1);
+            }
+            path = jprbt->RbteConnect(start_config, goals[ik_index_in_target_configs], params, planning_result);
+            getTime(&t2);
+            planning_result.time_taken = getTime(t1, t2);
+            final_path = path.value();
+
+            break;
+        }
+        case 97:
+        {
+            std::cout << "TEST YAML\n";
+            BurgLoader b2();
+            BurgLoader bburg = BurgLoader(std::string(obstacleFile));
+            bburg.GetObstacles();
+            std::cout << "path: " << bburg.path << "\n";
+            std::cout << "tested YAML\n";
+            break;
+        }
         case 98:
         {
             std::cout << "TEST COLLISION VS DISTANCE SPEED\n";
@@ -387,81 +436,87 @@ int main(int argc, char **argv)
             std::cout << "Planning finished in time\n";
             planning_result.finished_in_time = 1;
         }
-
-        char fname[2000];
+        try
         {
-            snprintf(fname, sizeof(fname), "%s.txt", targetPrefixFile);
-            ofstream ofs(fname);
-            // ofs << planning_result.toCSVString() << "\n";
-            ofs << planning_result.toJSON() << "\n";
-            ofs.close();
-        }
-        {
-            snprintf(fname, sizeof(fname), "%s.try", targetPrefixFile);
-            ofstream ofs(fname);
-            ofs << jprbt->ConfigsToString(final_path) << "\n";
-            ofs.close();
-        }
-        {
-            snprintf(fname, sizeof(fname), "%s.vis", targetPrefixFile);
-            ofstream ofs(fname);
-            ofs << jprbt->StringifyPath(final_path);
-            ofs.close();
 
-            // std::ifstream ifs(fname);
-
-            // if (!ifs)
-            // {
-            //     std::cerr << "Failed to open file: " << fname << std::endl;
-            //     return 1; // or handle error in a way suitable for your application
-            // }
-
-            // std::string line;
-            // while (std::getline(ifs, line))
-            // {
-            //     std::cout << line << '\n';
-            // }
-        }
-
-        if (renderVideo)
-        {
-            // ROBOT:
-            std::string vis_file_name = std::string(targetPrefixFile) + ".vis";
-
-            std::string path_name = joinWithCurrentDirectory(vis_file_name);
-
-            // needs `pip install bpy` for python 3.10, numpy
-            std::string vis_args = path_name + " " + std::to_string(camX) + " " + std::to_string(camY) + " " + std::to_string(camZ) + " " + grasp_path;
-            // TREE:
-            std::cout << "RENDER TREE: " << render_tree << "\n";
-            if (render_tree)
+            char fname[2000];
             {
-                std::string tree_file_name = std::string(targetPrefixFile) + ".tree";
+                snprintf(fname, sizeof(fname), "%s.txt", targetPrefixFile);
+                ofstream ofs(fname);
+                // ofs << planning_result.toCSVString() << "\n";
+                ofs << planning_result.toJSON() << "\n";
+                ofs.close();
+            }
+            {
+                snprintf(fname, sizeof(fname), "%s.try", targetPrefixFile);
+                ofstream ofs(fname);
+                ofs << jprbt->ConfigsToString(final_path) << "\n";
+                ofs.close();
+            }
+            {
+                snprintf(fname, sizeof(fname), "%s.vis", targetPrefixFile);
+                ofstream ofs(fname);
+                ofs << jprbt->StringifyPath(final_path);
+                ofs.close();
 
-                std::ofstream tree_file(tree_file_name);
-                // std::cout << "tree csv: " << jprbt->tree_csv << "\n";
+                // std::ifstream ifs(fname);
 
-                if (tree_file.is_open())
+                // if (!ifs)
+                // {
+                //     std::cerr << "Failed to open file: " << fname << std::endl;
+                //     return 1; // or handle error in a way suitable for your application
+                // }
+
+                // std::string line;
+                // while (std::getline(ifs, line))
+                // {
+                //     std::cout << line << '\n';
+                // }
+            }
+
+            if (renderVideo)
+            {
+                // ROBOT:
+                std::string vis_file_name = std::string(targetPrefixFile) + ".vis";
+
+                std::string path_name = joinWithCurrentDirectory(vis_file_name);
+
+                // needs `pip install bpy` for python 3.10, numpy
+                std::string vis_args = path_name + " " + std::to_string(camX) + " " + std::to_string(camY) + " " + std::to_string(camZ) + " " + grasp_path;
+                // TREE:
+                std::cout << "RENDER TREE: " << render_tree << "\n";
+                if (render_tree)
                 {
-                    tree_file << jprbt->tree_csv;
-                    tree_file.close();
+                    std::string tree_file_name = std::string(targetPrefixFile) + ".tree";
+
+                    std::ofstream tree_file(tree_file_name);
+                    // std::cout << "tree csv: " << jprbt->tree_csv << "\n";
+
+                    if (tree_file.is_open())
+                    {
+                        tree_file << jprbt->tree_csv;
+                        tree_file.close();
+                    }
+                    std::string tree_path_name = joinWithCurrentDirectory(tree_file_name);
+                    std::cout << "tree file " << tree_path_name << "\n";
+                    vis_args = vis_args + " " + tree_path_name;
                 }
-                std::string tree_path_name = joinWithCurrentDirectory(tree_file_name);
-                std::cout << "tree file " << tree_path_name << "\n";
-                vis_args = vis_args + " " + tree_path_name;
-            }
 
-            std::string str_command = "python3.10 " + std::string(visualizationScriptFile) + " " + vis_args;
+                std::string str_command = "python3.10 " + std::string(visualizationScriptFile) + " " + vis_args;
 
-            const char *command = str_command.c_str();
-            int result = system(command);
+                const char *command = str_command.c_str();
+                int result = system(command);
 
-            if (result != 0)
-            {
-                std::cout << "Calling `" << command << "` failed" << std::endl;
+                if (result != 0)
+                {
+                    std::cout << "Calling `" << command << "` failed" << std::endl;
+                }
             }
         }
-
+        catch (const std::exception &e)
+        {
+            std::cout << "FAILED TO SAVE RESULT: " << e.what() << "\n";
+        }
         std::cout << "planning result " << planning_result.toCSVString() << "\n";
         std::cout << "\n";
     }

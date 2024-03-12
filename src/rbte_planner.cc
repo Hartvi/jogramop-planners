@@ -23,7 +23,7 @@ namespace Burs
     RbtePlanner::RbtePlanner() : RbtPlanner() {}
 
     std::optional<std::vector<Eigen::VectorXd>>
-    RbtePlanner::RbteConnect(const VectorXd &q_start, const VectorXd &q_goal, const RbtParameters &plan_parameters, PlanningResult &planning_result)
+    RbtePlanner::RbteConnect(const VectorXd &q_start, const VectorXd &q_goal, const JPlusRbtParameters &plan_parameters, PlanningResult &planning_result)
     {
         // Givens:
         RS start_state = this->NewState(q_start);
@@ -34,13 +34,13 @@ namespace Burs
         if (this->IsColliding(start_state))
         {
             std::cout << "START COLLIDING\n";
-            return {};
+            return {{start_state.config}};
         }
 
         if (this->IsColliding(goal_state))
         {
             std::cout << "GOAL COLLIDING\n";
-            return {};
+            return {{start_state.config}};
         }
 
         // Changing
@@ -57,19 +57,24 @@ namespace Burs
             // Random column
             int nearest_idx = t_a->Nearest(rand_states[0]);
             RS near_state = *t_a->Get(nearest_idx);
-
-            // Slow => maybe in the future use FCL and somehow compile it because it had a ton of compilation errors and version mismatches
-            double d_closest = this->GetClosestDistance(near_state);
+            if (near_state.closest_distance_idx < 0)
+            {
+                auto [closest_idx, closest_dists] = this->GetClosestDistances(near_state);
+                near_state.closest_distance_idx = closest_idx;
+                near_state.closest_dists = closest_dists;
+            }
+            double d_closest = near_state.closest_dists[near_state.closest_distance_idx];
 
             if (d_closest < plan_parameters.d_crit)
             {
-                int step_result = this->RRTStep(t_a, nearest_idx, near_state, plan_parameters.epsilon_q);
+                int step_result = this->RRTStepInQ(t_a, nearest_idx, near_state, plan_parameters.epsilon_q, plan_parameters.collision_resolution, true);
                 if (step_result < 0)
                 {
                     // If small basic rrt collides, then don't go here, hence the `continue`
                     continue;
                 }
 
+                // LOG
                 if (t_a == t_start)
                 {
                     RS tmp_state = *t_start->Get(step_result);
@@ -82,37 +87,31 @@ namespace Burs
                         best_state = tmp_state;
                     }
                 }
+                // END LOG
             }
             else
             {
                 // Qe is scaled to max euclidean delta_q or closest obstacle distance
-                std::vector<RS> endpoints = this->GetEndpoints(near_state, rand_states, std::min(d_closest, plan_parameters.delta_q));
-                // TRAVELLED DISTANCES ARE INDEED ALWAYS SMALLER THAN D_CLOSEST
+                std::vector<RS> endpoints = this->CreateExtendedBur(near_state, plan_parameters);
 
                 for (unsigned int i = 0; i < endpoints.size(); ++i)
                 {
-                    auto q_t = endpoints[i];
-                    auto max_epsilon_separated_points = this->Densify(near_state, q_t, plan_parameters);
-                    int prev_idx = nearest_idx; // idx of q_near
-
-                    this->AddPointsExceptFirst(t_a, prev_idx, max_epsilon_separated_points);
-
-                    for (RS &point : max_epsilon_separated_points)
+                    int prev_idx = t_a->AddNode(nearest_idx, endpoints[i]);
+                    // LOG
+                    // Measure distance to goal if this is the starting tree
+                    if (t_a == t_start)
                     {
-                        // Measure distance to goal if this is the starting tree
-                        if (t_a == t_start)
-                        {
-                            RS tmp_state = *t_start->Get(prev_idx);
-                            double tmp_dist = this->env->robot->EEDistance(tmp_state, goal_state);
+                        RS tmp_state = *t_start->Get(prev_idx);
+                        double tmp_dist = this->env->robot->EEDistance(tmp_state, goal_state);
 
-                            if (tmp_dist < best_dist)
-                            {
-                                best_dist = tmp_dist;
-                                std::cout << "RBT best dist: " << best_dist << "\n";
-                                best_state = tmp_state;
-                            }
+                        if (tmp_dist < best_dist)
+                        {
+                            best_dist = tmp_dist;
+                            std::cout << "RBT best dist: " << best_dist << "\n";
+                            best_state = tmp_state;
                         }
                     }
+                    // END LOG
                 }
             }
 
@@ -138,6 +137,7 @@ namespace Burs
                 // `q_new` is in `t_a`
                 // `t_b` extends to `q_new` => it has a node near `q_new`
 
+                // LOG
                 planning_result.distance_to_goal = 0.0;
                 planning_result.num_iterations = k;
                 planning_result.tree_size = t_start->GetNumberOfNodes() + t_goal->GetNumberOfNodes();
@@ -148,15 +148,16 @@ namespace Burs
                 {
                     this->tree_csv = this->TreePoints(t_start, 100);
                 }
+                // END LOG
                 return path;
             }
             std::swap(t_a, t_b);
         }
 
+        // LOG
         planning_result.num_iterations = plan_parameters.max_iters;
         planning_result.tree_size = t_start->GetNumberOfNodes() + t_goal->GetNumberOfNodes();
         planning_result.success = false;
-
         int best_idx = t_start->Nearest(best_state);
         planning_result.distance_to_goal = this->env->robot->EEDistance(best_state, goal_state);
 
@@ -164,13 +165,8 @@ namespace Burs
         {
             this->tree_csv = this->TreePoints(t_start, 100);
         }
+        // END LOG
         return this->ConstructPathFromTree(t_start, best_idx);
-    }
-
-    void
-    RbtePlanner::TestFunctions()
-    {
-        this->env->robot->segmentToJntCausality;
     }
 
     std::vector<RS>
@@ -202,10 +198,7 @@ namespace Burs
                 // has already moved dc, now it wants to move from dc to dc(i), where dc(i) >= dc
                 // therefore the distance budget left to move is dc(i) - dc >= 0
                 double delta_dist = near_state.closest_dists[i] - closest_dist;
-                if (delta_dist < plan_parameters.d_crit)
-                {
-                    continue;
-                }
+                std::cout << "using extra dist: " << 100 * delta_dist << " cm\n";
                 VectorXd limited_config = rand_states[k].config.cwiseProduct(this->env->robot->segmentToJntCausality[i]);
                 RS tmp_tgt(limited_config, this->env->robot->ForwardPass(limited_config));
                 endpoints[k] = this->GetEndpoints(endpoints[k], {tmp_tgt}, delta_dist)[0];
@@ -214,5 +207,4 @@ namespace Burs
 
         return endpoints;
     }
-
 }

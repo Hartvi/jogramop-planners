@@ -75,11 +75,13 @@ namespace Burs
         std::shared_ptr<BaseEnv> env;
 
         int q_dim;
+        double avg_collisions_per_step = 0.0;
+        size_t num_steps = 0;
         // 2 columns: min column and max column
         MatrixXd bounds;
 
-        //this variable is set when catching signal and planners should (periodically) check it.
-        // if nonzero, planners should terminate and return results (if possible) immediately
+        // this variable is set when catching signal and planners should (periodically) check it.
+        //  if nonzero, planners should terminate and return results (if possible) immediately
         int globalTrigger;
     };
 
