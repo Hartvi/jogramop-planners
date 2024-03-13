@@ -46,19 +46,23 @@ namespace Burs
         int ik_attempts = 0;
         int num_goals = 0;
         auto res = this->env->robot->GetInverseKinematics(ik_solver, init_joints, plan_parameters.target_poses[this->rng->getRandomInt()].frame);
-        while (!res && ik_attempts < plan_parameters.max_iters)
+        while (ik_attempts < plan_parameters.max_iters)
         {
             ik_attempts++;
+            init_joints.data = q_start + 0.1 * MatrixXd::Random(this->q_dim, 1);
             res = this->env->robot->GetInverseKinematics(ik_solver, init_joints, plan_parameters.target_poses[this->rng->getRandomInt()].frame);
             if (res)
             {
                 RS tmp = this->NewState(res.value());
-                if (!this->IsColliding(tmp))
+                if (!this->IsColliding(tmp) && this->InBounds(tmp.config))
                 {
-                    res = {};
+                    std::cout << "collision free IK solution FOUND\n";
+                    break;
+                    // res = {};
                 }
             }
         }
+        int ik_solutions = 1;
         q_goal = res.value();
 
         // END IK
@@ -84,13 +88,16 @@ namespace Burs
             // SOME SMALL PROBABILITY => FIND IK
             if (rng->getRandomReal() < plan_parameters.probability_to_steer_to_target)
             {
+                init_joints.data = q_start + 0.1 * MatrixXd::Random(this->q_dim, 1);
                 res = this->env->robot->GetInverseKinematics(ik_solver, init_joints, plan_parameters.target_poses[this->rng->getRandomInt()].frame);
                 if (res)
                 {
                     RS tmp = this->NewState(res.value());
-                    if (!this->IsColliding(tmp))
+                    if (!this->IsColliding(tmp) && this->InBounds(tmp.config))
                     {
                         t_goal->AddNode(0, tmp);
+                        ik_solutions++;
+                        std::cout << "IK SOLUTIONS: " << ik_solutions << "\n";
                     }
                 }
             }

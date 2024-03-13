@@ -79,7 +79,7 @@ namespace Burs
             totalNNtime += getTime(tt1, tt2);
 
             getTime(&tt1);
-            int step_result = this->RRTStep(tree, idx_near, tmp_state, planner_parameters.epsilon_q);
+            int step_result = this->RRTStepInQ(tree, idx_near, tmp_state, planner_parameters.epsilon_q, planner_parameters.collision_resolution, false);
             getTime(&tt2);
             totalCollideAndAddTime += getTime(tt1, tt2);
 
@@ -224,40 +224,52 @@ namespace Burs
     AlgorithmState
     JRRTPlanner::ExtendToGoalRRT(std::shared_ptr<BurTree> t_a, JPlusRbtParameters &planner_parameters) const
     {
-        // std::cout << "inside RRT extend to goal\n";
+        std::cout << "extend to goal\n";
         int randint = this->rng->getRandomInt();
         Grasp random_grasp = planner_parameters.target_poses[randint];
         KDL::Frame p_goal = random_grasp.frame;
 
         int best_state_idx = random_grasp.best_state;
         RS *best_state = t_a->Get(best_state_idx);
+        if (!best_state->has_radii)
+        {
+            auto [jac, r] = this->env->robot->ForwardJacs(best_state->config);
+            best_state->jac = jac;
+            best_state->radii = r;
+            best_state->has_radii = true;
+        }
         RS near_state = *best_state;
         // Copy since we will change it
 
         int prev_idx = t_a->Nearest(best_state_idx);
         double delta_p = random_grasp.best_dist;
         KDL::Frame p_near = this->env->robot->GetEEFrame(*best_state);
-        double delta_p_old = 0;
-        // TESTING
+
+        int extension = 0;
 
         do
         {
             KDL::Vector delta_pos = (p_goal.p - p_near.p);
+            // std::cout << "extension dist: " << delta_pos.Norm() << "\n";
             double metric_dist = delta_pos.Norm();
             auto [d, f_tgt] = this->BasicDistanceMetric(p_near, p_goal, planner_parameters.rotation_dist_ratio);
             delta_p = d;
+            // if close enough => BREAK
+            if (delta_p <= planner_parameters.p_close_enough)
+            {
+                break;
+            }
             bool use_rotation = (delta_p <= planner_parameters.use_rotation);
-            // std::cout << "delta p: " << delta_p << " rotation threshold: " << planner_parameters.use_rotation << "\n";
 
             // Max dist => epsilon_q
             double dist_to_move = std::min(metric_dist, planner_parameters.epsilon_q);
-            RS new_state;
+
             MatrixXd p_inv = this->env->robot->JPlus(near_state);
             // .completeOrthogonalDecomposition().pseudoInverse();
             VectorXd delta_frame(6);
-            delta_frame(0) = delta_pos(0);
-            delta_frame(1) = delta_pos(1);
-            delta_frame(2) = delta_pos(2);
+            // Is this
+            delta_frame.head<3>() << delta_pos[0], delta_pos[1], delta_pos[2];
+            // the same as this?
             if (use_rotation)
             {
                 double x, y, z;
@@ -273,29 +285,26 @@ namespace Burs
                 delta_frame(4) = 0;
                 delta_frame(5) = 0;
             }
-            // std::cout << "pinv: " << p_inv.rows() << ", " << p_inv.cols() << "\n";
-            // std::cout << "delta_frame: " << delta_frame.transpose() << "\n";
             VectorXd delta_q = p_inv * delta_frame;
 
-            new_state = this->NewState(near_state.config + delta_q);
-            // if (!planner_parameters.use_platform)
-            // {
-            //     delta_q(0) = 0;
-            //     delta_q(1) = 0;
-            // }
-            near_state = this->GetEndpoints(near_state, {new_state}, dist_to_move)[0];
-
-            if (this->IsColliding(near_state) || !this->InBounds(near_state.config))
+            // std::cout << "near config: " << near_state.config << "\n";
+            RS tmp_state = this->NewState(near_state.config + delta_q);
+            prev_idx = this->RRTStepInQ(t_a, prev_idx, tmp_state, planner_parameters.epsilon_q, planner_parameters.collision_resolution, true);
+            if (prev_idx < 0)
             {
                 return AlgorithmState::Trapped;
             }
-            prev_idx = t_a->AddNode(prev_idx, near_state);
+            near_state = *t_a->Get(prev_idx);
+
             this->SetGraspClosestConfigs(planner_parameters, t_a, prev_idx);
 
             p_near = this->env->robot->GetEEFrame(near_state);
-
-            delta_p_old = delta_p;
-        } while (delta_p > planner_parameters.p_close_enough);
+            if (extension++ > planner_parameters.max_extensions)
+            {
+                return AlgorithmState::Trapped;
+            }
+        } while (true);
+        // std::cout << "extensions: " << extension << " max extensions: " << planner_parameters.max_extensions << " delta_p: " << delta_p << "\n";
 
         return AlgorithmState::Reached;
     }

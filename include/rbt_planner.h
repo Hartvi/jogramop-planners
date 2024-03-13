@@ -26,22 +26,10 @@ namespace Burs
         virtual ~RbtPlanner() = default;
 
         std::optional<std::vector<Eigen::VectorXd>>
-        RbtConnectDenseBurs(const VectorXd &q_start, const VectorXd &q_goal, const RbtParameters &plan_parameters, PlanningResult &planning_result);
-
-        std::optional<std::vector<Eigen::VectorXd>>
         RbtConnect(const VectorXd &q_start, const VectorXd &q_goal, const RbtParameters &plan_parameters, PlanningResult &planning_result);
 
         std::pair<AlgorithmState, int>
         BurConnect(std::shared_ptr<BurTree> t, const RS &state, const RbtParameters &plan_parameters, const RS &goal_state, RS &best_state, double &best_dist);
-
-        int
-        AddPointsExceptFirst(std::shared_ptr<BurTree> t, const int &first_el_idx, const std::vector<RS> vec) const;
-
-        std::vector<double>
-        AddDenseBur(std::shared_ptr<BurTree> tree, const int &idx_near, const std::vector<RS> &endpoints, JPlusRbtParameters &plan_params) const;
-
-        std::vector<RS>
-        Densify(const RS &src, const RS &tgt, const RbtParameters &plan_params) const;
 
         void
         InitGraspClosestConfigs(JPlusRbtParameters &planner_parameters, std::shared_ptr<BurTree> t, const int &start_idx) const;
@@ -51,6 +39,9 @@ namespace Burs
 
         unsigned int
         GetBestGrasp(JPlusRbtParameters &planner_parameters) const;
+
+        std::vector<RS>
+        Densify(const RS &src, const RS &tgt, const RbtParameters &plan_params) const;
 
         std::optional<std::vector<Eigen::VectorXd>>
         TestCollisionVsDistanceTime(const VectorXd &q_start, const RbtParameters &plan_parameters, PlanningResult &planning_result);

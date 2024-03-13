@@ -52,14 +52,6 @@ namespace Burs
         double denominator = (end_state.config - k_state.config).cwiseAbs().dot(k_state.radii);
         return phi_tk * (1.0 - tk) / denominator;
     }
-    // double
-    // BasePlanner::GetDeltaTk(double phi_tk, double tk, const VectorXd &q_e, const VectorXd &q_k) const
-    // {
-    //     VectorXd r_vec = this->radius_func(q_k);
-
-    //     double denominator = (q_e - q_k).cwiseAbs().dot(r_vec);
-    //     return phi_tk * (1.0 - tk) / denominator;
-    // }
 
     std::vector<RS>
     BasePlanner::QToStates(const MatrixXd &Q) const
@@ -152,7 +144,7 @@ namespace Burs
         double d_small = 0.1 * d_max;
 
         std::vector<RS> new_states;
-        new_states.reserve(rand_states.size());
+        // new_states.reserve(rand_states.size());
 
         for (int i = 0; i < rand_states.size(); ++i)
         {
@@ -161,6 +153,12 @@ namespace Burs
             if (maxPossibleDist < d_max)
             {
                 new_states.push_back(rand_states[i]);
+                // std::cout << "dist close: " << maxPossibleDist << " < " << d_max << "\n";
+                // if (this->IsColliding(rand_states[i]))
+                // {
+                //     std::cout << "CLOSE STATE COLLIDING\n";
+                // }
+
                 continue;
             }
 
@@ -182,16 +180,27 @@ namespace Burs
                 double delta_tk = this->GetDeltaTk(phi_result, tk, end_state, state_k);
 
                 tk = tk + delta_tk;
-                if (tk >= 1.0)
+                if (tk > 1.0)
                 {
-                    std::cout << "MOVED TOO MUCH IN ENDPOINT CALC\n";
-                    break;
+                    std::cout << "MOVED TOO MUCH IN ENDPOINT CALC " << tk << "\n";
+                    // break;
                 }
                 // has actually never reached > 1
                 // q_k = q_near + tk * (q_e - q_near);
                 VectorXd q_k = state_near.config + tk * (end_state.config - state_near.config);
                 state_k = this->QToStates(q_k)[0];
-                phi_result = d_max - this->env->robot->MaxDistance(state_near, state_k);
+                double tmp_travelled_dist = this->env->robot->MaxDistance(state_near, state_k);
+                // std::cout << "i: "<<i<<" k: " << k << " maxdist: " << d_max << " dist: " << tmp_travelled_dist << "\n";
+                // if (this->IsColliding(state_k))
+                // {
+                // std::cout << "COLLIDING IN GETENDPOINTS\n";
+                // exit(1);
+                // }
+                phi_result = d_max - tmp_travelled_dist;
+                // if (phi_result < 0.0)
+                // {
+                //     std::cout << "STATE WILL COLLIDE\n";
+                // }
             }
             new_states.push_back(state_k);
         }

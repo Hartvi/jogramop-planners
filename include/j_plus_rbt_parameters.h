@@ -23,9 +23,13 @@ namespace Burs
         double p_close_enough;
         double probability_to_steer_to_target;
 
+        int max_extensions;
+
         std::vector<Grasp> target_poses;
 
         Eigen::Vector3d mean_target;
+
+        int JRBTOption;
 
         void
         GetMeanTranslation(std::vector<Grasp> &target_poses)

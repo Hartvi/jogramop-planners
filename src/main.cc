@@ -119,13 +119,15 @@ int main(int argc, char **argv)
     int preheat_type;
 
     double collisionResolution;
+    int maxExtensions;
+    int jrbtOption;
 
     {
         CmdOptions o;
 
         o.addOption(Option<char *>("grasp", &graspFile, "filename with grasps (.csv)"));
         o.addOption(Option<char *>("urdf", &urdfFile, "filename with URDF of the robot (.urdf)"));
-        o.addOption(Option<char *>("obstacle", &obstacleFile, "filename with obstacles (.obj)"));
+        o.addOption(Option<char *>("obstacle", &obstacleFile, "filename with obstacles (.obj) or .yaml scene with .obj file links"));
         o.addOption(Option<char *>("start_config", &startConfigFile, "filename with initial configuration (.csv)"));
         o.addOption(Option<int>("planner", &plannerType, "planner to choose (int)"));
         o.addOption(Option<int>("max_iters", &max_iters, "max number of iterations"));
@@ -141,24 +143,26 @@ int main(int argc, char **argv)
         o.addOption(Option<int>("minColSegIdx", &minColSegmentIdx, "segment id from which it can collide with ground"));
 
         o.addOption(Option<int>("ik_index", &ik_index_in_target_configs, 0, "max iters for all ik solutions")); // default value is 0
-        o.addOption(Option<double>("q_resolution", &q_resolution, 0.006, "resolution of collision of individual steps"));
+        o.addOption(Option<double>("q_resolution", &q_resolution, 0.1, "resolution at which to output path"));
 
         o.addOption(Option<int>("use_rot", &useRotation, 0, "rotation bias threshold when to start using it (mm+deg)"));
         o.addOption(Option<double>("rot_ratio", &rotationDistRatio, 0.5, "ratio of rotation in distance metric (mm+deg)"));
 
-        o.addOption(Option<char *>("target_prefix", &targetPrefixFile, "file in which to save measurements, separated by keywords"));
+        o.addOption(Option<char *>("target_prefix", &targetPrefixFile, "planner_output", "file in which to save measurements, separated by keywords"));
 
-        o.addOption(Option<int>("render", &renderVideo, "whether to render video"));
-        o.addOption(Option<char *>("vis_script", &visualizationScriptFile, "script to visualize with"));
-        o.addOption(Option<int>("cx", &camX, "camera x coordinate"));
-        o.addOption(Option<int>("cy", &camY, "camera y coordinate"));
-        o.addOption(Option<int>("cz", &camZ, "camera z coordinate"));
+        o.addOption(Option<int>("render", &renderVideo, 0, "whether to render video"));
+        o.addOption(Option<char *>("vis_script", &visualizationScriptFile, "", "script to visualize with"));
+        o.addOption(Option<int>("cx", &camX, 0, "camera x coordinate"));
+        o.addOption(Option<int>("cy", &camY, 0, "camera y coordinate"));
+        o.addOption(Option<int>("cz", &camZ, 0, "camera z coordinate"));
 
         o.addOption(Option<int>("seed", &seed, -1, "random seed or time (if seed = -1)")); // default value is -1 -> seed is from time
 
         o.addOption(Option<int>("render_tree", &render_tree, 0, "whether to render the tree")); // default value is 0
 
-        o.addOption(Option<double>("collision_resolution", &collisionResolution, 0.006, "resolution at which to check for collisions"));
+        o.addOption(Option<double>("collision_resolution", &collisionResolution, 0.0045, "resolution at which to check for collisions"));
+        o.addOption(Option<int>("max_extensions", &maxExtensions, 50, "max num of extend to goal steps"));
+        o.addOption(Option<int>("jrbt_option", &jrbtOption, 0, "which type of rbt to run. 0=default 1=extended non-convex"));
 
         if (!o.parse(argc, argv))
         {
@@ -245,6 +249,7 @@ int main(int argc, char **argv)
         params.use_rotation = useRotation;
         params.rotation_dist_ratio = rotationDistRatio;
         params.collision_resolution = collisionResolution;
+        params.max_extensions = maxExtensions;
 
         // END COMMON SETTINGS ------------------------------------------------------------------------------------------------------------
 

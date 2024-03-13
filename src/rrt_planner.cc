@@ -37,8 +37,8 @@ namespace Burs
 
         // interpolate base on workspace distance
         unsigned int steps = (unsigned int)(max_dist / p_step + 2.0);
-        // std::cout << "collision checks in rrtqstep: " << steps << "\n";
-        for (unsigned int i = 1; i < 15; ++i)
+        std::cout << "collision checks in rrtqstep: " << steps << "\n";
+        for (unsigned int i = 1; i < steps; ++i)
         {
             VectorXd interconfig = near_state.config + ((double)i) * p_step * (new_state.config - near_state.config);
             RS interstate(interconfig, this->env->robot->ForwardPass(interconfig));
