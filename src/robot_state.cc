@@ -9,6 +9,13 @@ namespace Burs
     // {
     // }
 
+    RS::RS(const VectorXd &config, const std::vector<KDL::Frame> &frames, const KDL::Jacobian &jac, const VectorXd &radii, const VectorXd &rigidRadii)
+        : config(config), frames(frames), jac(jac), radii(radii), rigidRadii(rigidRadii)
+    {
+        assert(config.size() > 1);
+        this->has_radii = true;
+    }
+
     RS::RS(const VectorXd &config, const std::vector<KDL::Frame> &frames, const KDL::Jacobian &jac, const VectorXd &radii)
         : config(config), frames(frames), jac(jac), radii(radii)
     {

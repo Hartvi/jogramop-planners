@@ -29,14 +29,17 @@ namespace Burs
         double
         GetDeltaTk(double phi_tk, double tk, const RS &end_state, const RS &k_state) const;
 
-        // double
-        // GetDeltaTk(double phi_tk, double tk, const VectorXd &q_e, const VectorXd &q_k) const;
+        double
+        GetDeltaTkGeometry(double phi_tk, double tk, const RS &end_state, const RS &k_state) const;
 
         std::vector<RS>
         QToStates(const MatrixXd &Q) const;
 
         std::vector<std::vector<RS>>
         GetEndpointsInterstates(const RS &state_near, const std::vector<RS> &rand_states, double d_max, double q_resolution) const;
+
+        std::vector<RS>
+        GetEndpointsGeometry(const RS &state_near, const std::vector<RS> &rand_states, double d_max);
 
         std::vector<RS>
         GetEndpoints(const RS &state_near, const std::vector<RS> &rand_states, double d_max) const;
@@ -65,6 +68,8 @@ namespace Burs
 
     public:
         std::string tree_csv;
+        RS last_state;
+        bool finished = false;
     };
 }
 

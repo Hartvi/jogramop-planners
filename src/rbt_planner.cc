@@ -56,6 +56,15 @@ namespace Burs
             // Random column
             int nearest_idx = t_a->Nearest(rand_states[0]);
             RS near_state = *t_a->Get(nearest_idx);
+            for (size_t i = 0; i < Qe.cols(); ++i)
+            {
+                // normalize
+                Qe.col(i).normalize();
+                // stretch to cover the whole range
+                Qe.col(i) *= this->bounds.col(1) - this->bounds.col(0);
+                // add to nearest point to set it as the direction from q_near
+                Qe.col(i) += near_state.config;
+            }
 
             // Slow => maybe in the future use FCL and somehow compile it because it had a ton of compilation errors and version mismatches
             // double d_closest = this->GetClosestDistance(near_state);
@@ -67,7 +76,7 @@ namespace Burs
             }
             else
             {
-                std::cout << "REUSING DISTANCE\n";
+                // std::cout << "REUSING DISTANCE\n";
             }
             double d_closest = near_state.closest_dists[near_state.closest_distance_idx];
             // std::cout << "d_closest: " << d_closest << "\n";
@@ -209,7 +218,7 @@ namespace Burs
             }
             else
             {
-                std::cout << "REUSING DISTANCE\n";
+                // std::cout << "REUSING DISTANCE\n";
             }
             double d_closest = q_n.closest_dists[q_n.closest_distance_idx];
 
@@ -222,7 +231,10 @@ namespace Burs
 
                 for (unsigned int i = 0; i < q_t.size(); ++i)
                 {
-                    previous_step = t->AddNode(previous_step, q_t[i]);
+                    if (!this->IsColliding(q_t[i]))
+                    {
+                        previous_step = t->AddNode(previous_step, q_t[i]);
+                    }
                 }
                 q_n = q_t.back();
 

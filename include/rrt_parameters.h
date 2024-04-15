@@ -20,6 +20,7 @@ namespace Burs
         double epsilon_q;
         double q_resolution;
         double collision_resolution;
+        int minCollisionIdx = 999;
 
         RRTParameters(int max_iters, double epsilon_q)
             : max_iters(max_iters), epsilon_q(epsilon_q), q_resolution(0)

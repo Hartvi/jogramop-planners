@@ -26,6 +26,7 @@ namespace Burs
         KDL::Jacobian jac;
         // std::vector<KDL::Jacobian> jacs;
         VectorXd radii;
+        VectorXd rigidRadii;
 
         int closest_distance_idx = -1;
         std::vector<double> closest_dists;
@@ -34,6 +35,7 @@ namespace Burs
         // Existing constructors
         // RS(const VectorXd &config, const std::vector<KDL::Frame> &frames, const std::vector<KDL::Jacobian> &jacs);
         RS() = default;
+        RS(const VectorXd &config, const std::vector<KDL::Frame> &frames, const KDL::Jacobian &jac, const VectorXd &radii, const VectorXd &rigidRadii);
         RS(const VectorXd &config, const std::vector<KDL::Frame> &frames, const KDL::Jacobian &jac, const VectorXd &radii);
         RS(const VectorXd &config, const std::vector<KDL::Frame> &frames);
         // RS(const VectorXd &config, const std::vector<KDL::Frame> &frames, const KDL::Jacobian &jac);
@@ -57,6 +59,10 @@ namespace Burs
                 frames = other.frames;
                 jac = other.jac;
                 radii = other.radii;
+                has_radii = other.has_radii;
+                rigidRadii = other.rigidRadii;
+                closest_distance_idx = other.closest_distance_idx;
+                closest_dists = other.closest_dists;
             }
             return *this;
         }

@@ -34,6 +34,7 @@ namespace Burs
         // To prevent uninitialized vectors in plan_params
         this->InitGraspClosestConfigs(plan_params, tree, 0);
 
+        // LOGGING VARS
         double totalNNtime = 0;
         // double totalAddTime = 0;
         double totalRunTime = 0;
@@ -42,6 +43,10 @@ namespace Burs
         double totalCollideAndAddTime = 0;
         struct rusage gt1, gt2;
         getTime(&gt1);
+
+        int num_bad_crashes = 0;
+        int numberOfDistanceChecks = 0;
+        // END LOGGING VARS
 
         for (unsigned int k = 0; k < plan_params.max_iters; ++k)
         {
@@ -71,6 +76,11 @@ namespace Burs
                 break;
             }
 
+            if (this->finished)
+            {
+                break;
+            }
+
             MatrixXd Qe = this->GetRandomQ(plan_params.num_spikes);
 
             struct rusage tt1, tt2;
@@ -78,15 +88,31 @@ namespace Burs
             // Random column
             int nearest_idx = tree->Nearest(Qe.col(0).data());
             RS *near_state = tree->Get(nearest_idx);
+            for (size_t i = 0; i < Qe.cols(); ++i)
+            {
+                // normalize
+                Qe.col(i).normalize();
+                // stretch to cover the whole range
+                Qe.col(i) = Qe.col(i).cwiseProduct(this->bounds.col(1) - this->bounds.col(0));
+                // add to nearest point to set it as the direction from q_near
+                Qe.col(i) += near_state->config;
+            }
             getTime(&tt2);
             totalNNtime += getTime(tt1, tt2);
 
             getTime(&tt1);
             if (near_state->closest_distance_idx < 0)
             {
+                // std::cout << "near state closest dist idx: " << near_state->closest_distance_idx << "\n";
+                // if (this->IsColliding(*near_state))
+                // {
+                //     std::cout << "NEAR STATE COLLIDING\n";
+                // }
                 auto [d_closest_idx, ds_closest] = this->GetClosestDistances(*near_state);
                 near_state->closest_distance_idx = d_closest_idx;
                 near_state->closest_dists = ds_closest;
+                ++numberOfDistanceChecks;
+                // std::cout << "dclosest: " << ds_closest[d_closest_idx] << "\n";
             }
             else
             {
@@ -96,7 +122,6 @@ namespace Burs
                 // continue;
             }
             double d_closest = near_state->closest_dists[near_state->closest_distance_idx];
-            // double d_closest = this->GetClosestDistance(*near_state);
             getTime(&tt2);
             totalGetClosestDistTime += getTime(tt1, tt2);
 
@@ -113,21 +138,24 @@ namespace Burs
                     // if (this->IsColliding(*tree->Get(step_result)))
                     // {
                     //     std::cout << "RRT STEP COLLIDING\n";
+                    //     throw std::runtime_error("RRT STEP COLLIDING");
                     // }
                     this->SetGraspClosestConfigs(plan_params, tree, step_result);
                 }
+                std::cout << "IN RRT\n";
             }
             else // REGULAR BUR
             {
                 double distance_to_move = d_closest;
-                std::vector<RS> endpoints = this->GetEndpoints(*near_state, Qe_states, distance_to_move);
+                std::vector<RS> endpoints = this->GetEndpointsGeometry(*near_state, Qe_states, distance_to_move);
 
                 for (unsigned int i = 0; i < endpoints.size(); ++i)
                 {
                     if (this->IsColliding(endpoints[i]))
                     {
-                        // std::cout << "ENDPOINT COLLIDING\n";
-                        // exit(1);
+                        std::cout << "ENDPOINT SHOULD NOT BE COLLIDING\n";
+                        num_bad_crashes++;
+                        exit(1);
                     }
                     else
                     {
@@ -163,6 +191,8 @@ namespace Burs
                     plan_result.tree_size = tree->GetNumberOfNodes();
                     plan_result.success = true;
 
+                    // std::cout << "NUM BAD CRASHES: " << num_bad_crashes << "\n";
+                    std::cout << "NUM DIST CHECKS: " << numberOfDistanceChecks << "\n";
                     // Return best path
                     auto path = this->ConstructPathFromTree(tree, best_idx);
                     if (plan_params.visualize_tree > 0)
@@ -180,6 +210,10 @@ namespace Burs
 
         // Get idx in tree that leads to the best config
         int best_idx = tree->Nearest(best_grasp.best_state);
+        if (finished)
+        {
+            best_idx = tree->Nearest(this->last_state);
+        }
         // Take measurements
         plan_result.distance_to_goal = best_grasp.best_dist;
         plan_result.num_iterations = plan_params.max_iters;
@@ -192,6 +226,8 @@ namespace Burs
         {
             this->tree_csv = this->TreePoints(tree, plan_params.visualize_tree);
         }
+        // std::cout << "NUM BAD CRASHES: " << num_bad_crashes << "\n";
+        std::cout << "NUM DIST CHECKS: " << numberOfDistanceChecks << "\n";
         return path;
     }
 

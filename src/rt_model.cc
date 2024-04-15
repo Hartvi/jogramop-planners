@@ -29,9 +29,27 @@ namespace RtModels
 
         this->SetRotation(Eigen::Matrix<PQP_REAL, 3, 3>::Identity()); // Initialized as identity matrix
         this->SetTranslation(Eigen::Vector3d::Zero());                // Initialized as zero vector
-        // std::cout << "RtModel: Loaded " << filePath << std::endl;
 
-        // this->filePath = filePath;
+        this->encompassingRadii = Eigen::Vector3d::Zero();
+        for (size_t i = 0; i < this->pqpModel->num_tris; ++i)
+        {
+            auto p1 = this->pqpModel->tris[i].p1;
+            for (size_t k = 0; k < 3; ++k)
+            {
+                double tmpR;
+                double dist1, dist2;
+                dist1 = p1[k];
+                dist2 = p1[(k + 1) % 3];
+                tmpR = sqrt(dist1 * dist1 + dist2 * dist2);
+                int idxR = (k + 2) % 3;
+                if (tmpR > encompassingRadii(idxR))
+                {
+                    // std::cout << "radius: " << idxR << " point: " << p1[0] << ", " << p1[1] << ", " << p1[2] << ": radius: " << tmpR << "\n";
+                    encompassingRadii(idxR) = tmpR;
+                }
+            }
+        }
+        // throw std::runtime_error("RTModel debug exit");
     }
 
     std::string
@@ -158,5 +176,4 @@ namespace RtModels
         // std::cout << "Checkin collision at m1: " << Vector3d(this->getT()) << " m2: " << Vector3d(m2->getT()) << std::endl;
         PQP_Collide(result, this->getR(), this->getT(), this->pqpModel.get(), m2->getR(), m2->getT(), m2->pqpModel.get());
     }
-
 }

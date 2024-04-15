@@ -10,6 +10,7 @@
 #include "rt_model.h"
 
 #include <kdl/chainiksolverpos_lma.hpp>
+#include <kdl/chainiksolverpos_nr_jl.hpp>
 
 namespace Burs
 {
@@ -18,29 +19,11 @@ namespace Burs
     class RobotCollision : public RobotBase
     {
     public:
-        /* let's say it has 8 joints and 9 segment.
-         two joints could be in one and the same location without a mesh inbetween
-          that is when the optional is false
-         e.g.:
-         [====] JOINT JOINT [====] JOINT [====]
-         */
-        std::vector<std::optional<std::shared_ptr<RtModels::RtModel>>> segmentIdToModel;
-
-        int numberOfModels;
-
-        std::string urdf_filename;
-        std::vector<std::string> mObjs;
-
-        std::vector<VectorXd> segmentToJntCausality;
-
         // Constructor
         RobotCollision(std::string urdf_filename);
 
         std::vector<bool>
         GetValidTransforms();
-
-        std::vector<VectorXd>
-        MovableJoints() const;
 
         std::vector<std::shared_ptr<RtModels::RtModel>>
         GetModels();
@@ -60,8 +43,14 @@ namespace Burs
         std::pair<Matrix3d, Vector3d>
         KDLFrameToEigen(const KDL::Frame &f);
 
+        double
+        MaxDistanceMeshes(const RS &state1, const RS &state2) const;
+
+        // std::optional<VectorXd>
+        // GetInverseKinematics(KDL::ChainIkSolverPos_LMA &solver, const KDL::JntArray &q_init, const KDL::Frame &tgt);
+
         std::optional<VectorXd>
-        GetInverseKinematics(KDL::ChainIkSolverPos_LMA &solver, const KDL::JntArray &q_init, const KDL::Frame &tgt);
+        GetInverseKinematics(KDL::ChainIkSolverPos &solver, const KDL::JntArray &q_init, const KDL::Frame &tgt);
     };
 
     /* Accept the three functions from outside. Link the URDF to the bur-planning algorithm. */

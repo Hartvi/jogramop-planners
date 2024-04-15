@@ -1,4 +1,6 @@
 # main todos
+- mesh distance function => fix that it always says some large value... for minimal translation/rotation it should have minimal max distance as well
+- pass fksolver in the forward pass as a reference parameter
 - implement rrt - DONE
 - implement rbt - DONE
 - implement rrt (in config space with intermediate collision checks) - DONE

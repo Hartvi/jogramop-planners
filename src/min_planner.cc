@@ -86,13 +86,6 @@ namespace Burs
     MinPlanner::IsColliding(const RS &state) const
     {
         this->env->SetPoses(state);
-        for (unsigned int i = 4; i < state.frames.size(); ++i)
-        {
-            if (state.frames[i].p.z() < 0.04)
-            {
-                return true;
-            }
-        }
         return this->env->IsColliding();
     }
 

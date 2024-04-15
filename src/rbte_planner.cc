@@ -57,6 +57,16 @@ namespace Burs
             // Random column
             int nearest_idx = t_a->Nearest(rand_states[0]);
             RS near_state = *t_a->Get(nearest_idx);
+            for (size_t i = 0; i < Qe.cols(); ++i)
+            {
+                // normalize
+                Qe.col(i).normalize();
+                // stretch to cover the whole range
+                Qe.col(i) *= this->bounds.col(1) - this->bounds.col(0);
+                // add to nearest point to set it as the direction from q_near
+                Qe.col(i) += near_state.config;
+            }
+
             if (near_state.closest_distance_idx < 0)
             {
                 auto [closest_idx, closest_dists] = this->GetClosestDistances(near_state);
@@ -96,22 +106,25 @@ namespace Burs
 
                 for (unsigned int i = 0; i < endpoints.size(); ++i)
                 {
-                    int prev_idx = t_a->AddNode(nearest_idx, endpoints[i]);
-                    // LOG
-                    // Measure distance to goal if this is the starting tree
-                    if (t_a == t_start)
+                    if (!this->IsColliding(endpoints[i]))
                     {
-                        RS tmp_state = *t_start->Get(prev_idx);
-                        double tmp_dist = this->env->robot->EEDistance(tmp_state, goal_state);
-
-                        if (tmp_dist < best_dist)
+                        int prev_idx = t_a->AddNode(nearest_idx, endpoints[i]);
+                        // LOG
+                        // Measure distance to goal if this is the starting tree
+                        if (t_a == t_start)
                         {
-                            best_dist = tmp_dist;
-                            std::cout << "RBT best dist: " << best_dist << "\n";
-                            best_state = tmp_state;
+                            RS tmp_state = *t_start->Get(prev_idx);
+                            double tmp_dist = this->env->robot->EEDistance(tmp_state, goal_state);
+
+                            if (tmp_dist < best_dist)
+                            {
+                                best_dist = tmp_dist;
+                                std::cout << "RBT best dist: " << best_dist << "\n";
+                                best_state = tmp_state;
+                            }
                         }
+                        // END LOG
                     }
-                    // END LOG
                 }
             }
 

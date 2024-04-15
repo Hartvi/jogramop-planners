@@ -22,6 +22,7 @@ namespace RtModels
         Eigen::Matrix<PQP_REAL, 3, 1> t;     // Translation vector
         std::shared_ptr<PQP_Model> pqpModel; // Pointer to PQP_Model which is collidable
         std::string filePath;
+        Eigen::Vector3d encompassingRadii;
 
         PQP_REAL(*getR())
         [3];

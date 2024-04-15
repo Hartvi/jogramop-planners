@@ -116,11 +116,11 @@ int main(int argc, char **argv)
     int useRotation;
     double rotationDistRatio;
     int biasCalculationType;
-    int preheat_type;
 
     double collisionResolution;
     int maxExtensions;
     int jrbtOption;
+    int use_joint_limits;
 
     {
         CmdOptions o;
@@ -162,7 +162,8 @@ int main(int argc, char **argv)
 
         o.addOption(Option<double>("collision_resolution", &collisionResolution, 0.0045, "resolution at which to check for collisions"));
         o.addOption(Option<int>("max_extensions", &maxExtensions, 50, "max num of extend to goal steps"));
-        o.addOption(Option<int>("jrbt_option", &jrbtOption, 0, "which type of rbt to run. 0=default 1=extended non-convex"));
+        o.addOption(Option<int>("jrbt_option", &jrbtOption, 0, "Which type of rbt to run. 0=default 1=extended non-convex"));
+        o.addOption(Option<int>("use_joint_limits", &use_joint_limits, 1, "Use joint limits in inverse kinematics. 0=default 1=extended non-convex"));
 
         if (!o.parse(argc, argv))
         {
@@ -244,12 +245,13 @@ int main(int argc, char **argv)
         JPlusRbtParameters params(max_iters, d_crit, delta_q, epsilon_q, num_spikes, p_close_enough, probability_to_steer_to_target, grasps, q_resolution);
         params.visualize_tree = render_tree;
         params.seed = usedSeed;
-        params.preheat_type = preheat_type;
+        params.ik_use_joint_limits = use_joint_limits;
 
         params.use_rotation = useRotation;
         params.rotation_dist_ratio = rotationDistRatio;
         params.collision_resolution = collisionResolution;
         params.max_extensions = maxExtensions;
+        params.minCollisionIdx = minColSegmentIdx;
 
         // END COMMON SETTINGS ------------------------------------------------------------------------------------------------------------
 

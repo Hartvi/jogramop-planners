@@ -224,7 +224,7 @@ namespace Burs
     AlgorithmState
     JRRTPlanner::ExtendToGoalRRT(std::shared_ptr<BurTree> t_a, JPlusRbtParameters &planner_parameters) const
     {
-        std::cout << "extend to goal\n";
+        // std::cout << "extend to goal\n";
         int randint = this->rng->getRandomInt();
         Grasp random_grasp = planner_parameters.target_poses[randint];
         KDL::Frame p_goal = random_grasp.frame;
@@ -233,9 +233,10 @@ namespace Burs
         RS *best_state = t_a->Get(best_state_idx);
         if (!best_state->has_radii)
         {
-            auto [jac, r] = this->env->robot->ForwardJacs(best_state->config);
+            auto [jac, r, rigidRadii] = this->env->robot->ForwardJacs(best_state->config);
             best_state->jac = jac;
             best_state->radii = r;
+            best_state->rigidRadii = rigidRadii;
             best_state->has_radii = true;
         }
         RS near_state = *best_state;
@@ -295,6 +296,10 @@ namespace Burs
                 return AlgorithmState::Trapped;
             }
             near_state = *t_a->Get(prev_idx);
+            // if (this->IsColliding(near_state))
+            // {
+            //     throw std::runtime_error("RRT EXTEND TO GOAL COLLIDING");
+            // }
 
             this->SetGraspClosestConfigs(planner_parameters, t_a, prev_idx);
 

@@ -77,6 +77,60 @@ namespace Burs
         this->segmentIdToFile = this->GetSegmentIdToFile();
 
         this->minMaxBounds = this->GetMinMaxBounds();
+
+        // KDL::ChainFkSolverPos_recursive fk_solver(this->kdl_chain);
+        // this->fk_solver = KDL::ChainFkSolverPos_recursive(this->kdl_chain);
+        // KDL::ChainFkSolverPos_recursive fk_solver = KDL::ChainFkSolverPos_recursive(this->kdl_chain);
+        // this->fk_solver = fk_solver;
+
+        // Get the directory of the URDF file
+        std::filesystem::path urdf_path(urdf_filename);
+        std::filesystem::path urdf_dir = urdf_path.parent_path();
+
+        this->urdf_filename = urdf_dir / urdf_path;
+
+        int numModels = 0;
+        // Initialization specific to RobotCollision
+        // std::cout << "number of segments " << this->kdl_chain.getNrOfSegments() << std::endl;
+        std::cout << "URDF dir: " << urdf_dir << "\n";
+        for (int i = 0; i < this->kdl_chain.getNrOfSegments(); ++i)
+        {
+            const KDL::Segment &segment = kdl_chain.getSegment(i);
+            std::cout << "Segment name:     " << this->kdl_chain.getSegment(i).getName() << "\n";
+            if (this->segmentIdToFile.find(i) != this->segmentIdToFile.end())
+            {
+                // Add relative path to urdf file
+                std::filesystem::path model_path = urdf_dir / this->segmentIdToFile[i];
+
+                // for later visualization purposess
+                this->mObjs.push_back(model_path);
+
+                std::shared_ptr<RtModels::RtModel> trpqpmodel = std::make_shared<RtModels::RtModel>(model_path);
+                std::cout << "Robot segment:    " << i << " \n  File:           " << this->segmentIdToFile[i] << " \n  Number of tris: " << trpqpmodel->pqpModel->num_tris << "\n";
+                // std::cout << "radii: " << trpqpmodel->encompassingRadii.transpose() << "\n";
+                this->segmentIdToModel.push_back(trpqpmodel);
+                numModels++;
+            }
+            else
+            {
+                this->segmentIdToModel.push_back({});
+            }
+            std::cout << "\n";
+        }
+        // throw std::runtime_error("ROBOT COLLISION DEBUG THROW");
+        this->numberOfModels = numModels;
+
+        // std::cout << "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n";
+        // std::cout << "num models: " << this->numberOfModels << "\n";
+        auto movablejoints = this->MovableJoints();
+        this->segmentToJntCausality = movablejoints;
+        // std::cout << "MOVABLE JOINT MAPPING\n";
+        // for (unsigned int i = 0; i < movablejoints.size(); ++i)
+        // {
+        //     std::cout << "segment " << i << ": " << movablejoints[i] << "\n";
+        // }
+        // exit(0);
+        // std::cout << "Initialized RobotCollision. Number of models: " << this->numberOfModels << std::endl;
     }
 
     std::vector<std::vector<double>>
@@ -360,11 +414,14 @@ namespace Burs
         return pinv;
     }
 
-    std::pair<KDL::Jacobian, VectorXd>
+    std::tuple<KDL::Jacobian, VectorXd, VectorXd>
     RobotBase::ForwardJacs(const VectorXd &q_in)
     {
         VectorXd r(q_in.size());
+        VectorXd rigidRadii(q_in.size());
         r.array() = 0;
+        rigidRadii.array() = 0;
+
         // std::cout << "TODO: COPY JACOBIAN FUNCTION FROM KDL REPO AND REWRITE IT TO RETURN THE VECTOR OF ALL JACOBIANS\n";
         KDL::JntArray q_kdl(q_in.size());
         q_kdl.data = q_in;
@@ -452,10 +509,30 @@ namespace Burs
             //           << jac.data << "\n";
             for (unsigned int l = 0; l < k; ++l)
             {
+                // if (l < 2)
+                // {
+                //     std::cout << "translation jac: " << jac.data.col(l).head<3>().transpose() << "\n";
+                // }
                 double tmp_r = jac.data.col(l).head<3>().norm();
                 if (tmp_r > r(l))
                 {
                     r(l) = tmp_r;
+                }
+                // rotational jacobian:
+                // if segment has mesh:
+                if (this->segmentIdToModel[i])
+                {
+                    double JPhiNorm = jac.data.col(l).tail<3>().cwiseAbs().dot(this->segmentIdToModel[i].value()->encompassingRadii);
+                    // double JPhiNorm = 3 * jac.data.col(l).tail<3>().cwiseAbs().maxCoeff() * this->segmentIdToModel[i].value()->encompassingRadii.maxCoeff();
+                    // std::cout << "jphinorm: " << JPhiNorm << "  jphinorm max: " << JPhiNorm2 << "\n";
+                    // std::cout << "jphinorm: " << JPhiNorm << "\n";
+                    // std::cout << "segment " << i << ": " << jac.data.col(l).tail<3>().cwiseAbs().transpose() << ", radii: " << this->segmentIdToModel[i].value()->encompassingRadii.transpose() << "\n";
+                    // FOR THE LAST ANGLE THERE SHOULD BE NON-ZERO RADIUS
+                    if (JPhiNorm > rigidRadii(l))
+                    {
+                        // std::cout << "new radius " << l << ": " << JPhiNorm << "\n";
+                        rigidRadii(l) = JPhiNorm;
+                    }
                 }
             }
             // std::cout << "best r: " << r.transpose() << "\n";
@@ -467,7 +544,8 @@ namespace Burs
         //           << jac.data << "\n";
         // exit(1);
         // return (error = E_NOERROR);
-        return {jac, r};
+        // std::cout << "rigid radii: " << rigidRadii.transpose() << "\n";
+        return {jac, r, rigidRadii};
     }
 
     VectorXd
@@ -669,8 +747,8 @@ namespace Burs
         // Frame of every segment
         std::vector<KDL::Frame> frames = this->ForwardPass(q_in);
         // Jacobian of every segment
-        auto [jac, r] = this->ForwardJacs(q_in);
-        RS state(q_in, frames, jac, r);
+        auto [jac, r, rigidRadii] = this->ForwardJacs(q_in);
+        RS state(q_in, frames, jac, r, rigidRadii);
 
         // std::cout << "r: " << r.transpose() << "\n";
 
@@ -761,4 +839,61 @@ namespace Burs
 
         return vectors;
     }
+
+    std::vector<VectorXd>
+    RobotBase::MovableJoints() const
+    {
+        // TODO create a mask for each case so that when I generate random samples I can zero out joints that aren't supposed to be moved
+        // each segment denotes joint ids that affect the segment
+        // segment 1 => joints 0,1,2 affect it => 2
+        std::vector<VectorXd> segmentToJointVector(this->numberOfModels, VectorXd::Ones(this->kdl_chain.getNrOfJoints()));
+        std::vector<int> segmentToJointCausality;
+        // It is only from the set of segments that have models:
+        int joint = 0;
+        /*
+        lastInactiveSegment: 4/8
+        i:0
+         nothing
+        i:1
+         joint+=1
+        i:2
+         joint+=1
+         segments+=1
+        i:3
+         joint+=1
+         segments+=1
+        i:4
+         joint+=1
+         segments+=1
+        i:5
+         joint+=1
+         segments+=1
+        */
+        int k = 0;
+        for (unsigned int i = 0; i < this->segmentIdToModel.size(); ++i)
+        {
+            if (this->kdl_chain.getSegment(i).getJoint().getType() != KDL::Joint::JointType::None)
+            {
+                ++joint;
+            }
+            if (this->segmentIdToModel[i])
+            {
+                for (int l = k; l < segmentToJointVector.size(); ++l)
+                {
+                    for (int m = 0; m < joint; ++m)
+                    {
+                        segmentToJointVector[l](m) = 0.0;
+                    }
+                }
+                std::cout << "i: " << i << " joint: " << joint << " mask vector: " << segmentToJointVector[k].transpose() << "\n";
+                segmentToJointCausality.push_back(joint);
+                ++k;
+            }
+            else
+            {
+            }
+        }
+        return segmentToJointVector;
+    }
+
 }

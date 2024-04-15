@@ -42,6 +42,29 @@ namespace Burs
     BasePlanner::BasePlanner() {}
 
     double
+    BasePlanner::GetDeltaTkGeometry(double phi_tk, double tk, const RS &end_state, const RS &k_state) const
+    {
+        VectorXd deltaConfigs = (end_state.config - k_state.config).cwiseAbs();
+        // radii are positive => can add the vectors then dot product
+        // std::cout << "has radii: " << k_state.has_radii << "  rigidR: " << k_state.rigidRadii.transpose() << "\n";
+        VectorXd radiiSum = k_state.radii + k_state.rigidRadii;
+        double denominator = deltaConfigs.dot(radiiSum);
+        // std::cout << "total movement estimate: " << denominator << "\n";
+        // std::cout << "wire movement estimate: " << k_state.radii.dot(deltaConfigs) << "\n";
+        // std::cout << "mesh movement estimate: " << k_state.rigidRadii.dot(deltaConfigs) << "\n";
+        // for (size_t i = 0; i < radiiSum.size(); ++i)
+        // {
+        //     std::cout << "estimate for segment " << i << ": " << radiiSum(i) * deltaConfigs(i) << "\n";
+        // }
+        /*
+        for each joint:
+          for each segment:
+            */
+        // for (size_t i = 0; i < ; ++i)
+        return phi_tk * (1.0 - tk) / denominator;
+    }
+
+    double
     BasePlanner::GetDeltaTk(double phi_tk, double tk, const RS &end_state, const RS &k_state) const
     {
         // VectorXd r_vec = this->radius_func(q_k);
@@ -139,28 +162,67 @@ namespace Burs
     }
 
     std::vector<RS>
+    BasePlanner::GetEndpointsGeometry(const RS &state_near, const std::vector<RS> &rand_states, double d_max)
+    {
+        double d_small = 0.1 * d_max;
+
+        std::vector<RS> new_states;
+        new_states.reserve(rand_states.size());
+
+        for (int i = 0; i < rand_states.size(); ++i)
+        {
+            double tk = 0;
+
+            // always start out from the center
+            RS state_k = state_near;
+            double phi_result = d_max;
+
+            const RS &end_state = rand_states[i];
+
+            // They said 4-5 iterations to reach 0.1*closest_distance
+            // So either:
+            //  1. iterate until 0.1*dc
+            //  2. 4-5 iterations
+            // for (unsigned int k = 0; k < 5; ++k)
+            for (unsigned int k = 0; k < 5; ++k)
+            {
+                double delta_tk = this->GetDeltaTkGeometry(phi_result, tk, end_state, state_k);
+
+                tk = tk + delta_tk;
+                VectorXd q_k = state_near.config + tk * (end_state.config - state_near.config);
+                state_k = this->QToStates(q_k)[0];
+                double tmp_travelled_dist = this->env->robot->MaxDistanceMeshes(state_near, state_k);
+                phi_result = d_max - tmp_travelled_dist;
+            }
+            new_states.push_back(state_k);
+        }
+        return new_states;
+    }
+
+    std::vector<RS>
     BasePlanner::GetEndpoints(const RS &state_near, const std::vector<RS> &rand_states, double d_max) const
     {
         double d_small = 0.1 * d_max;
 
         std::vector<RS> new_states;
-        // new_states.reserve(rand_states.size());
+        new_states.reserve(rand_states.size());
 
         for (int i = 0; i < rand_states.size(); ++i)
         {
             // If this won't move further that it is allowed
-            double maxPossibleDist = this->env->robot->MaxDistance(state_near, rand_states[i]);
-            if (maxPossibleDist < d_max)
-            {
-                new_states.push_back(rand_states[i]);
-                // std::cout << "dist close: " << maxPossibleDist << " < " << d_max << "\n";
-                // if (this->IsColliding(rand_states[i]))
-                // {
-                //     std::cout << "CLOSE STATE COLLIDING\n";
-                // }
+            // double maxPossibleDist = this->env->robot->MaxDistance(state_near, rand_states[i]);
+            // if (maxPossibleDist < d_max)
+            // {
+            //     new_states.push_back(rand_states[i]);
+            //     // std::cout << "dist close: " << maxPossibleDist << " < " << d_max << "\n";
+            //     if (this->IsColliding(rand_states[i]))
+            //     {
+            //         std::cout << "CLOSE STATE COLLIDING\n";
+            //         exit(1);
+            //     }
 
-                continue;
-            }
+            //     continue;
+            // }
 
             double tk = 0;
 
@@ -183,6 +245,7 @@ namespace Burs
                 if (tk > 1.0)
                 {
                     std::cout << "MOVED TOO MUCH IN ENDPOINT CALC " << tk << "\n";
+                    tk = 1.0;
                     // break;
                 }
                 // has actually never reached > 1
@@ -190,12 +253,12 @@ namespace Burs
                 VectorXd q_k = state_near.config + tk * (end_state.config - state_near.config);
                 state_k = this->QToStates(q_k)[0];
                 double tmp_travelled_dist = this->env->robot->MaxDistance(state_near, state_k);
-                // std::cout << "i: "<<i<<" k: " << k << " maxdist: " << d_max << " dist: " << tmp_travelled_dist << "\n";
-                // if (this->IsColliding(state_k))
-                // {
-                // std::cout << "COLLIDING IN GETENDPOINTS\n";
-                // exit(1);
-                // }
+                std::cout << "i: " << i << " k: " << k << " maxdist: " << d_max << " dist: " << tmp_travelled_dist << "\n";
+                if (this->IsColliding(state_k))
+                {
+                    std::cout << "COLLIDING IN GETENDPOINTS\n";
+                    exit(1);
+                }
                 phi_result = d_max - tmp_travelled_dist;
                 // if (phi_result < 0.0)
                 // {

@@ -70,6 +70,15 @@ namespace Burs
 
         for (int i = 0; i < this->robot_models.size(); i++)
         {
+            if (i >= this->minimumColSegmentIdx)
+            {
+                double current_part_z = this->robot_models[i]->getT()[2];
+                if (current_part_z < this->groundLevel)
+                {
+                    return true;
+                }
+            }
+
             std::shared_ptr<RtModels::RtModel> current_robot_part = this->robot_models[i];
             for (int k = 0; k < this->obstacle_models.size(); k++)
             {
@@ -178,6 +187,16 @@ namespace Burs
             segment_distances[i] = min_seg_dist;
         }
 
+        // std::cout << "distances: ";
+        // for (auto &it : segment_distances)
+        // {
+        //     std::cout << it << ", ";
+        // }
+        // std::cout << "\nmin dist: " << segment_distances[min_idx] << "\n";
+        if (segment_distances[min_idx] < 1e-4)
+        {
+            throw std::runtime_error("MIN DIST WAS ZERO");
+        }
         // Return both the overall minimum distance and the vector of per-segment minimum distances
         return {min_idx, segment_distances};
     }

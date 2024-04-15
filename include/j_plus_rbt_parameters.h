@@ -14,7 +14,7 @@ namespace Burs
     class JPlusRbtParameters : public RbtParameters
     {
     public:
-        int preheat_type;
+        bool ik_use_joint_limits;
         bool use_platform = true;
 
         int use_rotation;

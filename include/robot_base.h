@@ -20,6 +20,7 @@
 
 #include "bur_funcs.h"
 #include "robot_state.h"
+#include "rt_model.h"
 
 namespace Burs
 {
@@ -28,6 +29,21 @@ namespace Burs
     class RobotBase
     {
     public:
+        /* let's say it has 8 joints and 9 segment.
+         two joints could be in one and the same location without a mesh inbetween
+          that is when the optional is false
+         e.g.:
+         [====] JOINT JOINT [====] JOINT [====]
+         */
+        std::vector<std::optional<std::shared_ptr<RtModels::RtModel>>> segmentIdToModel;
+
+        int numberOfModels;
+
+        std::string urdf_filename;
+        std::vector<std::string> mObjs;
+
+        std::vector<VectorXd> segmentToJntCausality;
+
         std::filesystem::path urdf_file;
 
         urdf::ModelInterfaceSharedPtr robot_model;
@@ -99,14 +115,14 @@ namespace Burs
         MatrixXd
         JPlus(const RS &state);
 
-        std::pair<KDL::Jacobian, VectorXd>
+        std::tuple<KDL::Jacobian, VectorXd, VectorXd>
         ForwardJacs(const VectorXd &q_in);
 
         VectorXd
         GetRadii(const RS &state);
 
-        // void
-        // AddRadii(RS &state);
+        std::vector<VectorXd>
+        MovableJoints() const;
 
         RS
         FullFK(const VectorXd &q_in);
