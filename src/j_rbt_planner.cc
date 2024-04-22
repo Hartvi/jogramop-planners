@@ -101,15 +101,11 @@ namespace Burs
             totalNNtime += getTime(tt1, tt2);
 
             getTime(&tt1);
-            if (near_state->closest_distance_idx < 0)
+            if (!near_state->hasClosestDists)
             {
-                // std::cout << "near state closest dist idx: " << near_state->closest_distance_idx << "\n";
-                // if (this->IsColliding(*near_state))
-                // {
-                //     std::cout << "NEAR STATE COLLIDING\n";
-                // }
                 auto [d_closest_idx, ds_closest] = this->GetClosestDistances(*near_state);
-                near_state->closest_distance_idx = d_closest_idx;
+                near_state->hasClosestDists = true;
+                near_state->closest_distance_ids = d_closest_idx;
                 near_state->closest_dists = ds_closest;
                 ++numberOfDistanceChecks;
                 // std::cout << "dclosest: " << ds_closest[d_closest_idx] << "\n";
@@ -121,7 +117,7 @@ namespace Burs
                 // k--;
                 // continue;
             }
-            double d_closest = near_state->closest_dists[near_state->closest_distance_idx];
+            double d_closest = near_state->closest_dists[near_state->closest_distance_ids[0]];
             getTime(&tt2);
             totalGetClosestDistTime += getTime(tt1, tt2);
 
@@ -330,27 +326,22 @@ namespace Burs
 
             // Iterate max `closest_dist` to `target_config`
             std::cout << "dist to move: " << distance_to_move << " res: " << plan_params.q_resolution << "\n";
-            std::vector<std::vector<RS>> bur_endpoints = this->GetEndpointsInterstates(*best_state, target_states, distance_to_move, plan_params.q_resolution);
+            std::vector<RS> bur_endpoints = this->GetEndpoints(*best_state, target_states, distance_to_move);
 
             // If closest obstacle was too close => check collisions for the RRT step
             for (unsigned int i = 0; i < bur_endpoints.size(); ++i)
             {
-                std::vector<RS> line = bur_endpoints[i];
-                // std::cout << "line: " << i << "\n";
                 int prev_idx = best_state_idx;
-                for (unsigned int j = 0; j < line.size(); ++j)
+                if (too_close)
                 {
-                    if (too_close)
+                    if (this->IsColliding(bur_endpoints[i]))
                     {
-                        if (this->IsColliding(line[j]))
-                        {
-                            return AlgorithmState::Trapped;
-                        }
+                        return AlgorithmState::Trapped;
                     }
-                    // std::cout << "point: " << j << "\n";
-                    prev_idx = tree->AddNode(prev_idx, line[j]);
-                    this->SetGraspClosestConfigs(plan_params, tree, prev_idx);
                 }
+                // std::cout << "point: " << j << "\n";
+                prev_idx = tree->AddNode(prev_idx, bur_endpoints[i]);
+                this->SetGraspClosestConfigs(plan_params, tree, prev_idx);
             }
 
             // Checks bounds

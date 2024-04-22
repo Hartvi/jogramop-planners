@@ -56,7 +56,8 @@ namespace Burs
         std::tuple<double, std::vector<std::vector<double>>, std::vector<std::vector<std::pair<Vector3d, Vector3d>>>>
         GetClosestDistancesAndPoints() const;
 
-        std::pair<int, std::vector<double>>
+        // std::pair<int, std::vector<double>>
+        std::pair<std::vector<size_t>, std::vector<double>>
         GetClosestDistances() const;
 
         /// @brief Check closest distance between robot parts and obstacles, NEED TO SET ROTATIONS AND TRANSLATIONS BEFOREHAND

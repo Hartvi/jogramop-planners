@@ -47,7 +47,8 @@ namespace Burs
         bool
         IsColliding(const RS &state) const;
 
-        std::pair<int, std::vector<double>>
+        // std::pair<int, std::vector<double>>
+        std::pair<std::vector<size_t>, std::vector<double>>
         GetClosestDistances(const RS &state) const;
 
         double

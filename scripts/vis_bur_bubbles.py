@@ -71,8 +71,8 @@ class LineRobot:
 
     def plot(self, q: np.ndarray, ax: plt.axes, color=(0.0, 0.7, 0.0)):
         poss = self.forward(q)
-        ax.scatter(poss[:, 0], poss[:, 1], color=color, s=5)
-        ax.plot(poss[:, 0], poss[:, 1], color=color)
+        ax.scatter(poss[:, 0], poss[:, 1], color=color, s=25)
+        ax.plot(poss[:, 0], poss[:, 1], color=color, linewidth=5)
 
     def scatter_config(self, q, ax: plt.axes, color=(0.7, 0.0, 0), s=15):
         ax.scatter(q[0], q[1], color=color, s=s)
@@ -82,7 +82,7 @@ class LineRobot:
 
     def scatter_distance_configs(self, q: np.ndarray, max_dist, ax: plt.axes, color) -> list[list[float]]:
         epsilon_q = 0.05
-        rotation_resolution = 9
+        rotation_resolution = 7
         rotation_resolution_edge = 10000
         self.scatter_config(q, ax, color)
         tmp_configs = list()
@@ -227,12 +227,14 @@ class Env:
         ax1 = self.ax1
         ax2 = self.ax2
 
-        ax1.set_title("Workspace")
-        ax2.set_title("Configuration space")
-        ax1.set_xlabel("y [m]")
-        ax1.set_ylabel("x [m]")
-        ax2.set_xlabel("theta1 [rad]")
-        ax2.set_ylabel("theta2 [rad]")
+        axisfontsize = 20
+        titlefontsize = 24
+        ax1.set_title("Workspace", fontsize=titlefontsize)
+        ax2.set_title("Configuration space", fontsize=titlefontsize)
+        ax1.set_xlabel("x [m]", fontsize=axisfontsize)
+        ax1.set_ylabel("y [m]", fontsize=axisfontsize)
+        ax2.set_xlabel("theta1 [rad]", fontsize=axisfontsize)
+        ax2.set_ylabel("theta2 [rad]", fontsize=axisfontsize)
 
         ax1.set_xlim([-4, 4])
         ax1.set_ylim([-4, 4])
@@ -241,7 +243,6 @@ class Env:
         ax2.set_ylim([-3.2, 3.14])
 
     def closest_distance(self, q: np.ndarray) -> float:
-        ...
         min_dist = float('inf')
         for shape in self.shapes:
             tmp_dist = self.robot.closest_distance(q, shape)
@@ -281,14 +282,15 @@ class Env:
     def plot_config(self, q: np.ndarray, color=(0, 0, 0)):
         self.robot.plot(q, self.ax1, color)
 
-    def plot_bur(self, q: np.ndarray, color):
+    def plot_bur(self, q: np.ndarray, color, plot_edge_configs=False):
         max_dist = env.closest_distance(q)
         endpoints = self.robot.scatter_distance_configs(
             q, max_dist, self.ax2, color)
 
         self.plot_config(q)
-        for i in range(len(endpoints)):
-            self.plot_config(endpoints[i], color)
+        if plot_edge_configs:
+            for i in range(len(endpoints)):
+                self.plot_config(endpoints[i], color)
 
     def plot_extended_bur(self, q: np.ndarray, color):
         min_idx, max_dists = env.closest_distances(q)
@@ -308,7 +310,7 @@ class Env:
                 q = np.array([2.0*i/line_size - 1, 2.0*k/line_size - 1])*np.pi
                 d = self.closest_distance(q)
                 if d <= 0:
-                    self.robot.scatter_config(q, self.ax2)
+                    self.robot.scatter_config(q, self.ax2, s=25)
 
 
 if __name__ == "__main__":

@@ -68,17 +68,18 @@ namespace Burs
 
             // Slow => maybe in the future use FCL and somehow compile it because it had a ton of compilation errors and version mismatches
             // double d_closest = this->GetClosestDistance(near_state);
-            if (near_state.closest_distance_idx < 0)
+            if (!near_state.hasClosestDists)
             {
                 auto [d_closest_idx, ds_closest] = this->GetClosestDistances(near_state);
-                near_state.closest_distance_idx = d_closest_idx;
+                near_state.closest_distance_ids = d_closest_idx;
                 near_state.closest_dists = ds_closest;
+                near_state.hasClosestDists = true;
             }
             else
             {
                 // std::cout << "REUSING DISTANCE\n";
             }
-            double d_closest = near_state.closest_dists[near_state.closest_distance_idx];
+            double d_closest = near_state.closest_dists[near_state.closest_distance_ids[0]];
             // std::cout << "d_closest: " << d_closest << "\n";
 
             if (d_closest < plan_parameters.d_crit)
@@ -210,17 +211,18 @@ namespace Burs
         while (delta_s >= plan_parameters.epsilon_q)
         {
             // double d_closest = this->GetClosestDistance(q_n);
-            if (q_n.closest_distance_idx < 0)
+            if (!q_n.hasClosestDists)
             {
                 auto [d_closest_idx, ds_closest] = this->GetClosestDistances(q_n);
-                q_n.closest_distance_idx = d_closest_idx;
+                q_n.closest_distance_ids = d_closest_idx;
                 q_n.closest_dists = ds_closest;
+                q_n.hasClosestDists = true;
             }
             else
             {
                 // std::cout << "REUSING DISTANCE\n";
             }
-            double d_closest = q_n.closest_dists[q_n.closest_distance_idx];
+            double d_closest = q_n.closest_dists[q_n.closest_distance_ids[0]];
 
             if (d_closest > plan_parameters.d_crit)
             {

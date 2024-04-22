@@ -67,13 +67,14 @@ namespace Burs
                 Qe.col(i) += near_state.config;
             }
 
-            if (near_state.closest_distance_idx < 0)
+            if (!near_state.hasClosestDists)
             {
                 auto [closest_idx, closest_dists] = this->GetClosestDistances(near_state);
-                near_state.closest_distance_idx = closest_idx;
+                near_state.closest_distance_ids = closest_idx;
                 near_state.closest_dists = closest_dists;
+                near_state.hasClosestDists = true;
             }
-            double d_closest = near_state.closest_dists[near_state.closest_distance_idx];
+            double d_closest = near_state.closest_dists[near_state.closest_distance_ids[0]];
 
             if (d_closest < plan_parameters.d_crit)
             {
@@ -185,36 +186,35 @@ namespace Burs
     std::vector<RS>
     RbtePlanner::CreateExtendedBur(RS &near_state, const JPlusRbtParameters &plan_parameters)
     {
-        if (near_state.closest_distance_idx < 0)
+        if (!near_state.hasClosestDists)
         {
             throw std::runtime_error("RbtePlanner: CreateExtendedBur: near_state should have closest distance already computed.");
         }
-        /*
-        tmp_q = self.extend_in_direction(q, q_r, max_dists[min_idx], epsilon_q)
-        */
+        auto i_min = near_state.closest_distance_ids;
+        size_t i_d = i_min[0];
         MatrixXd Qe = this->GetRandomQ(plan_parameters.num_spikes);
         std::vector<RS> rand_states = this->NewStates(Qe);
-        double closest_dist = near_state.closest_dists[near_state.closest_distance_idx];
-        std::vector<RS> endpoints = this->GetEndpoints(near_state, rand_states, closest_dist);
-
-        /*
-        for k in range(min_idx+1, q.size):
-            q_r *= self.causality_mask[k-1]
-            q_r /= np.linalg.norm(q_r)
-            tmp_q = self.extend_in_direction(tmp_q, q_r, max_dists[k] - max_dists[k-1], epsilon_q)
-        */
+        double closest_dist = near_state.closest_dists[i_d];
+        std::vector<RS> endpoints = this->GetEndpointsGeometry(near_state, rand_states, closest_dist);
         // BEGIN EXTENDED BUR
-        for (unsigned int k = 0; k < plan_parameters.num_spikes; ++k)
+        for (unsigned int i = 1; i < near_state.closest_distance_ids.size(); ++i)
         {
-            for (unsigned int i = near_state.closest_distance_idx + 1; i < near_state.config.size(); ++i)
+            if (i_min[i] < i_d)
             {
-                // has already moved dc, now it wants to move from dc to dc(i), where dc(i) >= dc
-                // therefore the distance budget left to move is dc(i) - dc >= 0
-                double delta_dist = near_state.closest_dists[i] - closest_dist;
+                continue;
+            }
+            i_d = i_min[i];
+            for (unsigned int k = 0; k < plan_parameters.num_spikes; ++k)
+            {
+                // budget left = d_c[i_d] - dist(q, endpoints[k])
+                double tmp_dist_from_parent = endpoints[k].distanceFromParent;
+                double delta_dist = near_state.closest_dists[i_d] - tmp_dist_from_parent;
                 std::cout << "using extra dist: " << 100 * delta_dist << " cm\n";
                 VectorXd limited_config = rand_states[k].config.cwiseProduct(this->env->robot->segmentToJntCausality[i]);
                 RS tmp_tgt(limited_config, this->env->robot->ForwardPass(limited_config));
-                endpoints[k] = this->GetEndpoints(endpoints[k], {tmp_tgt}, delta_dist)[0];
+                endpoints[k] = this->GetEndpointsGeometry(endpoints[k], {tmp_tgt}, delta_dist)[0];
+                // old distanceFromParent gets overwritten, so we save the old one and add it
+                endpoints[k].distanceFromParent += tmp_dist_from_parent;
             }
         }
 

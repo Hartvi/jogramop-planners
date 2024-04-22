@@ -91,75 +91,75 @@ namespace Burs
         return rand_states;
     }
 
-    std::vector<std::vector<RS>>
-    BasePlanner::GetEndpointsInterstates(const RS &state_near, const std::vector<RS> &rand_states, double d_max, double q_resolution) const
-    {
-        double half_resolution = q_resolution * 0.5;
-        double d_small = 0.1 * d_max;
+    // std::vector<std::vector<RS>>
+    // BasePlanner::GetEndpointsInterstates(const RS &state_near, const std::vector<RS> &rand_states, double d_max, double q_resolution) const
+    // {
+    //     double half_resolution = q_resolution * 0.5;
+    //     double d_small = 0.1 * d_max;
 
-        std::vector<std::vector<RS>> new_states(rand_states.size());
+    //     std::vector<std::vector<RS>> new_states(rand_states.size());
 
-        for (int i = 0; i < rand_states.size(); ++i)
-        {
-            // If this won't move further that it is allowed
-            double maxPossibleDist = this->env->robot->MaxDistance(state_near, rand_states[i]);
-            if (maxPossibleDist < d_max)
-            {
-                new_states[i].push_back(rand_states[i]);
-                continue;
-            }
+    //     for (int i = 0; i < rand_states.size(); ++i)
+    //     {
+    //         // If this won't move further that it is allowed
+    //         double maxPossibleDist = this->env->robot->MaxDistance(state_near, rand_states[i]);
+    //         if (maxPossibleDist < d_max)
+    //         {
+    //             new_states[i].push_back(rand_states[i]);
+    //             continue;
+    //         }
 
-            double tk = 0;
-            double final_dist = 0;
+    //         double tk = 0;
+    //         double final_dist = 0;
 
-            // always start out from the center
-            RS state_k = state_near;
-            double phi_result = d_max;
+    //         // always start out from the center
+    //         RS state_k = state_near;
+    //         double phi_result = d_max;
 
-            const RS &end_state = rand_states[i];
-            VectorXd config_delta = end_state.config - state_near.config;
-            // They said 4-5 iterations to reach 0.1*closest_distance
-            // So either:
-            //  1. iterate until 0.1*dc
-            //  2. 4-5 iterations
-            for (unsigned int k = 0; phi_result > d_small; ++k)
-            {
-                double delta_tk = this->GetDeltaTk(phi_result, tk, end_state, state_k);
+    //         const RS &end_state = rand_states[i];
+    //         VectorXd config_delta = end_state.config - state_near.config;
+    //         // They said 4-5 iterations to reach 0.1*closest_distance
+    //         // So either:
+    //         //  1. iterate until 0.1*dc
+    //         //  2. 4-5 iterations
+    //         for (unsigned int k = 0; phi_result > d_small; ++k)
+    //         {
+    //             double delta_tk = this->GetDeltaTk(phi_result, tk, end_state, state_k);
 
-                tk = tk + delta_tk;
-                // q_k = q_near + tk * (q_e - q_near);
-                VectorXd q_k = state_near.config + tk * config_delta;
-                state_k = this->QToStates(q_k)[0];
-                final_dist = this->env->robot->MaxDistance(state_near, state_k);
-                // std::cout << "intermediate dist: " << final_dist << "\n";
-                phi_result = d_max - final_dist;
-            }
-            // 0.5 => 5 segments => 6 points
-            // 0.5/0.1 = 5
-            // 5 - 1 = 4 BUT we want 0.1, 0.2, 0.3, 0.4, not 0.0 0.1 0.2 0.3
-            // std::cout << "final dist: " << final_dist << " resolution: " << q_resolution << "\n";
-            int segments = (final_dist / q_resolution);
-            // std::cout << "num segments: " << segments << "\n";
-            // 1 2 3 4
-            for (unsigned int l = 1; l < segments; ++l) // segments = 5 => 1 2 3 4 OK
-            {
-                VectorXd q_k_tmp = state_near.config + static_cast<double>(l) / static_cast<double>(segments) * tk * (end_state.config - state_near.config);
-                RS inter_state = this->NewState(q_k_tmp);
+    //             tk = tk + delta_tk;
+    //             // q_k = q_near + tk * (q_e - q_near);
+    //             VectorXd q_k = state_near.config + tk * config_delta;
+    //             state_k = this->QToStates(q_k)[0];
+    //             final_dist = this->env->robot->MaxDistance(state_near, state_k);
+    //             // std::cout << "intermediate dist: " << final_dist << "\n";
+    //             phi_result = d_max - final_dist;
+    //         }
+    //         // 0.5 => 5 segments => 6 points
+    //         // 0.5/0.1 = 5
+    //         // 5 - 1 = 4 BUT we want 0.1, 0.2, 0.3, 0.4, not 0.0 0.1 0.2 0.3
+    //         // std::cout << "final dist: " << final_dist << " resolution: " << q_resolution << "\n";
+    //         int segments = (final_dist / q_resolution);
+    //         // std::cout << "num segments: " << segments << "\n";
+    //         // 1 2 3 4
+    //         for (unsigned int l = 1; l < segments; ++l) // segments = 5 => 1 2 3 4 OK
+    //         {
+    //             VectorXd q_k_tmp = state_near.config + static_cast<double>(l) / static_cast<double>(segments) * tk * (end_state.config - state_near.config);
+    //             RS inter_state = this->NewState(q_k_tmp);
 
-                double tmp_max_dist = this->env->robot->MaxDistance(state_near, inter_state);
-                // if (tmp_max_dist > d_max)
-                // {
-                //     std::cout << "base_planner.cc: interstate exceeded max dist: " << tmp_max_dist << " > " << d_max << "\n";
-                //     exit(1);
-                // }
-                // std::cout << "dist: " << tmp_max_dist << "\n";
-                new_states[i].push_back(inter_state);
-            }
-            new_states[i].push_back(state_k);
-        }
+    //             double tmp_max_dist = this->env->robot->MaxDistance(state_near, inter_state);
+    //             // if (tmp_max_dist > d_max)
+    //             // {
+    //             //     std::cout << "base_planner.cc: interstate exceeded max dist: " << tmp_max_dist << " > " << d_max << "\n";
+    //             //     exit(1);
+    //             // }
+    //             // std::cout << "dist: " << tmp_max_dist << "\n";
+    //             new_states[i].push_back(inter_state);
+    //         }
+    //         new_states[i].push_back(state_k);
+    //     }
 
-        return new_states;
-    }
+    //     return new_states;
+    // }
 
     std::vector<RS>
     BasePlanner::GetEndpointsGeometry(const RS &state_near, const std::vector<RS> &rand_states, double d_max)
@@ -176,6 +176,7 @@ namespace Burs
             // always start out from the center
             RS state_k = state_near;
             double phi_result = d_max;
+            double max_travelled_dist = 0;
 
             const RS &end_state = rand_states[i];
 
@@ -191,9 +192,11 @@ namespace Burs
                 tk = tk + delta_tk;
                 VectorXd q_k = state_near.config + tk * (end_state.config - state_near.config);
                 state_k = this->QToStates(q_k)[0];
-                double tmp_travelled_dist = this->env->robot->MaxDistanceMeshes(state_near, state_k);
-                phi_result = d_max - tmp_travelled_dist;
+                max_travelled_dist = this->env->robot->MaxDistanceMeshes(state_near, state_k);
+                phi_result = d_max - max_travelled_dist;
             }
+            state_k.distanceFromParent = max_travelled_dist;
+            state_k.hasDistFromParent = true;
             new_states.push_back(state_k);
         }
         return new_states;
@@ -209,22 +212,9 @@ namespace Burs
 
         for (int i = 0; i < rand_states.size(); ++i)
         {
-            // If this won't move further that it is allowed
-            // double maxPossibleDist = this->env->robot->MaxDistance(state_near, rand_states[i]);
-            // if (maxPossibleDist < d_max)
-            // {
-            //     new_states.push_back(rand_states[i]);
-            //     // std::cout << "dist close: " << maxPossibleDist << " < " << d_max << "\n";
-            //     if (this->IsColliding(rand_states[i]))
-            //     {
-            //         std::cout << "CLOSE STATE COLLIDING\n";
-            //         exit(1);
-            //     }
-
-            //     continue;
-            // }
 
             double tk = 0;
+            double max_travelled_dist = 0;
 
             // always start out from the center
             RS state_k = state_near;
@@ -252,19 +242,11 @@ namespace Burs
                 // q_k = q_near + tk * (q_e - q_near);
                 VectorXd q_k = state_near.config + tk * (end_state.config - state_near.config);
                 state_k = this->QToStates(q_k)[0];
-                double tmp_travelled_dist = this->env->robot->MaxDistance(state_near, state_k);
-                std::cout << "i: " << i << " k: " << k << " maxdist: " << d_max << " dist: " << tmp_travelled_dist << "\n";
-                if (this->IsColliding(state_k))
-                {
-                    std::cout << "COLLIDING IN GETENDPOINTS\n";
-                    exit(1);
-                }
-                phi_result = d_max - tmp_travelled_dist;
-                // if (phi_result < 0.0)
-                // {
-                //     std::cout << "STATE WILL COLLIDE\n";
-                // }
+                max_travelled_dist = this->env->robot->MaxDistance(state_near, state_k);
+                phi_result = d_max - max_travelled_dist;
             }
+            state_k.distanceFromParent = max_travelled_dist;
+            state_k.hasDistFromParent = true;
             new_states.push_back(state_k);
         }
         return new_states;

@@ -28,8 +28,12 @@ namespace Burs
         VectorXd radii;
         VectorXd rigidRadii;
 
-        int closest_distance_idx = -1;
+        bool hasClosestDists = false;
+        std::vector<size_t> closest_distance_ids;
         std::vector<double> closest_dists;
+
+        bool hasDistFromParent = false;
+        double distanceFromParent;
 
     public:
         // Existing constructors
@@ -61,8 +65,9 @@ namespace Burs
                 radii = other.radii;
                 has_radii = other.has_radii;
                 rigidRadii = other.rigidRadii;
-                closest_distance_idx = other.closest_distance_idx;
+                closest_distance_ids = other.closest_distance_ids;
                 closest_dists = other.closest_dists;
+                hasClosestDists = other.hasClosestDists;
             }
             return *this;
         }

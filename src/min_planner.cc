@@ -62,7 +62,8 @@ namespace Burs
     //     return t->Nearest(q.data());
     // }
 
-    std::pair<int, std::vector<double>>
+    // std::pair<int, std::vector<double>>
+    std::pair<std::vector<size_t>, std::vector<double>>
     MinPlanner::GetClosestDistances(const RS &state) const
     {
         this->env->SetPoses(state);

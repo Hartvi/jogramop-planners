@@ -135,7 +135,7 @@ namespace Burs
         return {min_total_dist, d1d2, points};
     }
 
-    std::pair<int, std::vector<double>>
+    std::pair<std::vector<size_t>, std::vector<double>>
     BaseEnv::GetClosestDistances() const
     {
         if (!this->poses_are_set)
@@ -146,8 +146,6 @@ namespace Burs
         PQP_DistanceResult res;
 
         std::vector<double> segment_distances(this->robot_models.size());
-        double min_total_dist = std::numeric_limits<double>::max(); // Use max double value for initial comparison
-        int min_idx = -1;
 
         for (size_t i = 0; i < this->robot_models.size(); ++i) // Use size_t for indexing to match the size type
         {
@@ -176,29 +174,29 @@ namespace Burs
                     min_seg_dist = res.distance;
                 }
             }
-
-            // Update the overall minimum distance if this segment's minimum is lower
-            if (min_seg_dist < min_total_dist)
-            {
-                min_total_dist = min_seg_dist;
-                min_idx = i;
-            }
-
             segment_distances[i] = min_seg_dist;
         }
 
-        // std::cout << "distances: ";
-        // for (auto &it : segment_distances)
-        // {
-        //     std::cout << it << ", ";
-        // }
-        // std::cout << "\nmin dist: " << segment_distances[min_idx] << "\n";
-        if (segment_distances[min_idx] < 1e-4)
+        // Create a vector of indices
+        std::vector<size_t> indices(segment_distances.size());
+
+        // Fill indices with 0, 1, 2, ..., segment_distances.size() - 1
+        std::iota(indices.begin(), indices.end(), 0);
+
+        // Sort indices based on comparing values in segment_distances
+        std::sort(indices.begin(), indices.end(),
+                  [&segment_distances](size_t i1, size_t i2)
+                  {
+                      return segment_distances[i1] < segment_distances[i2];
+                  });
+
+        if (segment_distances[indices[0]] < 1e-4)
         {
             throw std::runtime_error("MIN DIST WAS ZERO");
         }
+
         // Return both the overall minimum distance and the vector of per-segment minimum distances
-        return {min_idx, segment_distances};
+        return {indices, segment_distances};
     }
 
     double
