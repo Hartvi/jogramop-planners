@@ -408,66 +408,22 @@ namespace Burs
     RobotBase::JPlus(const RS &state)
     {
         MatrixXd pinv = state.jac.data.completeOrthogonalDecomposition().pseudoInverse();
-        // std::cout << "pinv: \n"
-        //           << pinv << "\n";
-        // exit(1);
         return pinv;
     }
 
-    std::tuple<KDL::Jacobian, VectorXd, VectorXd>
+    std::tuple<KDL::Jacobian, VectorXd>
     RobotBase::ForwardJacs(const VectorXd &q_in)
     {
         VectorXd r(q_in.size());
-        VectorXd rigidRadii(q_in.size());
         r.array() = 0;
-        rigidRadii.array() = 0;
 
         // std::cout << "TODO: COPY JACOBIAN FUNCTION FROM KDL REPO AND REWRITE IT TO RETURN THE VECTOR OF ALL JACOBIANS\n";
         KDL::JntArray q_kdl(q_in.size());
         q_kdl.data = q_in;
         KDL::Jacobian jac(q_in.size());
 
-        // KDL::ChainJntToJacSolver s(this->kdl_chain);
-
-        // int res = 0;
-        // for (unsigned int i = 0; i < this->kdl_chain.getNrOfSegments(); ++i)
-        // {
-        //     res = s.JntToJac(q_kdl, jac, i + 1);
-        //     if (res < 0)
-        //     {
-        //         std::cout << "failed jnt to jac: " << (i + 1) << "\n";
-        //         // exit(1);
-        //     }
-        //     // std::cout << "jac " << i << ": \n"
-        //     //           << jac.data << "\n";
-        //     for (unsigned int l = 0; l < q_in.size(); ++l)
-        //     {
-        //         double tmp_r = jac.data.col(l).head<3>().norm();
-        //         if (tmp_r > r(l))
-        //         {
-        //             r(l) = tmp_r;
-        //         }
-        //     }
-        //     // std::cout << "best r: " << r.transpose() << "\n\n";
-        // }
-        // std::cout << "best r: " << r.transpose() << "\n\n";
-        // r.array() = 0;
-        // exit(1);
-
-        //     if (locked_joints_.size() != chain.getNrOfJoints()) return (error = E_NOT_UP_TO_DATE);
-        // unsigned int segmentNr;
-        // if (seg_nr < 0)
-        //     segmentNr = chain.getNrOfSegments();
-        // else
-        //     segmentNr = seg_nr;
-
         // Initialize Jacobian to zero since only segmentNr columns are computed
         KDL::SetToZero(jac);
-
-        // if (q_in.rows() != chain.getNrOfJoints() || jac.columns() != chain.getNrOfJoints())
-        //     return (error = E_SIZE_MISMATCH);
-        // else if (segmentNr > chain.getNrOfSegments())
-        //     return (error = E_OUT_OF_RANGE);
 
         KDL::Twist t_tmp;
         KDL::Frame T_tmp;
@@ -478,8 +434,9 @@ namespace Burs
         KDL::Frame total;
         for (unsigned int i = 0; i < this->kdl_chain.getNrOfSegments(); i++)
         {
+            auto jointType = this->kdl_chain.getSegment(i).getJoint().getType();
             // Calculate new Frame_base_ee
-            if (this->kdl_chain.getSegment(i).getJoint().getType() != KDL::Joint::JointType::None)
+            if (jointType != KDL::Joint::JointType::None)
             {
                 // pose of the new end-point expressed in the base
                 total = T_tmp * this->kdl_chain.getSegment(i).pose(q_in(j));
@@ -497,55 +454,176 @@ namespace Burs
             changeRefPoint(jac, total.p - T_tmp.p, jac);
 
             // Only increase jointnr if the segment has a joint
-            if (this->kdl_chain.getSegment(i).getJoint().getType() != KDL::Joint::JointType::None)
+            if (jointType != KDL::Joint::JointType::None)
             {
                 // Only put the twist inside if it is not locked
                 // if (!locked_joints_[j])
                 jac.setColumn(k++, t_tmp);
                 j++;
-            }
 
-            // std::cout << "inside jac " << i << " jnt: " << k << " :\n"
-            //           << jac.data << "\n";
-            for (unsigned int l = 0; l < k; ++l)
-            {
-                // if (l < 2)
-                // {
-                //     std::cout << "translation jac: " << jac.data.col(l).head<3>().transpose() << "\n";
-                // }
-                double tmp_r = jac.data.col(l).head<3>().norm();
-                if (tmp_r > r(l))
+                for (unsigned int l = 0; l < k; ++l)
                 {
-                    r(l) = tmp_r;
-                }
-                // rotational jacobian:
-                // if segment has mesh:
-                if (this->segmentIdToModel[i])
-                {
-                    double JPhiNorm = jac.data.col(l).tail<3>().cwiseAbs().dot(this->segmentIdToModel[i].value()->encompassingRadii);
-                    // double JPhiNorm = 3 * jac.data.col(l).tail<3>().cwiseAbs().maxCoeff() * this->segmentIdToModel[i].value()->encompassingRadii.maxCoeff();
-                    // std::cout << "jphinorm: " << JPhiNorm << "  jphinorm max: " << JPhiNorm2 << "\n";
-                    // std::cout << "jphinorm: " << JPhiNorm << "\n";
-                    // std::cout << "segment " << i << ": " << jac.data.col(l).tail<3>().cwiseAbs().transpose() << ", radii: " << this->segmentIdToModel[i].value()->encompassingRadii.transpose() << "\n";
-                    // FOR THE LAST ANGLE THERE SHOULD BE NON-ZERO RADIUS
-                    if (JPhiNorm > rigidRadii(l))
+                    if (jointType == KDL::Joint::JointType::TransAxis || jointType == KDL::Joint::JointType::TransX || jointType == KDL::Joint::JointType::TransY || jointType == KDL::Joint::JointType::TransZ)
                     {
-                        // std::cout << "new radius " << l << ": " << JPhiNorm << "\n";
-                        rigidRadii(l) = JPhiNorm;
+                        // ASSUMING CONFIGURATION TRANSLATES TO 1:1 Meter translation
+                        double tmp_r = 1;
+                        if (tmp_r > r(l))
+                        {
+                            r(l) = tmp_r;
+                        }
+                        continue;
+                    }
+                    double tmp_r = jac.data.col(l).head<3>().norm();
+                    if (tmp_r > r(l))
+                    {
+                        r(l) = tmp_r;
                     }
                 }
             }
-            // std::cout << "best r: " << r.transpose() << "\n";
 
             T_tmp = total;
         }
-        // std::cout << "best r: " << r.transpose() << "\n";
-        // std::cout << "my jac:\n"
-        //           << jac.data << "\n";
-        // exit(1);
-        // return (error = E_NOERROR);
-        // std::cout << "rigid radii: " << rigidRadii.transpose() << "\n";
+        return {jac, r};
+    }
+
+    std::tuple<KDL::Jacobian, VectorXd, VectorXd>
+    RobotBase::ForwardJacsComplete(const VectorXd &q_in)
+    {
+        VectorXd r(q_in.size());
+        VectorXd rigidRadii(q_in.size());
+        r.array() = 0;
+        rigidRadii.array() = 0;
+
+        KDL::JntArray q_kdl(q_in.size());
+        q_kdl.data = q_in;
+        KDL::Jacobian jac(q_in.size());
+
+        // Initialize Jacobian to zero since only segmentNr columns are computed
+        KDL::SetToZero(jac);
+
+        KDL::Twist t_tmp;
+        KDL::Frame T_tmp;
+        T_tmp = KDL::Frame::Identity();
+        KDL::SetToZero(t_tmp);
+        int j = 0;
+        int k = 0;
+        KDL::Frame total;
+        for (unsigned int i = 0; i < this->kdl_chain.getNrOfSegments(); i++)
+        {
+            auto jointType = this->kdl_chain.getSegment(i).getJoint().getType();
+            // Calculate new Frame_base_ee
+            if (jointType != KDL::Joint::JointType::None)
+            {
+                // pose of the new end-point expressed in the base
+                total = T_tmp * this->kdl_chain.getSegment(i).pose(q_in(j));
+                // changing base of new segment's twist to base frame if it is not locked
+                // t_tmp = T_tmp.M*chain.getSegment(i).twist(1.0);
+                // if (!locked_joints_[j])
+                t_tmp = T_tmp.M * this->kdl_chain.getSegment(i).twist(q_in(j), 1.0);
+            }
+            else
+            {
+                total = T_tmp * this->kdl_chain.getSegment(i).pose(0.0);
+            }
+
+            // Changing Refpoint of all columns to new ee
+            changeRefPoint(jac, total.p - T_tmp.p, jac);
+
+            // Only increase jointnr if the segment has a joint
+            if (jointType != KDL::Joint::JointType::None)
+            {
+                // Only put the twist inside if it is not locked
+                // if (!locked_joints_[j])
+                jac.setColumn(k++, t_tmp);
+                j++;
+
+                for (unsigned int l = 0; l < k; ++l)
+                {
+                    if (jointType == KDL::Joint::JointType::TransAxis || jointType == KDL::Joint::JointType::TransX || jointType == KDL::Joint::JointType::TransY || jointType == KDL::Joint::JointType::TransZ)
+                    {
+                        // ASSUMING CONFIGURATION TRANSLATES TO 1:1 Meter translation
+                        double tmp_r = 1;
+                        if (tmp_r > r(l))
+                        {
+                            r(l) = tmp_r;
+                        }
+                        continue;
+                    }
+                    double tmp_r = jac.data.col(l).head<3>().norm();
+                    if (tmp_r > r(l))
+                    {
+                        r(l) = tmp_r;
+                    }
+                    // rotational jacobian:
+                    // if segment has mesh:
+                    if (this->segmentIdToModel[i])
+                    {
+                        double JPhiNorm = jac.data.col(l).tail<3>().cwiseAbs().dot(this->segmentIdToModel[i].value()->encompassingRadii);
+                        // double JPhiNorm = 3 * jac.data.col(l).tail<3>().cwiseAbs().maxCoeff() * this->segmentIdToModel[i].value()->encompassingRadii.maxCoeff();
+                        // FOR THE LAST ANGLE THERE SHOULD BE NON-ZERO RADIUS
+                        if (JPhiNorm > rigidRadii(l))
+                        {
+                            rigidRadii(l) = JPhiNorm;
+                        }
+                    }
+                }
+            }
+
+            T_tmp = total;
+        }
         return {jac, r, rigidRadii};
+    }
+
+    VectorXd
+    RobotBase::GetDistanceEstimates(const RS &state)
+    {
+        VectorXd dists(state.config.size());
+        unsigned int nrSegments = this->kdl_chain.getNrOfSegments();
+
+        unsigned int j = 0;
+        for (unsigned int i = 0; i < nrSegments - 1; ++i)
+        {
+            auto segment_pose = state.frames[i];
+            KDL::Vector pj = segment_pose.p;
+
+            // Local axis: https://docs.ros.org/en/indigo/api/orocos_kdl/html/classKDL_1_1Joint.html#a57c97b32765b0caeb84b303d66a96a1b
+            auto joint = this->kdl_chain.getSegment(i).getJoint();
+            KDL::Vector joint_axis_local = joint.JointAxis();
+            KDL::Vector vj = segment_pose.M * joint_axis_local;
+            // typedef enum { RotAxis,RotX,RotY,RotZ,TransAxis,TransX,TransY,TransZ,None} JointType;
+
+            if (joint.getType() == KDL::Joint::JointType::None)
+            {
+                continue;
+            }
+            if (joint.getType() == KDL::Joint::JointType::TransAxis || joint.getType() == KDL::Joint::JointType::TransX || joint.getType() == KDL::Joint::JointType::TransY || joint.getType() == KDL::Joint::JointType::TransZ)
+            {
+                // joint.scale is by default 1
+                dists(j) = 1;
+            }
+            for (unsigned int k = i + 1; k < nrSegments; ++k)
+            {
+                // segment position - joint position
+                auto p = state.frames[k].p;
+                // center point around the current joint
+                auto pv = p - pj;
+                // project `pv` on `vj` =
+                //  (pv^T * vj)
+                //  ----------- * vj
+                //  vj^T * vj
+                auto pvT_vj = (pv[0] * vj[0] + pv[1] * vj[1] + pv[2] * vj[2]);
+                auto vjT_vj = vj[0] * vj[0] + vj[1] * vj[1] + vj[2] * vj[2];
+                // project point on plane defined by joint axis
+                auto proj_vOrth_pv = vj - pvT_vj / vjT_vj * vj;
+                double r = proj_vOrth_pv.Norm();
+                if (r > dists(j))
+                {
+                    dists(j) = r;
+                }
+            }
+            ++j;
+        }
+        return dists;
     }
 
     VectorXd
@@ -742,12 +820,42 @@ namespace Burs
     }
 
     RS
+    RobotBase::BasicFK(const VectorXd &q_in)
+    {
+        std::vector<KDL::Frame> frames = this->ForwardPass(q_in);
+        RS state(q_in, frames);
+        return state;
+    }
+
+    RS
+    RobotBase::FullFKPos(const VectorXd &q_in)
+    {
+        // Frame of every segment
+        std::vector<KDL::Frame> frames = this->ForwardPass(q_in);
+        // Jacobian of every segment
+        auto [jac, r] = this->ForwardJacs(q_in);
+        RS state(q_in, frames, jac, r);
+
+        // std::cout << "r: " << r.transpose() << "\n";
+
+        // KDL::Jacobian jac = this->ForwardJac(q_in);
+        // RS state(q_in, frames, jac);
+        // VectorXd r_orig = this->GetRadii(state);
+        // state.radii = r_orig;
+
+        // std::cout << "r_orig: " << r_orig.transpose() << "\n";
+        // exit(1);
+
+        return state;
+    }
+
+    RS
     RobotBase::FullFK(const VectorXd &q_in)
     {
         // Frame of every segment
         std::vector<KDL::Frame> frames = this->ForwardPass(q_in);
         // Jacobian of every segment
-        auto [jac, r, rigidRadii] = this->ForwardJacs(q_in);
+        auto [jac, r, rigidRadii] = this->ForwardJacsComplete(q_in);
         RS state(q_in, frames, jac, r, rigidRadii);
 
         // std::cout << "r: " << r.transpose() << "\n";

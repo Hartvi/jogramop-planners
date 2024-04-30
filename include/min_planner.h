@@ -47,18 +47,17 @@ namespace Burs
         bool
         IsColliding(const RS &state) const;
 
-        // std::pair<int, std::vector<double>>
         std::pair<std::vector<size_t>, std::vector<double>>
         GetClosestDistances(const RS &state) const;
 
         double
         GetClosestDistance(const RS &state) const;
 
-        // VectorXd
-        // Nearest(std::shared_ptr<BurTree> t, VectorXd &q);
+        void
+        AddClosestDistances(RS &state);
 
-        // int
-        // NearestIndex(std::shared_ptr<BurTree> t, VectorXd &q);
+        void
+        AddDistanceEstimates(RS &state, DistanceEstimateType distanceEstimateType);
 
         std::vector<VectorXd>
         Path(std::shared_ptr<BurTree> t_a, int a_closest, std::shared_ptr<BurTree> t_b, int b_closest);
@@ -67,10 +66,10 @@ namespace Burs
         ConstructPathFromTree(std::shared_ptr<BurTree> t_a, int final_node_id);
 
         RS
-        NewState(const VectorXd &q) const;
+        NewState(const VectorXd &q, bool posOnly = true) const;
 
         std::vector<RS>
-        NewStates(const MatrixXd &Q) const;
+        NewStates(const MatrixXd &Q, bool posOnly = true) const;
 
     public:
         std::shared_ptr<BaseEnv> env;

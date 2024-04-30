@@ -190,10 +190,10 @@ namespace Burs
                       return segment_distances[i1] < segment_distances[i2];
                   });
 
-        if (segment_distances[indices[0]] < 1e-4)
-        {
-            throw std::runtime_error("MIN DIST WAS ZERO");
-        }
+        // if (segment_distances[indices[0]] < 1e-4)
+        // {
+        //     throw std::runtime_error("MIN DIST WAS ZERO");
+        // }
 
         // Return both the overall minimum distance and the vector of per-segment minimum distances
         return {indices, segment_distances};

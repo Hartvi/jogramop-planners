@@ -398,6 +398,20 @@ int main(int argc, char **argv)
 
             break;
         }
+        case 7:
+        {
+            std::cout << "PLANNING J+RBT complete\n";
+
+            struct rusage t1, t2;
+            getTime(&t1);
+            path = jprbt->JRbtBasicComplete(start_config, params, planning_result);
+
+            getTime(&t2);
+            planning_result.time_taken = getTime(t1, t2);
+            final_path = path.value();
+
+            break;
+        }
         case 97:
         {
             std::cout << "TEST YAML\n";

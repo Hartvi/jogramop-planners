@@ -70,6 +70,51 @@ namespace Burs
         return this->env->GetClosestDistances();
     }
 
+    void
+    MinPlanner::AddClosestDistances(RS &state)
+    {
+        auto [d_closest_idx, ds_closest] = this->GetClosestDistances(state);
+        state.hasClosestDists = true;
+        state.closest_distance_ids = d_closest_idx;
+        state.closest_dists = ds_closest;
+    }
+
+    void
+    MinPlanner::AddDistanceEstimates(RS &state, DistanceEstimateType distanceEstimateType)
+    {
+        switch (distanceEstimateType)
+        {
+        case DistanceEstimateType::Projection:
+        {
+            VectorXd dists = this->env->robot->GetDistanceEstimates(state);
+            state.radii = dists;
+            break;
+        }
+        case DistanceEstimateType::JacPos:
+        {
+            auto [jac, radii] = this->env->robot->ForwardJacs(state.config);
+            state.radii = radii;
+            state.jac = jac;
+            state.has_radii = true;
+            break;
+        }
+        case DistanceEstimateType::JacPosRot:
+        {
+            auto [jac, radii, rigidRadii] = this->env->robot->ForwardJacsComplete(state.config);
+            state.hasJacRadii = true;
+            state.radii = radii;
+            state.hasJacRigidRadii = true;
+            state.rigidRadii = rigidRadii;
+            state.hasJacobian = true;
+            state.jac = jac;
+            state.has_radii = true;
+            break;
+        }
+        }
+        state.distanceEstimateType = distanceEstimateType;
+        state.hasDistanceEstimate = true;
+    }
+
     double
     MinPlanner::GetClosestDistance(const RS &state) const
     {
@@ -153,19 +198,26 @@ namespace Burs
     }
 
     RS
-    MinPlanner::NewState(const VectorXd &q) const
+    MinPlanner::NewState(const VectorXd &q, bool posOnly) const
     {
-        return this->env->robot->FullFK(q);
+        if (posOnly)
+        {
+            return this->env->robot->FullFKPos(q);
+        }
+        else
+        {
+            return this->env->robot->FullFK(q);
+        }
     }
 
     std::vector<RS>
-    MinPlanner::NewStates(const MatrixXd &Q) const
+    MinPlanner::NewStates(const MatrixXd &Q, bool posOnly) const
     {
         std::vector<RS> states;
         states.reserve(Q.cols());
         for (unsigned int i = 0; i < Q.cols(); ++i)
         {
-            states.push_back(this->NewState(Q.col(i)));
+            states.push_back(this->NewState(Q.col(i), posOnly));
         }
         return states;
     }

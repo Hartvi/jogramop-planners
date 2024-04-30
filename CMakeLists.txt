@@ -2,6 +2,9 @@ cmake_minimum_required(VERSION 3.2.0)
 
 project(jogramop-planners)
 
+## SET NINJA AS BUILD TOOL --- CAN BREAK STUFF => CHECK THIS
+set(CMAKE_MAKE_PROGRAM /usr/bin/ninja CACHE STRING "Ninja location")
+
 # Set C++17 Standard
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)

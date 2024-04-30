@@ -115,14 +115,26 @@ namespace Burs
         MatrixXd
         JPlus(const RS &state);
 
-        std::tuple<KDL::Jacobian, VectorXd, VectorXd>
+        std::tuple<KDL::Jacobian, VectorXd>
         ForwardJacs(const VectorXd &q_in);
+
+        std::tuple<KDL::Jacobian, VectorXd, VectorXd>
+        ForwardJacsComplete(const VectorXd &q_in);
+
+        VectorXd
+        GetDistanceEstimates(const RS &state);
 
         VectorXd
         GetRadii(const RS &state);
 
         std::vector<VectorXd>
         MovableJoints() const;
+
+        RS
+        BasicFK(const VectorXd &q_in);
+
+        RS
+        FullFKPos(const VectorXd &q_in);
 
         RS
         FullFK(const VectorXd &q_in);

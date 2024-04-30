@@ -14,6 +14,13 @@ namespace Burs
 {
     using namespace Eigen;
 
+    enum DistanceEstimateType
+    {
+        JacPosRot,
+        JacPos,
+        Projection
+    };
+
     // This encapsulates a forward kinematics + full Jacobian pass for a single configuration
     class RS
     {
@@ -22,10 +29,12 @@ namespace Burs
         // Frame of every segment
         std::vector<KDL::Frame> frames;
         bool has_radii = false;
-        // Every step in RRT requires the jacobian & frames of each segment
+        bool hasJacobian = false;
         KDL::Jacobian jac;
         // std::vector<KDL::Jacobian> jacs;
+        bool hasJacRadii = false;
         VectorXd radii;
+        bool hasJacRigidRadii = false;
         VectorXd rigidRadii;
 
         bool hasClosestDists = false;
@@ -34,6 +43,9 @@ namespace Burs
 
         bool hasDistFromParent = false;
         double distanceFromParent;
+
+        bool hasDistanceEstimate = false;
+        DistanceEstimateType distanceEstimateType;
 
     public:
         // Existing constructors
@@ -64,10 +76,15 @@ namespace Burs
                 jac = other.jac;
                 radii = other.radii;
                 has_radii = other.has_radii;
+                hasJacobian = other.hasJacobian;
+                hasJacRadii = other.hasJacRadii;
+                hasJacRigidRadii = other.hasJacRigidRadii;
                 rigidRadii = other.rigidRadii;
                 closest_distance_ids = other.closest_distance_ids;
                 closest_dists = other.closest_dists;
                 hasClosestDists = other.hasClosestDists;
+                hasDistanceEstimate = other.hasDistanceEstimate;
+                distanceEstimateType = other.distanceEstimateType;
             }
             return *this;
         }

@@ -201,7 +201,7 @@ namespace Burs
             KDL::Twist t = this->GetTwist(g.frame, ee, g.best_dist, true);
             KDL::JntArray j = this->env->robot->ForwardJPlus(*best_state, t);
             VectorXd new_config = best_state->config + j.data;
-            RS new_state = this->NewState(new_config);
+            RS new_state = this->NewState(new_config, true);
             if (this->IsColliding(new_state) || !this->InBounds(new_config))
             {
                 RRTNode st = t_a->mNodes[g.best_state];
@@ -222,7 +222,7 @@ namespace Burs
     }
 
     AlgorithmState
-    JRRTPlanner::ExtendToGoalRRT(std::shared_ptr<BurTree> t_a, JPlusRbtParameters &planner_parameters) const
+    JRRTPlanner::ExtendToGoalRRT(std::shared_ptr<BurTree> t_a, JPlusRbtParameters &planner_parameters, bool posOnly) const
     {
         // std::cout << "extend to goal\n";
         int randint = this->rng->getRandomInt();
@@ -233,11 +233,21 @@ namespace Burs
         RS *best_state = t_a->Get(best_state_idx);
         if (!best_state->has_radii)
         {
-            auto [jac, r, rigidRadii] = this->env->robot->ForwardJacs(best_state->config);
-            best_state->jac = jac;
-            best_state->radii = r;
-            best_state->rigidRadii = rigidRadii;
-            best_state->has_radii = true;
+            if (posOnly)
+            {
+                auto [jac, r] = this->env->robot->ForwardJacs(best_state->config);
+                best_state->jac = jac;
+                best_state->radii = r;
+                best_state->has_radii = true;
+            }
+            else
+            {
+                auto [jac, r, rigidRadii] = this->env->robot->ForwardJacsComplete(best_state->config);
+                best_state->jac = jac;
+                best_state->radii = r;
+                best_state->rigidRadii = rigidRadii;
+                best_state->has_radii = true;
+            }
         }
         RS near_state = *best_state;
         // Copy since we will change it
@@ -290,16 +300,16 @@ namespace Burs
 
             // std::cout << "near config: " << near_state.config << "\n";
             RS tmp_state = this->NewState(near_state.config + delta_q);
-            prev_idx = this->RRTStepInQ(t_a, prev_idx, tmp_state, planner_parameters.epsilon_q, planner_parameters.collision_resolution, true);
+            prev_idx = this->RRTStepInQ(t_a, prev_idx, tmp_state, planner_parameters.epsilon_q, planner_parameters.collision_resolution, true, posOnly);
             if (prev_idx < 0)
             {
                 return AlgorithmState::Trapped;
             }
             near_state = *t_a->Get(prev_idx);
-            // if (this->IsColliding(near_state))
-            // {
-            //     throw std::runtime_error("RRT EXTEND TO GOAL COLLIDING");
-            // }
+            if (this->IsColliding(near_state))
+            {
+                throw std::runtime_error("RRT EXTEND TO GOAL COLLIDING");
+            }
 
             this->SetGraspClosestConfigs(planner_parameters, t_a, prev_idx);
 

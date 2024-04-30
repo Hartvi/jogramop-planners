@@ -21,10 +21,7 @@ namespace Burs
         virtual ~RRTPlanner() = default;
 
         int
-        RRTStepInQ(std::shared_ptr<BurTree> t, int node_idx, const RS &rand_state, const Qunit &epsilon_q, const Meters &p_step, const bool &full_state = false) const;
-
-        // int
-        // RRTStepInQ(std::shared_ptr<BurTree> t, int node_idx, const RS &rand_state, const Meters &epsilon_q, const Meters &p_step) const;
+        RRTStepInQ(std::shared_ptr<BurTree> t, int node_idx, const RS &rand_state, const Qunit &epsilon_q, const Meters &p_step, const bool &full_state = false, const bool &posOnly = true) const;
 
         int
         RRTStep(std::shared_ptr<BurTree> t, int node_idx, const RS &rand_state, const Meters &epsilon_q) const;

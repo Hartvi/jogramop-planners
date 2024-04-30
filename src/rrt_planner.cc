@@ -15,7 +15,7 @@ namespace Burs
     }
 
     int
-    RRTPlanner::RRTStepInQ(std::shared_ptr<BurTree> t, int node_idx, const RS &rand_state, const Qunit &epsilon_q, const Meters &p_step, const bool &full_state) const
+    RRTPlanner::RRTStepInQ(std::shared_ptr<BurTree> t, int node_idx, const RS &rand_state, const Qunit &epsilon_q, const Meters &p_step, const bool &full_state, const bool &posOnly) const
     {
         // p_step in the bur paper is roughly 0.006
         RS near_state = *t->Get(node_idx);
@@ -27,7 +27,7 @@ namespace Burs
         RS new_state;
         if (full_state)
         {
-            new_state = this->NewState(new_config);
+            new_state = this->NewState(new_config, posOnly);
         }
         else
         {

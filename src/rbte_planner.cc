@@ -209,6 +209,10 @@ namespace Burs
                 // budget left = d_c[i_d] - dist(q, endpoints[k])
                 double tmp_dist_from_parent = endpoints[k].distanceFromParent;
                 double delta_dist = near_state.closest_dists[i_d] - tmp_dist_from_parent;
+                if (delta_dist < plan_parameters.d_crit)
+                {
+                    continue;
+                }
                 std::cout << "using extra dist: " << 100 * delta_dist << " cm\n";
                 VectorXd limited_config = rand_states[k].config.cwiseProduct(this->env->robot->segmentToJntCausality[i]);
                 RS tmp_tgt(limited_config, this->env->robot->ForwardPass(limited_config));

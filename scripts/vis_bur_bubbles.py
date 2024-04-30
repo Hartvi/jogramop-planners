@@ -81,7 +81,7 @@ class LineRobot:
         return np.max(np.linalg.norm(self.forward(q1) - self.forward(q2), axis=1))
 
     def scatter_distance_configs(self, q: np.ndarray, max_dist, ax: plt.axes, color) -> list[list[float]]:
-        epsilon_q = 0.05
+        epsilon_q = 0.01
         rotation_resolution = 7
         rotation_resolution_edge = 10000
         self.scatter_config(q, ax, color)
@@ -106,12 +106,13 @@ class LineRobot:
         return tmp_configs
 
     def scatter_distance_configs_extended(self, q: np.ndarray, min_idx: int, max_dists: np.ndarray, ax: plt.axes, color) -> list[list[float]]:
-        epsilon_q = 0.05
+        epsilon_q = 0.01
         rotation_resolution = 7
+        rotation_resolution_edge = 10000
         self.scatter_config(q, ax, color)
         tmp_configs = list()
         extra_configs = list()
-        for i in range(rotation_resolution):
+        for i in range(rotation_resolution_edge):
             # slight change ==> PI
             q_r = np.random.random((q.size, )) * 2 - 1
             q_r /= np.linalg.norm(q_r)
@@ -119,7 +120,9 @@ class LineRobot:
             tmp_q = self.extend_in_direction(
                 q, q_r, max_dists[min_idx], epsilon_q)
             self.scatter_config(tmp_q, ax, color)
-            tmp_configs.append(tmp_q)
+
+            if i % int(rotation_resolution_edge / rotation_resolution) == 0:
+                tmp_configs.append(tmp_q)
 
             for k in range(min_idx+1, q.size):
                 # print("closest dists:", max_dists, "idx:", min_idx, "mask:", self.causality_mask[k-1], "q_r:", q_r, "tmp_q:",tmp_q)
@@ -131,15 +134,20 @@ class LineRobot:
                 # print("dist after:", self.dist(tmp_q, q))
                 # print("closest dists:", max_dists, "idx:", min_idx, "mask:", self.causality_mask[k-1], "q_r:", q_r, "tmp_q:",tmp_q)
 
-            extra_configs.append(tmp_q)
-            self.scatter_config(tmp_q, ax, color)
+            if i % int(rotation_resolution_edge / rotation_resolution) == 0:
+                extra_configs.append(tmp_q)
+            self.scatter_config(tmp_q, ax, (0.0, 0.8, 0.3))
 
         for i in range(len(tmp_configs)):
             ax.plot([q[0], tmp_configs[i][0]], [
                     q[1], tmp_configs[i][1]], color=color)
+        # for i in range(len(tmp_configs)):
+        #     ax.plot([tmp_configs[i][0], extra_configs[i][0]], [
+        #             tmp_configs[i][1], extra_configs[i][1]], color=(0, 0, 0))
+
         for i in range(len(tmp_configs)):
-            ax.plot([tmp_configs[i][0], extra_configs[i][0]], [
-                    tmp_configs[i][1], extra_configs[i][1]], color=(0, 0, 0))
+            ax.plot([q[0], extra_configs[i][0]], [
+                    q[1], extra_configs[i][1]], color=(0.0, 0.8, 0.3))
         return extra_configs
         # return tmp_configs
 
@@ -236,8 +244,12 @@ class Env:
         ax2.set_xlabel("theta1 [rad]", fontsize=axisfontsize)
         ax2.set_ylabel("theta2 [rad]", fontsize=axisfontsize)
 
-        ax1.set_xlim([-4, 4])
-        ax1.set_ylim([-4, 4])
+        ax1.set_xlim([-2, 2])
+        ax1.set_ylim([-2, 2])
+        ax1.text(0.5, 0.25, "theta1", fontsize=15,
+                 color=(0.0, 0.3, 0.8), ha='center', va='center')
+        ax1.text(0.95, 1.35, "theta2", fontsize=15,
+                 color=(0.0, 0.3, 0.8), ha='center', va='center')
 
         ax2.set_xlim([-3.2, 3.14])
         ax2.set_ylim([-3.2, 3.14])
@@ -292,14 +304,15 @@ class Env:
             for i in range(len(endpoints)):
                 self.plot_config(endpoints[i], color)
 
-    def plot_extended_bur(self, q: np.ndarray, color):
+    def plot_extended_bur(self, q: np.ndarray, color, plot_edge_configs=False):
         min_idx, max_dists = env.closest_distances(q)
         endpoints = self.robot.scatter_distance_configs_extended(
             q, min_idx, max_dists, self.ax2, color)
 
         self.plot_config(q)
-        for i in range(len(endpoints)):
-            self.plot_config(endpoints[i], color)
+        if plot_edge_configs:
+            for i in range(len(endpoints)):
+                self.plot_config(endpoints[i], color)
 
     def plot_obstacles(self, color=(1, 0, 0)):
         for i in range(len(self.shapes)):
@@ -314,7 +327,7 @@ class Env:
 
 
 if __name__ == "__main__":
-    plot_thing = 1
+    plot_thing = 2
     robot = LineRobot([1.0, 0.5])
     # test_config = [1.57/2, 1.57/2]
     test_config = [0, -1.57/2]
@@ -323,7 +336,7 @@ if __name__ == "__main__":
     circle2: Circle = Circle(np.array([-1, 1.5]), 0.5)
     circle3: Circle = Circle(np.array([-0.5, -0.5]), 0.3)
     circle4: Circle = Circle(np.array([2, 2]), 0.2)
-    env: Env = Env(robot, [circle2, circle3, circle4])
+    env: Env = Env(robot, [circle2, circle3])
 
     env.plot_obstacles()
 
@@ -335,7 +348,15 @@ if __name__ == "__main__":
         env.plot_bur(np.array([-2.55, 1.5]), (0.8, 0.8, 0))
         env.plot_bur(np.array([-0.35, 1.5]), (0, 0, 1))
     elif plot_thing == 1:
-        num_burs = 1
+        num_burs = 0
+        rand_config = np.array([1.17, -0.692])
+        rand_color = (np.random.random(),
+                      np.random.random(), np.random.random())
+
+        env.plot_config(rand_config*np.array([1, 0]), (0.0, 0.4, 0.99))
+        env.plot_config(rand_config*np.array([0, 0]), (0.0, 0.4, 0.99))
+        env.plot_bur(rand_config, (0.0, 0.3, 0.8))
+
         for i in range(0, num_burs):
             rand_config = (
                 2 * np.pi * np.random.random((len(test_config),)) - np.pi)*0.9
@@ -346,12 +367,14 @@ if __name__ == "__main__":
                           np.random.random(), np.random.random())
             env.plot_bur(rand_config, (0.5, rand_color[0], rand_color[1]))
     elif plot_thing == 2:
-        num_burs = 2
-        rand_config = np.array([-0.67, -1.792])
+        num_burs = 0
+        rand_config = np.array([1.17, -0.692])
         rand_color = (np.random.random(),
                       np.random.random(), np.random.random())
 
-        env.plot_extended_bur(rand_config, (0.5, rand_color[0], rand_color[1]))
+        env.plot_config(rand_config*np.array([1, 0]), (0.0, 0.4, 0.99))
+        env.plot_config(rand_config*np.array([0, 0]), (0.0, 0.4, 0.99))
+        env.plot_extended_bur(rand_config, (0.0, 0.3, 0.8))
 
         for i in range(0, num_burs):
             rand_config = (
