@@ -59,8 +59,13 @@ if __name__ == "__main__":
             planners, [scenario], txts)
 
         # skip scenarios that haven't been run
-        if np.array(planners_on_scenarios).flatten().size == 0:
-            continue
+        try:
+            if np.array(planners_on_scenarios).flatten().size == 0:
+                continue
+        except:
+            print("TRYING TO PLOT WRONG RUNS: ")
+            print("EXCEPTION:", planners_on_scenarios)
+            exit(1)
 
         fig, ax = plt.subplots()
 
@@ -78,7 +83,7 @@ if __name__ == "__main__":
             plot_vals = times_vals[np.argsort(times_vals[:, 0])]
             plot_vals[:, 1] = np.cumsum(plot_vals[:, 1]) / len(p) * 100
             ax.plot(np.concatenate([[0], plot_vals[:, 0]]), np.concatenate([[0], plot_vals[:, 1]]),
-                    label=planners[l], color=planner_colours[l], linestyle=linestyles[l], linewidth=2)
+                    label=planners[l], linestyle=linestyles[l % len(linestyles)], linewidth=2)
             ax.set_xlabel("Time [s]")
             ax.set_ylabel("Success rate [%]")
 

@@ -58,6 +58,108 @@ namespace Burs
         return phi_tk * (1.0 - tk) / denominator;
     }
 
+    double
+    BasePlanner::GetDeltaTkGeneral(double phi_tk, double tk, const RS &end_state, const RS &k_state, const DistanceEstimateType &det) const
+    {
+        VectorXd deltaConfigs = (end_state.config - k_state.config).cwiseAbs();
+        // radii are positive => can add the vectors then do dot product
+        VectorXd radiiSum; // = k_state.radii + k_state.rigidRadii;
+        switch (det)
+        {
+        case (DistanceEstimateType::JacPos):
+        case (DistanceEstimateType::Projection):
+        case (DistanceEstimateType::ProjectionRot):
+        {
+            radiiSum = k_state.radii;
+            break;
+        }
+        case (DistanceEstimateType::JacPosRot):
+        {
+            radiiSum = k_state.radii + k_state.rigidRadii;
+            break;
+        }
+        case (DistanceEstimateType::None):
+        {
+            throw std::runtime_error("GetDeltaTkGeneral: cannot compute deltatk for None distance estimate type");
+            break;
+        }
+        }
+        double denominator = deltaConfigs.dot(radiiSum);
+        return phi_tk * (1.0 - tk) / denominator;
+    }
+
+    std::vector<RS>
+    BasePlanner::GetEndpointsGeneral(RS &state_near, const std::vector<RS> &rand_states, double d_max, const DistanceEstimateType &det, const size_t &max_iters)
+    {
+        double d_small = 0.1 * d_max;
+
+        std::vector<RS> new_states;
+        if (!state_near.hasDistanceEstimate)
+        {
+            this->AddDistanceEstimates(state_near, det);
+        }
+
+        for (int i = 0; i < rand_states.size(); ++i)
+        {
+            double tk = 0;
+
+            // always start out from the center
+            RS state_k;
+            double phi_result = d_max;
+            const RS &end_state = rand_states[i];
+            double delta_tk = this->GetDeltaTkGeneral(phi_result, tk, end_state, state_near, det);
+            double max_travelled_dist = 0;
+
+            // bool isColliding = false;
+
+            size_t k = 0;
+            while (true)
+            {
+                tk = tk + delta_tk;
+                VectorXd q_k = state_near.config + tk * (end_state.config - state_near.config);
+                // max_iters = 5
+                // k=1 k=2 k=3 k=4 (k=5)=>None
+                state_k = this->NewState(q_k, (++k < max_iters) ? det : DistanceEstimateType::None);
+                // to prevent unnecessary computations below
+                if (k == max_iters)
+                {
+                    break;
+                }
+                // k++;
+                // state_k = this->NewState(q_k, det);
+                max_travelled_dist = this->env->robot->MaxDistance(state_near, state_k);
+                // if (det == DistanceEstimateType::JacPos || det == DistanceEstimateType::Projection || det == DistanceEstimateType::ProjectionRot)
+                // {
+                // if (this->IsColliding(state_k))
+                // {
+                //     isColliding = true;
+                //     break;
+                // }
+                // max_travelled_dist = this->env->robot->MaxDistance(state_near, state_k);
+                // }
+                // else
+                // {
+                //     max_travelled_dist = this->env->robot->MaxDistanceMeshes(state_near, state_k);
+                // }
+                phi_result = d_max - max_travelled_dist;
+                delta_tk = this->GetDeltaTkGeneral(phi_result, tk, end_state, state_k, det);
+                // std::cout << "k: " << k << " phi_result: " << phi_result << "\n";
+            }
+            // if (!isColliding)
+            if (det != DistanceEstimateType::JacPosRot && det != DistanceEstimateType::ProjectionRot)
+            {
+                if (this->IsColliding(state_k))
+                {
+                    continue;
+                }
+            }
+            // state_k.distanceFromParent = max_travelled_dist;
+            // state_k.hasDistFromParent = true;
+            new_states.push_back(state_k);
+        }
+        return new_states;
+    }
+
     std::vector<RS>
     BasePlanner::GetEndpointsGeometry(const RS &state_near, const std::vector<RS> &rand_states, double d_max)
     {
@@ -89,7 +191,7 @@ namespace Burs
 
                 tk = tk + delta_tk;
                 VectorXd q_k = state_near.config + tk * (end_state.config - state_near.config);
-                state_k = this->NewState(q_k, false);
+                state_k = this->NewState(q_k, DistanceEstimateType::JacPosRot);
                 max_travelled_dist = this->env->robot->MaxDistanceMeshes(state_near, state_k);
                 phi_result = d_max - max_travelled_dist;
             }
@@ -140,7 +242,7 @@ namespace Burs
                 tk = tk + delta_tk;
                 // q_k = q_near + tk * (q_e - q_near);
                 VectorXd q_k = state_near.config + tk * (end_state.config - state_near.config);
-                state_k = this->NewState(q_k);
+                state_k = this->NewState(q_k, DistanceEstimateType::Projection);
                 max_travelled_dist = this->env->robot->MaxDistance(state_near, state_k);
                 phi_result = d_max - max_travelled_dist;
             }
@@ -191,7 +293,7 @@ namespace Burs
                 tk = tk + delta_tk;
                 // q_k = q_near + tk * (q_e - q_near);
                 VectorXd q_k = state_near.config + tk * (end_state.config - state_near.config);
-                state_k = this->NewState(q_k);
+                state_k = this->NewState(q_k, DistanceEstimateType::Projection);
                 max_travelled_dist = this->env->robot->MaxDistance(state_near, state_k);
                 phi_result = d_max - max_travelled_dist;
             }
@@ -243,7 +345,7 @@ namespace Burs
                 // has actually never reached > 1
                 // q_k = q_near + tk * (q_e - q_near);
                 VectorXd q_k = state_near.config + tk * (end_state.config - state_near.config);
-                state_k = this->NewState(q_k);
+                state_k = this->NewState(q_k, DistanceEstimateType::Projection);
                 max_travelled_dist = this->env->robot->MaxDistance(state_near, state_k);
                 phi_result = d_max - max_travelled_dist;
             }
@@ -384,5 +486,4 @@ namespace Burs
         // double d_closest = this->GetClosestDistance(q_near);
         std::cout << "d < d_crit" << std::endl;
     }
-
 }

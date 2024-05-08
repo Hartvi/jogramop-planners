@@ -1,0 +1,20 @@
+
+#add_compile_options(-O2)     #pro profilovani zakomentovat 
+
+#for profilling, slows down the code a lot!!!!     
+add_compile_options(-ggdb3 -pg )  #pro profilovani odkomentova
+add_link_options(-ggdb3 -pg )     # dtto
+
+2. cmake .
+3. make clean
+4. make
+5. spust program, treba pres ./run_jrbt.sh
+6. vysledek je v gmon.out
+7. gprof ./burs_of_free_space gmon.out > gmon.prof   #mozna budes muset zmenit cestu k binarce?
+8. vysledek je v gmon.prof, coz je textak, ktery popisuje co kde jak dlouho trva
+
+Pro graficke zobrazeni pouzivam : https://github.com/jrfonseca/gprof2dot
+
+9. Stahni gprof2dot a jdi do slozky, kam jsi ho stahnul, rozbalil
+10.  python3 gprof2dot.py -n 5  -o burs.dot cesta/k/souboru/gmon.prof   #toto vytvori soubor burs.dot v tzv. 'dot' formatu
+11.  dot -Tpng burs.dot > burs.png

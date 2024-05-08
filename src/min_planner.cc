@@ -80,22 +80,33 @@ namespace Burs
     }
 
     void
-    MinPlanner::AddDistanceEstimates(RS &state, DistanceEstimateType distanceEstimateType)
+    MinPlanner::AddDistanceEstimates(RS &state, const DistanceEstimateType &distanceEstimateType) const
     {
+        state.distanceEstimateType = distanceEstimateType;
         switch (distanceEstimateType)
         {
         case DistanceEstimateType::Projection:
         {
             VectorXd dists = this->env->robot->GetDistanceEstimates(state);
+            state.hasJacRadii = true;
             state.radii = dists;
+            state.hasDistanceEstimate = true;
+            // std::cout << "ADDING PROJECTION RADII\n";
+            // std::cout << "r: " << state.radii.transpose() << "\n";
+            // exit(1);
             break;
         }
         case DistanceEstimateType::JacPos:
         {
             auto [jac, radii] = this->env->robot->ForwardJacs(state.config);
+            state.hasJacRadii = true;
             state.radii = radii;
+            state.hasJacobian = true;
             state.jac = jac;
-            state.has_radii = true;
+            state.hasDistanceEstimate = true;
+            // std::cout << "ADDING JACOBIAN RADII\n";
+            // std::cout << "r: " << state.radii.transpose() << "\n";
+            // exit(1);
             break;
         }
         case DistanceEstimateType::JacPosRot:
@@ -107,12 +118,25 @@ namespace Burs
             state.rigidRadii = rigidRadii;
             state.hasJacobian = true;
             state.jac = jac;
-            state.has_radii = true;
+            state.hasDistanceEstimate = true;
+            break;
+        }
+        case DistanceEstimateType::ProjectionRot:
+        {
+            VectorXd dists = this->env->robot->GetDistanceEstimatesWithRadii(state);
+            state.hasJacRadii = true;
+            state.radii = dists;
+            state.hasDistanceEstimate = true;
+            // std::cout << "ADDING PROJECTION +ROT RADII\n";
+            // std::cout << "r: " << state.radii.transpose() << "\n";
+            // exit(1);
+            break;
+        }
+        default:
+        {
             break;
         }
         }
-        state.distanceEstimateType = distanceEstimateType;
-        state.hasDistanceEstimate = true;
     }
 
     double
@@ -198,26 +222,24 @@ namespace Burs
     }
 
     RS
-    MinPlanner::NewState(const VectorXd &q, bool posOnly) const
+    MinPlanner::NewState(const VectorXd &q, const DistanceEstimateType &det) const
     {
-        if (posOnly)
+        RS new_state = this->env->robot->BasicFK(q);
+        if (det != DistanceEstimateType::None)
         {
-            return this->env->robot->FullFKPos(q);
+            this->AddDistanceEstimates(new_state, det);
         }
-        else
-        {
-            return this->env->robot->FullFK(q);
-        }
+        return new_state;
     }
 
     std::vector<RS>
-    MinPlanner::NewStates(const MatrixXd &Q, bool posOnly) const
+    MinPlanner::NewStates(const MatrixXd &Q, const DistanceEstimateType &det) const
     {
         std::vector<RS> states;
         states.reserve(Q.cols());
         for (unsigned int i = 0; i < Q.cols(); ++i)
         {
-            states.push_back(this->NewState(Q.col(i), posOnly));
+            states.push_back(this->NewState(Q.col(i), det));
         }
         return states;
     }

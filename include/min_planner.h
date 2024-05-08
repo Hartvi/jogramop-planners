@@ -57,19 +57,18 @@ namespace Burs
         AddClosestDistances(RS &state);
 
         void
-        AddDistanceEstimates(RS &state, DistanceEstimateType distanceEstimateType);
+        AddDistanceEstimates(RS &state, const DistanceEstimateType &distanceEstimateType) const;
 
-        std::vector<VectorXd>
-        Path(std::shared_ptr<BurTree> t_a, int a_closest, std::shared_ptr<BurTree> t_b, int b_closest);
+        std::vector<VectorXd> Path(std::shared_ptr<BurTree> t_a, int a_closest, std::shared_ptr<BurTree> t_b, int b_closest);
 
         std::vector<VectorXd>
         ConstructPathFromTree(std::shared_ptr<BurTree> t_a, int final_node_id);
 
         RS
-        NewState(const VectorXd &q, bool posOnly = true) const;
+        NewState(const VectorXd &q, const DistanceEstimateType &det = DistanceEstimateType::None) const;
 
         std::vector<RS>
-        NewStates(const MatrixXd &Q, bool posOnly = true) const;
+        NewStates(const MatrixXd &Q, const DistanceEstimateType &det = DistanceEstimateType::None) const;
 
     public:
         std::shared_ptr<BaseEnv> env;

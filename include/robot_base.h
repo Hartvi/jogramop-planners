@@ -4,6 +4,7 @@
 
 #include <kdl_parser/kdl_parser.hpp>
 #include <kdl/chainfksolverpos_recursive.hpp>
+#include <kdl/chainiksolver.hpp>
 #include <kdl/frames_io.hpp>
 
 #include <urdf_model/model.h>
@@ -37,6 +38,8 @@ namespace Burs
          */
         std::vector<std::optional<std::shared_ptr<RtModels::RtModel>>> segmentIdToModel;
 
+        Eigen::VectorXi radialJoints;
+        Eigen::VectorXd approxRadii;
         int numberOfModels;
 
         std::string urdf_filename;
@@ -125,7 +128,7 @@ namespace Burs
         GetDistanceEstimates(const RS &state);
 
         VectorXd
-        GetRadii(const RS &state);
+        GetDistanceEstimatesWithRadii(const RS &state);
 
         std::vector<VectorXd>
         MovableJoints() const;
@@ -133,18 +136,42 @@ namespace Burs
         RS
         BasicFK(const VectorXd &q_in);
 
-        RS
-        FullFKPos(const VectorXd &q_in);
-
-        RS
-        FullFK(const VectorXd &q_in);
-
         static Eigen::VectorXd
         parseCSVToVectorXd(const std::string &path);
 
         static std::vector<Eigen::VectorXd>
         parseCSVToVectors(const std::string &path);
         // END BASE
+
+        std::vector<bool>
+        GetValidTransforms();
+
+        std::vector<std::shared_ptr<RtModels::RtModel>>
+        GetModels();
+
+        double
+        EEDistance(const RS &state1, const RS &state2) const;
+
+        KDL::Frame
+        GetEEFrame(const RS &state) const;
+
+        std::pair<int, std::vector<double>>
+        MaxDistances(const RS &state1, const RS &state2) const;
+
+        double
+        MaxDistance(const RS &state1, const RS &state2) const;
+
+        double
+        MaxDistanceMeshes(const RS &state1, const RS &state2) const;
+
+        double
+        MaxDistanceMeshSegment(const KDL::Frame &f1, const KDL::Frame &f2, const std::shared_ptr<RtModels::RtModel> rt_model) const;
+
+        std::pair<Matrix3d, Vector3d>
+        KDLFrameToEigen(const KDL::Frame &f);
+
+        std::optional<VectorXd>
+        GetInverseKinematics(KDL::ChainIkSolverPos &solver, const KDL::JntArray &q_init, const KDL::Frame &tgt);
     };
 }
 #endif

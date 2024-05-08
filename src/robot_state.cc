@@ -12,23 +12,27 @@ namespace Burs
     RS::RS(const VectorXd &config, const std::vector<KDL::Frame> &frames, const KDL::Jacobian &jac, const VectorXd &radii, const VectorXd &rigidRadii)
         : config(config), frames(frames), jac(jac), radii(radii), rigidRadii(rigidRadii)
     {
-        assert(config.size() > 1);
-        this->has_radii = true;
+        // assert(config.size() > 1);
+        this->hasJacRadii = true;
+        this->hasJacRigidRadii = true;
+        this->hasDistanceEstimate = true;
+        this->hasJacobian = true;
+        this->distanceEstimateType = DistanceEstimateType::JacPosRot;
     }
 
     RS::RS(const VectorXd &config, const std::vector<KDL::Frame> &frames, const KDL::Jacobian &jac, const VectorXd &radii)
         : config(config), frames(frames), jac(jac), radii(radii)
     {
-        // std::cout << "config: " << this->config << "\n";
-        // assert(this->config.size() > 1);
-        assert(config.size() > 1);
-        this->has_radii = true;
+        // assert(config.size() > 1);
+        this->hasJacRadii = true;
+        this->hasDistanceEstimate = true;
+        this->hasJacobian = true;
+        this->distanceEstimateType = DistanceEstimateType::JacPos;
     }
 
     RS::RS(const VectorXd &config, const std::vector<KDL::Frame> &frames)
         : config(config), frames(frames)
     {
-        this->has_radii = false;
     }
 
     // RS::RS(const VectorXd &config, const std::vector<KDL::Frame> &frames, const KDL::Jacobian &jac)

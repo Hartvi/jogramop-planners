@@ -122,6 +122,8 @@ int main(int argc, char **argv)
     int jrbtOption;
     int use_joint_limits;
 
+    int distanceEstimateType;
+
     {
         CmdOptions o;
 
@@ -137,33 +139,26 @@ int main(int argc, char **argv)
         o.addOption(Option<int>("num_spikes", &num_spikes, "number of bur spikes"));
         o.addOption(Option<double>("p_close_enough", &p_close_enough, "end-effector is close enough to target"));
         o.addOption(Option<double>("prob_steer", &probability_to_steer_to_target, "end-effector is close enough to target"));
-
         o.addOption(Option<char *>("target_configs", &targetConfigsFile, "defaultValue", "target IK solutions for the grasps"));
         o.addOption(Option<double>("groundLevel", &groundLevel, "ground z coodinate"));
         o.addOption(Option<int>("minColSegIdx", &minColSegmentIdx, "segment id from which it can collide with ground"));
-
         o.addOption(Option<int>("ik_index", &ik_index_in_target_configs, 0, "max iters for all ik solutions")); // default value is 0
         o.addOption(Option<double>("q_resolution", &q_resolution, 0.1, "resolution at which to output path"));
-
         o.addOption(Option<int>("use_rot", &useRotation, 0, "rotation bias threshold when to start using it (mm+deg)"));
         o.addOption(Option<double>("rot_ratio", &rotationDistRatio, 0.5, "ratio of rotation in distance metric (mm+deg)"));
-
         o.addOption(Option<char *>("target_prefix", &targetPrefixFile, "planner_output", "file in which to save measurements, separated by keywords"));
-
         o.addOption(Option<int>("render", &renderVideo, 0, "whether to render video"));
         o.addOption(Option<char *>("vis_script", &visualizationScriptFile, "", "script to visualize with"));
         o.addOption(Option<int>("cx", &camX, 0, "camera x coordinate"));
         o.addOption(Option<int>("cy", &camY, 0, "camera y coordinate"));
         o.addOption(Option<int>("cz", &camZ, 0, "camera z coordinate"));
-
-        o.addOption(Option<int>("seed", &seed, -1, "random seed or time (if seed = -1)")); // default value is -1 -> seed is from time
-
+        o.addOption(Option<int>("seed", &seed, -1, "random seed or time (if seed = -1)"));      // default value is -1 -> seed is from time
         o.addOption(Option<int>("render_tree", &render_tree, 0, "whether to render the tree")); // default value is 0
-
         o.addOption(Option<double>("collision_resolution", &collisionResolution, 0.0045, "resolution at which to check for collisions"));
         o.addOption(Option<int>("max_extensions", &maxExtensions, 50, "max num of extend to goal steps"));
         o.addOption(Option<int>("jrbt_option", &jrbtOption, 0, "Which type of rbt to run. 0=default 1=extended non-convex"));
         o.addOption(Option<int>("use_joint_limits", &use_joint_limits, 1, "Use joint limits in inverse kinematics. 0=default 1=extended non-convex"));
+        o.addOption(Option<int>("distance_type", &distanceEstimateType, 2, "Distance estimate type for RBT. 0=FULL translate + rotate jacobian, 1=jacobian radii, 2=projection radii, 3=projection radi + mesh rotation"));
 
         if (!o.parse(argc, argv))
         {
@@ -252,6 +247,7 @@ int main(int argc, char **argv)
         params.collision_resolution = collisionResolution;
         params.max_extensions = maxExtensions;
         params.minCollisionIdx = minColSegmentIdx;
+        params.distanceEstimateType = (DistanceEstimateType)distanceEstimateType;
 
         // END COMMON SETTINGS ------------------------------------------------------------------------------------------------------------
 
@@ -288,10 +284,11 @@ int main(int argc, char **argv)
         }
         case 1:
         {
-            std::cout << "PLANNING J+RBT basic\n";
+            std::cout << "PLANNING J+RBT basic + proj\n";
 
             struct rusage t1, t2;
             getTime(&t1);
+            params.distanceEstimateType = (DistanceEstimateType)2;
             path = jprbt->JRbtBasic(start_config, params, planning_result);
 
             getTime(&t2);
@@ -400,16 +397,114 @@ int main(int argc, char **argv)
         }
         case 7:
         {
-            std::cout << "PLANNING J+RBT complete\n";
+            std::cout << "PLANNING J+RBT basic + jacpos\n";
 
             struct rusage t1, t2;
             getTime(&t1);
-            path = jprbt->JRbtBasicComplete(start_config, params, planning_result);
+            params.distanceEstimateType = (DistanceEstimateType)1;
+            path = jprbt->JRbtBasic(start_config, params, planning_result);
 
             getTime(&t2);
             planning_result.time_taken = getTime(t1, t2);
             final_path = path.value();
 
+            break;
+        }
+        case 8:
+        {
+            std::cout << "PLANNING J+RBT basic + jacposrot\n";
+
+            struct rusage t1, t2;
+            getTime(&t1);
+            params.distanceEstimateType = (DistanceEstimateType)0;
+            path = jprbt->JRbtBasic(start_config, params, planning_result);
+
+            getTime(&t2);
+            planning_result.time_taken = getTime(t1, t2);
+            final_path = path.value();
+
+            break;
+        }
+        case 9:
+        {
+            std::cout << "PLANNING J+RBT basic + proj rot\n";
+
+            struct rusage t1, t2;
+            getTime(&t1);
+            params.distanceEstimateType = (DistanceEstimateType)3;
+            path = jprbt->JRbtBasic(start_config, params, planning_result);
+
+            getTime(&t2);
+            planning_result.time_taken = getTime(t1, t2);
+            final_path = path.value();
+
+            break;
+        }
+        // case 7:
+        // {
+        //     std::cout << "PLANNING J+RBT complete\n";
+
+        //     struct rusage t1, t2;
+        //     getTime(&t1);
+        //     path = jprbt->JRbtBasicComplete(start_config, params, planning_result);
+
+        //     getTime(&t2);
+        //     planning_result.time_taken = getTime(t1, t2);
+        //     final_path = path.value();
+
+        //     break;
+        // }
+        case 96:
+        {
+            std::cout << " testing distance estimate + bur speeds\n";
+            struct rusage t1, t2;
+            for (int j = 0; j < 4; ++j)
+            {
+                getTime(&t1);
+                RS start_state = jprbt->NewState(start_config, DistanceEstimateType::JacPosRot);
+                for (int i = 0; i < params.max_iters; ++i)
+                {
+                    double d_c = jprbt->GetClosestDistance(start_state);
+                    Eigen::MatrixXd rand_configs = jprbt->GetRandomQ(params.num_spikes);
+                    for (int i = 0; i < params.num_spikes; ++i)
+                    {
+                        rand_configs.col(i) = start_state.config + params.delta_q * rand_configs.col(i).normalized();
+                    }
+                    std::vector<RS> new_states = jprbt->NewStates(rand_configs, DistanceEstimateType::None);
+                    jprbt->GetEndpointsGeneral(start_state, new_states, d_c, (DistanceEstimateType)j);
+                }
+                getTime(&t2);
+                double t = getTime(t1, t2);
+                std::cout << "time of " << j << ": " << t << "\n";
+            }
+
+            /*
+            distance check always:
+            simple mesh:
+            6,
+            5,
+            4.5,
+            4.1
+            full mesh:
+            31.8,
+            19.2,
+            18.4,
+            17.7
+            */
+            /*
+            distance check once:
+            simple mesh:
+            2.5,
+            1.5,
+            1.2,
+            0.76
+            full mesh:
+            14,
+            1.6,
+            1.2,
+            0.76
+            */
+            exit(0);
             break;
         }
         case 97:

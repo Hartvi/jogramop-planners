@@ -8,8 +8,6 @@
 #include <vector>
 #include <Eigen/Dense>
 
-// #include "bur_funcs.h"
-
 namespace Burs
 {
     using namespace Eigen;
@@ -18,22 +16,24 @@ namespace Burs
     {
         JacPosRot,
         JacPos,
-        Projection
+        Projection,
+        ProjectionRot,
+        None
     };
 
-    // This encapsulates a forward kinematics + full Jacobian pass for a single configuration
     class RS
     {
     public:
         VectorXd config;
         // Frame of every segment
         std::vector<KDL::Frame> frames;
-        bool has_radii = false;
+
         bool hasJacobian = false;
         KDL::Jacobian jac;
-        // std::vector<KDL::Jacobian> jacs;
+
         bool hasJacRadii = false;
         VectorXd radii;
+
         bool hasJacRigidRadii = false;
         VectorXd rigidRadii;
 
@@ -45,27 +45,14 @@ namespace Burs
         double distanceFromParent;
 
         bool hasDistanceEstimate = false;
-        DistanceEstimateType distanceEstimateType;
+        DistanceEstimateType distanceEstimateType = DistanceEstimateType::None;
 
     public:
-        // Existing constructors
-        // RS(const VectorXd &config, const std::vector<KDL::Frame> &frames, const std::vector<KDL::Jacobian> &jacs);
         RS() = default;
         RS(const VectorXd &config, const std::vector<KDL::Frame> &frames, const KDL::Jacobian &jac, const VectorXd &radii, const VectorXd &rigidRadii);
         RS(const VectorXd &config, const std::vector<KDL::Frame> &frames, const KDL::Jacobian &jac, const VectorXd &radii);
         RS(const VectorXd &config, const std::vector<KDL::Frame> &frames);
-        // RS(const VectorXd &config, const std::vector<KDL::Frame> &frames, const KDL::Jacobian &jac);
 
-        // Copy constructor
-        // RS(const RS &other)
-        //     : config(other.config), frames(other.frames), jac(other.jac), radii(other.radii)
-        // {
-        //     std::cout << "copy config: " << this->config << "\n";
-        //     assert(this->config.size() > 1);
-        //     assert(config.size() > 1);
-        // }
-
-        // Optionally, consider defining a copy assignment operator if needed
         RS &operator=(const RS &other)
         {
             if (this != &other) // protect against invalid self-assignment
@@ -75,7 +62,6 @@ namespace Burs
                 frames = other.frames;
                 jac = other.jac;
                 radii = other.radii;
-                has_radii = other.has_radii;
                 hasJacobian = other.hasJacobian;
                 hasJacRadii = other.hasJacRadii;
                 hasJacRigidRadii = other.hasJacRigidRadii;
@@ -88,9 +74,6 @@ namespace Burs
             }
             return *this;
         }
-
-        // VectorXd
-        // GetRadii(const std::vector<KDL::Jacobian> &jacs);
     };
 }
 

@@ -79,7 +79,7 @@ namespace Burs
             totalNNtime += getTime(tt1, tt2);
 
             getTime(&tt1);
-            int step_result = this->RRTStepInQ(tree, idx_near, tmp_state, planner_parameters.epsilon_q, planner_parameters.collision_resolution, false);
+            int step_result = this->RRTStepInQ(tree, idx_near, tmp_state, planner_parameters.epsilon_q, planner_parameters.collision_resolution, DistanceEstimateType::None);
             getTime(&tt2);
             totalCollideAndAddTime += getTime(tt1, tt2);
 
@@ -201,7 +201,7 @@ namespace Burs
             KDL::Twist t = this->GetTwist(g.frame, ee, g.best_dist, true);
             KDL::JntArray j = this->env->robot->ForwardJPlus(*best_state, t);
             VectorXd new_config = best_state->config + j.data;
-            RS new_state = this->NewState(new_config, true);
+            RS new_state = this->NewState(new_config, DistanceEstimateType::None);
             if (this->IsColliding(new_state) || !this->InBounds(new_config))
             {
                 RRTNode st = t_a->mNodes[g.best_state];
@@ -222,7 +222,7 @@ namespace Burs
     }
 
     AlgorithmState
-    JRRTPlanner::ExtendToGoalRRT(std::shared_ptr<BurTree> t_a, JPlusRbtParameters &planner_parameters, bool posOnly) const
+    JRRTPlanner::ExtendToGoalRRT(std::shared_ptr<BurTree> t_a, JPlusRbtParameters &planner_parameters) const
     {
         // std::cout << "extend to goal\n";
         int randint = this->rng->getRandomInt();
@@ -231,25 +231,26 @@ namespace Burs
 
         int best_state_idx = random_grasp.best_state;
         RS *best_state = t_a->Get(best_state_idx);
-        if (!best_state->has_radii)
+        if (!best_state->hasDistanceEstimate || !best_state->hasJacobian)
         {
-            if (posOnly)
+            switch (planner_parameters.distanceEstimateType)
             {
-                auto [jac, r] = this->env->robot->ForwardJacs(best_state->config);
-                best_state->jac = jac;
-                best_state->radii = r;
-                best_state->has_radii = true;
+            case (DistanceEstimateType::JacPos):
+            case (DistanceEstimateType::Projection):
+            case (DistanceEstimateType::ProjectionRot):
+            {
+                this->AddDistanceEstimates(*best_state, DistanceEstimateType::JacPos);
+                break;
             }
-            else
+            case (DistanceEstimateType::JacPosRot):
             {
-                auto [jac, r, rigidRadii] = this->env->robot->ForwardJacsComplete(best_state->config);
-                best_state->jac = jac;
-                best_state->radii = r;
-                best_state->rigidRadii = rigidRadii;
-                best_state->has_radii = true;
+                this->AddDistanceEstimates(*best_state, DistanceEstimateType::JacPosRot);
+                break;
+            }
             }
         }
         RS near_state = *best_state;
+        // std::cout << "has jac: " << near_state.jac.data << "\n";
         // Copy since we will change it
 
         int prev_idx = t_a->Nearest(best_state_idx);
@@ -260,6 +261,7 @@ namespace Burs
 
         do
         {
+            // std::cout << "extension: " << extension << "\n";
             KDL::Vector delta_pos = (p_goal.p - p_near.p);
             // std::cout << "extension dist: " << delta_pos.Norm() << "\n";
             double metric_dist = delta_pos.Norm();
@@ -300,16 +302,32 @@ namespace Burs
 
             // std::cout << "near config: " << near_state.config << "\n";
             RS tmp_state = this->NewState(near_state.config + delta_q);
-            prev_idx = this->RRTStepInQ(t_a, prev_idx, tmp_state, planner_parameters.epsilon_q, planner_parameters.collision_resolution, true, posOnly);
+            prev_idx = this->RRTStepInQ(t_a, prev_idx, tmp_state, planner_parameters.epsilon_q, planner_parameters.collision_resolution, planner_parameters.distanceEstimateType);
             if (prev_idx < 0)
             {
                 return AlgorithmState::Trapped;
             }
             near_state = *t_a->Get(prev_idx);
-            if (this->IsColliding(near_state))
+            // if (this->IsColliding(near_state))
+            // {
+            //     throw std::runtime_error("RRT EXTEND TO GOAL COLLIDING");
+            // }
+            switch (planner_parameters.distanceEstimateType)
             {
-                throw std::runtime_error("RRT EXTEND TO GOAL COLLIDING");
+            case (DistanceEstimateType::JacPos):
+            case (DistanceEstimateType::Projection):
+            case (DistanceEstimateType::ProjectionRot):
+            {
+                this->AddDistanceEstimates(near_state, DistanceEstimateType::JacPos);
+                break;
             }
+            case (DistanceEstimateType::JacPosRot):
+            {
+                this->AddDistanceEstimates(near_state, DistanceEstimateType::JacPosRot);
+                break;
+            }
+            }
+            // TOOD ADD DISTANCE EStIMATE TO NEARstATE
 
             this->SetGraspClosestConfigs(planner_parameters, t_a, prev_idx);
 

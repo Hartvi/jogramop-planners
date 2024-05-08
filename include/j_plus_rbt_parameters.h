@@ -29,7 +29,7 @@ namespace Burs
 
         Eigen::Vector3d mean_target;
 
-        int JRBTOption;
+        DistanceEstimateType distanceEstimateType;
 
         void
         GetMeanTranslation(std::vector<Grasp> &target_poses)

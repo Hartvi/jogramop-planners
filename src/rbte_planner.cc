@@ -78,7 +78,7 @@ namespace Burs
 
             if (d_closest < plan_parameters.d_crit)
             {
-                int step_result = this->RRTStepInQ(t_a, nearest_idx, near_state, plan_parameters.epsilon_q, plan_parameters.collision_resolution, true);
+                int step_result = this->RRTStepInQ(t_a, nearest_idx, near_state, plan_parameters.epsilon_q, plan_parameters.collision_resolution, DistanceEstimateType::None);
                 if (step_result < 0)
                 {
                     // If small basic rrt collides, then don't go here, hence the `continue`

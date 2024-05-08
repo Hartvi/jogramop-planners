@@ -26,8 +26,8 @@ include_directories(include /usr/local/include /usr/include /usr/local/include/e
 add_compile_options(-O2)     
 
 #for profilling, slows down the code a lot!!!!    
-# add_compile_options(-ggdb3 -pg )     
-# add_link_options(-ggdb3 -pg )     
+#add_compile_options(-ggdb3 -pg )     
+#add_link_options(-ggdb3 -pg )     
 
 
 # 2. cmake .

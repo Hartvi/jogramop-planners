@@ -15,24 +15,15 @@ namespace Burs
     }
 
     int
-    RRTPlanner::RRTStepInQ(std::shared_ptr<BurTree> t, int node_idx, const RS &rand_state, const Qunit &epsilon_q, const Meters &p_step, const bool &full_state, const bool &posOnly) const
+    RRTPlanner::RRTStepInQ(std::shared_ptr<BurTree> t, int node_idx, const RS &rand_state, const Qunit &epsilon_q, const Meters &p_step, const DistanceEstimateType &det) const
     {
-        // p_step in the bur paper is roughly 0.006
+        // p_step in the bur paper is roughly 0.005
         RS near_state = *t->Get(node_idx);
 
-        // std::cout << "near state: " << near_state.config.transpose() << "\n";
         // shifted in configuration space
         VectorXd new_config = near_state.config + epsilon_q * (rand_state.config - near_state.config).normalized();
         // end state
-        RS new_state;
-        if (full_state)
-        {
-            new_state = this->NewState(new_config, posOnly);
-        }
-        else
-        {
-            new_state = RS(new_config, this->env->robot->ForwardPass(new_config));
-        }
+        RS new_state = this->NewState(new_config, det);
         double max_dist = this->env->robot->MaxDistance(new_state, near_state);
 
         // interpolate base on workspace distance
@@ -281,7 +272,7 @@ namespace Burs
     RRTPlanner::GreedyExtendRandomConfigInQ(std::shared_ptr<BurTree> t_a, RS rand_state, const RRTParameters &planner_parameters, const RS &goal_state, RS &best_state) const
     {
         int nearest_idx = t_a->Nearest(rand_state);
-        auto step_result = this->RRTStepInQ(t_a, nearest_idx, rand_state, planner_parameters.epsilon_q, planner_parameters.collision_resolution, false);
+        auto step_result = this->RRTStepInQ(t_a, nearest_idx, rand_state, planner_parameters.epsilon_q, planner_parameters.collision_resolution, DistanceEstimateType::None);
 
         double best_dist = this->env->robot->EEDistance(best_state, goal_state);
 
@@ -307,7 +298,7 @@ namespace Burs
             }
 
             // then step again from newly added node: step_result
-            step_result = this->RRTStepInQ(t_a, step_result, rand_state, planner_parameters.epsilon_q, planner_parameters.collision_resolution, false);
+            step_result = this->RRTStepInQ(t_a, step_result, rand_state, planner_parameters.epsilon_q, planner_parameters.collision_resolution, DistanceEstimateType::None);
         }
         return AlgorithmState::Trapped;
     }

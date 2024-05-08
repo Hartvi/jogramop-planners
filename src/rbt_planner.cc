@@ -85,7 +85,7 @@ namespace Burs
             if (d_closest < plan_parameters.d_crit)
             {
                 // int step_result = this->RRTStepInQ(t_a, nearest_idx, near_state, plan_parameters.epsilon_q);
-                int step_result = this->RRTStepInQ(t_a, nearest_idx, rand_states[0], plan_parameters.epsilon_q, plan_parameters.collision_resolution, true);
+                int step_result = this->RRTStepInQ(t_a, nearest_idx, rand_states[0], plan_parameters.epsilon_q, plan_parameters.collision_resolution, DistanceEstimateType::None);
                 if (step_result < 0)
                 {
                     // If small basic rrt collides, then don't go here, hence the `continue`
@@ -250,7 +250,7 @@ namespace Burs
             else
             {
                 // std::cout << "q tgt: " << q.config.transpose() << "\n";
-                int q_t_idx = this->RRTStepInQ(t, previous_step, q, plan_parameters.epsilon_q, plan_parameters.collision_resolution, true);
+                int q_t_idx = this->RRTStepInQ(t, previous_step, q, plan_parameters.epsilon_q, plan_parameters.collision_resolution, DistanceEstimateType::None);
 
                 if (q_t_idx < 0)
                 {
@@ -345,6 +345,24 @@ namespace Burs
         KDL::Frame ee = this->env->robot->GetEEFrame(*t->Get(state_idx));
 
         double tmp_dist = 1e10;
+        // for (unsigned int i = 0; i < tgts.size(); ++i)
+        // {
+        //     auto &tgt = tgts[i];
+        //     auto &goal = tgt.frame;
+        //     double dist = 1000 * (ee.p - goal.p).Norm();
+
+        //     if (dist < tgt.best_dist)
+        //     {
+        //         tgt.best_dist = dist;
+        //         tgt.best_state = state_idx;
+        //     }
+        //     if (dist < tmp_dist)
+        //     {
+        //         dist = tmp_dist;
+        //     }
+        // }
+        // return tmp_dist;
+
         for (unsigned int i = 0; i < tgts.size(); ++i)
         {
             auto &tgt = tgts[i];
