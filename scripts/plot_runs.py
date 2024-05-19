@@ -51,6 +51,7 @@ if __name__ == "__main__":
     txt_extension = ".txt"
     txts = get_extension(txt_extension, filelist)
     planners = ["jrrt", "jrbt", "ikrrt"]
+    # planners = ["jrbt", "jrbtposrot"]
     # planners = ["ikrrt"]
     linestyles = ["-.", "--", ":"]
     planner_colours = [(1, 0, 0), (1, 0.5, 0), (0, 0.8, 0)]
@@ -87,5 +88,31 @@ if __name__ == "__main__":
             ax.set_xlabel("Time [s]")
             ax.set_ylabel("Success rate [%]")
 
-        fig.legend()
+        ax.legend(loc='upper right')  # Changed here
+        ax.set_title("Scenario "+str(scenario))
         fig.savefig(os.path.join(my_results, "scenario-"+str(scenario)+".png"))
+    planners_on_scenarios = get_planners_on_scenarios(
+        planners, ALL_SCENARIOS, txts)
+
+    fig, ax = plt.subplots()
+
+    result_paths = []
+    for l, p in enumerate(planners_on_scenarios):
+        print("PLANNER:", p)
+
+        times_vals = np.zeros((len(p), 2))
+        for k, n in enumerate(p):
+            with open(os.path.join(my_results, n)) as f:
+                d = json.load(f)
+                times_vals[k, 0] = d["time"]
+                times_vals[k, 1] = d["sr"]
+        print("PLANNER:", planners[l], "\n")
+        plot_vals = times_vals[np.argsort(times_vals[:, 0])]
+        plot_vals[:, 1] = np.cumsum(plot_vals[:, 1]) / len(p) * 100
+        ax.plot(np.concatenate([[0], plot_vals[:, 0]]), np.concatenate([[0], plot_vals[:, 1]]),
+                label=planners[l], linestyle=linestyles[l % len(linestyles)], linewidth=2)
+        ax.set_xlabel("Time [s]")
+        ax.set_ylabel("Success rate [%]")
+
+    ax.legend(loc='upper left')  # Changed here
+    fig.savefig(os.path.join(my_results, "scenario-ALL.png"))

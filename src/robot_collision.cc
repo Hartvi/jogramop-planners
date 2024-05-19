@@ -146,6 +146,32 @@ namespace Burs
         // return std::max(mesh_dist, max_dist);
     }
 
+    std::vector<double>
+    RobotCollision::MaxDistanceMeshPositions(const RS &state1, const RS &state2) const
+    {
+        // TODO: for small changes this should return small values
+        auto f1 = state1.frames;
+        auto f2 = state2.frames;
+        std::vector<double> max_dists(this->numberOfModels);
+        int frame_id = 0;
+        for (auto &it : this->segmentIdToModel)
+        {
+            if (it)
+            {
+                auto rtmodel = it.value();
+                auto num_tris = rtmodel->pqpModel->num_tris;
+                // std::cout << "Num tris: " << num_tris << "\n";
+                auto tmpf2 = state2.frames[frame_id];
+                auto tmpf1 = state1.frames[frame_id];
+                double dist = (tmpf1.p - tmpf2.p).Norm();
+                max_dists[frame_id] = dist;
+            }
+            ++frame_id;
+        }
+        // std::cout << "\n\n\n\n";
+        return max_dists;
+    }
+
     double
     RobotCollision::MaxDistanceMeshes(const RS &state1, const RS &state2) const
     {
@@ -163,7 +189,6 @@ namespace Burs
                 // std::cout << "Num tris: " << num_tris << "\n";
                 auto tmpf2 = state2.frames[frame_id];
                 auto tmpf1 = state1.frames[frame_id];
-                tmpf1.M;
                 auto deltaR2 = tmpf2.M;
 
                 for (size_t i = 0; i < num_tris; ++i)

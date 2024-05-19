@@ -1,10 +1,10 @@
 ./build/jogramop-planners test \
--grasp jogramop/scenarios/043/export/grasps.csv \
+-grasp jogramop/scenarios/033/export/grasps.csv \
 -urdf jogramop/robots/franka_panda/mobile_panda_fingersSmallMesh.urdf \
--obstacle jogramop/scenarios/043/export/obstacles.obj \
--start_config jogramop/scenarios/043/export/robot_start_conf.csv \
+-obstacle jogramop/scenarios/033/export/obstacles.obj \
+-start_config jogramop/scenarios/033/export/robot_start_conf.csv \
 -planner 0 \
--max_iters 100000 \
+-max_iters 1000000 \
 -d_crit 0.03 \
 -delta_q 3.1415 \
 -epsilon_q 0.1 \
@@ -18,10 +18,10 @@
 -groundLevel 0.0 \
 -minColSegIdx 6 \
 -target_prefix lel \
--target_configs jogramop/scenarios/043/export/grasp_IK_solutions.csv \
+-target_configs jogramop/scenarios/033/export/grasp_IK_solutions.csv \
 -ik_index 0 \
 -bias_calculation 0 \
--render 1 \
+-render 0 \
 -vis_script scripts/animate_scene.py \
 -cx -3 \
 -cy 3 \

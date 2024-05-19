@@ -121,17 +121,6 @@ namespace Burs
             state.hasDistanceEstimate = true;
             break;
         }
-        case DistanceEstimateType::ProjectionRot:
-        {
-            VectorXd dists = this->env->robot->GetDistanceEstimatesWithRadii(state);
-            state.hasJacRadii = true;
-            state.radii = dists;
-            state.hasDistanceEstimate = true;
-            // std::cout << "ADDING PROJECTION +ROT RADII\n";
-            // std::cout << "r: " << state.radii.transpose() << "\n";
-            // exit(1);
-            break;
-        }
         default:
         {
             break;

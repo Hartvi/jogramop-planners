@@ -3,8 +3,8 @@
 -urdf jogramop/robots/franka_panda/mobile_panda.urdf \
 -obstacle jogramop/scenarios/021/export/obstacles.obj \
 -start_config jogramop/scenarios/021/export/robot_start_conf.csv \
--planner 96 \
--max_iters 100000 \
+-planner 95 \
+-max_iters 1000000 \
 -d_crit 0.03 \
 -delta_q 6.1415 \
 -epsilon_q 0.1 \

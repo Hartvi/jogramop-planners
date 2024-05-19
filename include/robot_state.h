@@ -17,7 +17,6 @@ namespace Burs
         JacPosRot,
         JacPos,
         Projection,
-        ProjectionRot,
         None
     };
 

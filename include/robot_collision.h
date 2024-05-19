@@ -40,6 +40,9 @@ namespace Burs
         double
         MaxDistance(const RS &state1, const RS &state2) const;
 
+        std::vector<double>
+        MaxDistanceMeshPositions(const RS &state1, const RS &state2) const;
+
         std::pair<Matrix3d, Vector3d>
         KDLFrameToEigen(const KDL::Frame &f);
 

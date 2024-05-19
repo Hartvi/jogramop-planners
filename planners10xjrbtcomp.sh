@@ -1,0 +1,1 @@
+python3 scripts/run_script.py -planners jrbt jrbtposrot -scenarios 011 012 013 014 015 021 022 023 024 025 031 032 033 034 035 041 042 043 044 045 -num_runs 10 -params prob_steer 0.1 collision_resolution 0.005 max_iters 1000000

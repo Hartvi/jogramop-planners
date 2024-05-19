@@ -1,12 +1,12 @@
+import time
+import math
+from scipy.spatial.transform import Rotation
+import numpy as np
+import bpy
 from datetime import datetime
 import os
 import sys
 sys.path.append("/usr/local/lib/python3.10/site-packages")
-import bpy
-import numpy as np
-from scipy.spatial.transform import Rotation
-import math
-import time
 
 
 scene = bpy.context.scene
@@ -43,7 +43,6 @@ def float_to_colour(val):
         return (modulus_val, 1, 1, 1)
 
 
-
 def load_csv_floats(csv_file):
     ret = list()
     with open(csv_file, "r") as f:
@@ -74,14 +73,19 @@ def vis_points(point_positions, max_frame=0):
         current_frame = i * max_frame / max_val
         newest_object.hide_viewport = True
         newest_object.hide_render = True
-        newest_object.keyframe_insert(data_path="hide_viewport", frame=current_frame - 1)
-        newest_object.keyframe_insert(data_path="hide_render", frame=current_frame - 1)
+        newest_object.keyframe_insert(
+            data_path="hide_viewport", frame=current_frame - 1)
+        newest_object.keyframe_insert(
+            data_path="hide_render", frame=current_frame - 1)
         newest_object.hide_viewport = False
         newest_object.hide_render = False
-        newest_object.keyframe_insert(data_path="hide_viewport", frame=current_frame)
-        newest_object.keyframe_insert(data_path="hide_render", frame=current_frame)
+        newest_object.keyframe_insert(
+            data_path="hide_viewport", frame=current_frame)
+        newest_object.keyframe_insert(
+            data_path="hide_render", frame=current_frame)
 
-        newest_object.keyframe_insert(data_path="location", frame=current_frame)
+        newest_object.keyframe_insert(
+            data_path="location", frame=current_frame)
 
 
 def cylinder_between(x1, y1, z1, x2, y2, z2, r, mat=None, reuse_cyl=None):
@@ -213,6 +217,7 @@ def get_newest_object():
 
     return newest_object
 
+
 """
         quad_vel.location = [px, py, pz]
         quad_vel.rotation_euler = rotation
@@ -223,10 +228,12 @@ def get_newest_object():
         quad_vel.keyframe_insert(data_path="scale", frame=frame)
 """
 
+
 class ObjectMode:
-    none=-1
-    robot=0
-    obstacle=1
+    none = -1
+    robot = 0
+    obstacle = 1
+
 
 def render_env(path_to_file, extra_points_file=None, tree_points_file=None):
 
@@ -238,14 +245,14 @@ def render_env(path_to_file, extra_points_file=None, tree_points_file=None):
         with open(extra_points_file, "r") as f:
             lines = f.read().split("\n")
             for k in range(len(lines)):
-                T = np.zeros((4,4))
+                T = np.zeros((4, 4))
                 numbers = lines[k].split(",")
-                
+
                 try:
                     values = list(map(float, numbers))
                     for i in range(16):
-                        T[i//4, i%4] = values[i]
-                        
+                        T[i//4, i % 4] = values[i]
+
                     # rotation: Rotation = Rotation.from_matrix(T)
                     # euler = rotation.as_euler('xyz', False)
 
@@ -253,10 +260,12 @@ def render_env(path_to_file, extra_points_file=None, tree_points_file=None):
                         # current_object.rotation_euler[i] = euler[i]
 
                     position = T[:3, 3]
-                    current_object = create_point(position, (1, 0, 0, 1), 0.015)
+                    current_object = create_point(
+                        position, (1, 0, 0, 1), 0.015)
                     # print("position: ", position)
                     newest_object = bpy.context.object
-                    newest_object.keyframe_insert(data_path="location", frame=0)
+                    newest_object.keyframe_insert(
+                        data_path="location", frame=0)
                 except:
                     print("invalid data:", numbers)
                     pass
@@ -267,20 +276,20 @@ def render_env(path_to_file, extra_points_file=None, tree_points_file=None):
         lines = f.read().split("\n")
         k = 0
         built_models = dict()
-        
+
         frame = -1
         # changes the speed at which it animates. Higher = slower
         frame_increment = 1
 
         while k < len(lines):
-            ## currently displaying robot segments: THEY ARE UNIQUE, SO NO ID NEEDED
+            # currently displaying robot segments: THEY ARE UNIQUE, SO NO ID NEEDED
             object_mode = ObjectMode.none
             model_id = None
 
-            ## line: `robot,segment_id``
+            # line: `robot,segment_id``
             if "robot" in lines[k]:
 
-                ## for frame counting: when it changes to robot base segment, increment frame since it moved
+                # for frame counting: when it changes to robot base segment, increment frame since it moved
                 line_split = lines[k].split(",")
 
                 if len(line_split) > 1:
@@ -303,13 +312,13 @@ def render_env(path_to_file, extra_points_file=None, tree_points_file=None):
                 model_name = lines[k]
 
                 if object_mode == ObjectMode.obstacle:
-                    ... ## handled above
+                    ...  # handled above
                 elif object_mode == ObjectMode.robot:
                     model_id = model_name
 
                 if not model_id in built_models:
                     import_obj(model_name)
-                    ## bpy.context.object
+                    # bpy.context.object
                     newest_object = get_newest_object()
                     built_models[model_id] = newest_object
 
@@ -319,24 +328,25 @@ def render_env(path_to_file, extra_points_file=None, tree_points_file=None):
                 for _ in range(2):
                     if "R" in lines[k]:
                         k += 1
-                        T = np.zeros((3,3))
+                        T = np.zeros((3, 3))
                         for i in range(3):
                             numbers = lines[k].split(",")
                             while "" in numbers:
                                 numbers.remove("")
                             values = list(map(float, numbers))
                             for j in range(3):
-                                T[i,j] = values[j]
-                            
+                                T[i, j] = values[j]
+
                             k += 1
-                        
+
                         rotation: Rotation = Rotation.from_matrix(T)
                         euler = rotation.as_euler('xyz', False)
 
                         for i in range(3):
                             current_object.rotation_euler[i] = euler[i]
 
-                        current_object.keyframe_insert(data_path="rotation_euler", frame=frame)
+                        current_object.keyframe_insert(
+                            data_path="rotation_euler", frame=frame)
 
                         # quat = rotation.as_quat(True)
                         # current_object.rotation_mode = "QUATERNION"
@@ -346,7 +356,6 @@ def render_env(path_to_file, extra_points_file=None, tree_points_file=None):
                         # # insert frame of current rotation
                         # current_object.keyframe_insert(data_path="rotation_quaternion", frame=frame)
 
-                        
                     if "t" in lines[k] and len(lines[k]) < 2 or "t," in lines[k] and len(lines[k]) < 3:
                         k += 1
                         t = np.zeros((3, ))
@@ -356,14 +365,15 @@ def render_env(path_to_file, extra_points_file=None, tree_points_file=None):
                         values = list(map(float, numbers))
                         for j in range(3):
                             t[j] = values[j]
-                        
+
                         k += 1
 
                         for i in range(3):
                             current_object.location[i] = t[i]
 
-                        ## insert frame of current rotation
-                        current_object.keyframe_insert(data_path="location", frame=frame)
+                        # insert frame of current rotation
+                        current_object.keyframe_insert(
+                            data_path="location", frame=frame)
 
             k += 1
 
@@ -415,15 +425,16 @@ def render_animation(frame_start, frame_end, frame_step):
 
 
 if __name__ == "__main__":
-    test_path = "/home/hartvi/Documents/CVUT/diploma_thesis/burs_of_free_space/lel.try"
-    grasps_file = "/home/hartvi/Documents/CVUT/diploma_thesis/burs_of_free_space/jogramop/scenarios/005/export/grasps.csv"
+    test_path = "/home/hartvi/Documents/CVUT/diploma_thesis/burs_of_free_space/lel.vis"
+    # grasps_file = "/home/hartvi/Documents/CVUT/diploma_thesis/burs_of_free_space/jogramop/scenarios/005/export/grasps.csv"
+    grasps_file = None
     tree_file = None
     camX = -3
     camY = 2
-    camZ = 7
+    camZ = 3
     if len(sys.argv) > 1:
         test_path = sys.argv[1]
-        print("try file",test_path)
+        print("try file", test_path)
         camX = float(sys.argv[2])
         camY = float(sys.argv[3])
         camZ = float(sys.argv[4])

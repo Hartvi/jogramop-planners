@@ -51,7 +51,7 @@ params["-max_iters"] = 100000
 params["-d_crit"] = 0.03
 params["-delta_q"] = 6.2
 params["-epsilon_q"] = 0.1
-params["-num_spikes"] = 2
+params["-num_spikes"] = 7
 params["-p_close_enough"] = 50.0
 params["-prob_steer"] = 0.05
 params["-q_resolution"] = 0.1
@@ -139,7 +139,7 @@ def n_runs(binary_path, tmp_params: dict, planner_id: int, scenario: str, n: int
 
 
 # CUSTOM FUNCTIONS
-def run_ALL_SCENARIOS(binary_path, tmp_params: dict, planners: list[str], n: int = 100, t: int = 30, directory: str = "results/"):
+def run_ALL_SCENARIOS(binary_path, tmp_params: dict, planners: list[str], n: int = 100, t: int = 60, directory: str = "results/"):
     assert (directory[-1] == "/")
     dirs = directory.split("/")
     os.makedirs(directory, exist_ok=True)
@@ -152,7 +152,7 @@ def run_ALL_SCENARIOS(binary_path, tmp_params: dict, planners: list[str], n: int
     return command_str
 
 
-def run_scenarios(binary_path, tmp_params: dict, planners: list[str], scenarios: list[str], n: int = 100, t: int = 30, directory: str = "results/"):
+def run_scenarios(binary_path, tmp_params: dict, planners: list[str], scenarios: list[str], n: int = 100, t: int = 60, directory: str = "results/"):
     assert (directory[-1] == "/")
     os.makedirs(directory, exist_ok=True)
 

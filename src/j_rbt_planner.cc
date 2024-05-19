@@ -321,16 +321,12 @@ namespace Burs
             getTime(&tt1);
             if (!near_state->hasClosestDists)
             {
-                // if (this->IsColliding(*near_state))
-                // {
-                //     throw std::runtime_error("NEAR STATE COLLIDING => DISTANCE WOULD BE ZERO");
-                // }
                 auto [d_closest_idx, ds_closest] = this->GetClosestDistances(*near_state);
                 near_state->hasClosestDists = true;
                 near_state->closest_distance_ids = d_closest_idx;
                 near_state->closest_dists = ds_closest;
                 ++numberOfDistanceChecks;
-                // std::cout << "dclosest: " << ds_closest[d_closest_idx] << "\n";
+                // std::cout << "checking dist\n";
             }
             double d_closest = near_state->closest_dists[near_state->closest_distance_ids[0]];
             getTime(&tt2);
@@ -349,11 +345,7 @@ namespace Burs
                 totalCollideAndAddTime += getTime(tt1, tt2);
                 if (step_result >= 0)
                 {
-                    // if (this->IsColliding(*tree->Get(step_result)))
-                    // {
-                    //     std::cout << "RRT STEP COLLIDING\n";
-                    //     throw std::runtime_error("RRT STEP COLLIDING");
-                    // }
+                    // std::cout << "added rrt step\n";
                     getTime(&tt1);
                     this->SetGraspClosestConfigs(plan_params, tree, step_result);
                     getTime(&tt2);
@@ -363,12 +355,14 @@ namespace Burs
             }
             else // REGULAR BUR
             {
-                double distance_to_move = d_closest;
+                // std::cout << "creating bur\n";
+                // double distance_to_move = d_closest;
                 getTime(&tt1);
-                std::vector<RS> endpoints = this->GetEndpointsGeneral(*near_state, Qe_states, distance_to_move, plan_params.distanceEstimateType);
+                std::vector<RS> endpoints = this->GetEndpointsGeneral(*near_state, Qe_states, plan_params.distanceEstimateType);
                 getTime(&tt2);
                 totalGetEndpointsTime += getTime(tt1, tt2);
 
+                // std::cout << "endpoints size: " << endpoints.size() << "\n";
                 for (unsigned int i = 0; i < endpoints.size(); ++i)
                 {
                     // if (this->IsColliding(endpoints[i]))
@@ -381,6 +375,7 @@ namespace Burs
                     // {
                     getTime(&tt1);
                     int res = tree->AddNode(nearest_idx, endpoints[i]);
+                    // std::cout << "adding node\n";
                     totalCollideAndAddTime += getTime(tt1, tt2);
                     getTime(&tt2);
                     getTime(&tt1);

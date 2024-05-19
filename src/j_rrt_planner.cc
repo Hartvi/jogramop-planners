@@ -237,7 +237,6 @@ namespace Burs
             {
             case (DistanceEstimateType::JacPos):
             case (DistanceEstimateType::Projection):
-            case (DistanceEstimateType::ProjectionRot):
             {
                 this->AddDistanceEstimates(*best_state, DistanceEstimateType::JacPos);
                 break;
@@ -316,7 +315,6 @@ namespace Burs
             {
             case (DistanceEstimateType::JacPos):
             case (DistanceEstimateType::Projection):
-            case (DistanceEstimateType::ProjectionRot):
             {
                 this->AddDistanceEstimates(near_state, DistanceEstimateType::JacPos);
                 break;

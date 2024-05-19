@@ -454,17 +454,89 @@ int main(int argc, char **argv)
 
         //     break;
         // }
+        case 95:
+        {
+            std::cout << " testing forward kinematics speeds\n";
+            struct rusage t1, t2;
+            getTime(&t1);
+
+            auto chain = jprbt->env->robot->kdl_chain;
+            for (size_t i = 0; i < params.max_iters; ++i)
+            {
+                KDL::JntArray q_kdl;
+                q_kdl.data = start_config;
+
+                KDL::Frame p_out;
+
+                KDL::ChainFkSolverPos_recursive fk_solver(chain);
+                for (size_t k = 0; k < chain.getNrOfSegments(); ++k)
+                {
+                    if (fk_solver.JntToCart(q_kdl, p_out, k + 1) < 0)
+                    {
+                        throw std::runtime_error("RobotBase::ForwardPass failed.");
+                    }
+                }
+            }
+            getTime(&t2);
+            std::cout << "time of bad forward kinematics: " << getTime(t1, t2) << "\n";
+
+            getTime(&t1);
+            for (size_t i = 0; i < params.max_iters; ++i)
+            {
+                KDL::JntArray q_kdl;
+                q_kdl.data = start_config;
+
+                std::vector<KDL::Frame> p_out(chain.getNrOfSegments());
+
+                KDL::ChainFkSolverPos_recursive fk_solver(chain);
+                if (fk_solver.JntToCart(q_kdl, p_out) < 0)
+                {
+                    throw std::runtime_error("RobotBase::ForwardPass failed.");
+                }
+            }
+            getTime(&t2);
+            std::cout << "time of good forward kinematics: " << getTime(t1, t2) << "\n";
+
+            /*
+            distance check always:
+            simple mesh:
+            6,
+            5,
+            4.5,
+            4.1
+            full mesh:
+            31.8,
+            19.2,
+            18.4,
+            17.7
+            */
+            /*
+            distance check once:
+            simple mesh:
+            2.5,
+            1.5,
+            1.2,
+            0.76
+            full mesh:
+            14,
+            1.6,
+            1.2,
+            0.76
+            */
+            exit(0);
+            break;
+        }
         case 96:
         {
             std::cout << " testing distance estimate + bur speeds\n";
             struct rusage t1, t2;
-            for (int j = 0; j < 4; ++j)
+            RS start_state = jprbt->NewState(start_config, DistanceEstimateType::JacPosRot);
+            for (int j = 0; j < 3; ++j)
             {
                 getTime(&t1);
-                RS start_state = jprbt->NewState(start_config, DistanceEstimateType::JacPosRot);
+                double d_c = jprbt->GetClosestDistance(start_state);
                 for (int i = 0; i < params.max_iters; ++i)
                 {
-                    double d_c = jprbt->GetClosestDistance(start_state);
                     Eigen::MatrixXd rand_configs = jprbt->GetRandomQ(params.num_spikes);
                     for (int i = 0; i < params.num_spikes; ++i)
                     {
@@ -477,6 +549,20 @@ int main(int argc, char **argv)
                 double t = getTime(t1, t2);
                 std::cout << "time of " << j << ": " << t << "\n";
             }
+            getTime(&t1);
+            std::shared_ptr<BurTree> t = std::make_shared<BurTree>(start_state, jprbt->q_dim);
+            for (int i = 0; i < params.max_iters; ++i)
+            {
+                for (int k = 0; k < params.num_spikes; ++k)
+                {
+                    Eigen::VectorXd rand_config = jprbt->GetRandomQ(1);
+                    RS rand_state = jprbt->NewState(rand_config);
+                    jprbt->RRTStepInQ(t, 0, rand_state, params.epsilon_q, params.collision_resolution);
+                }
+            }
+            getTime(&t2);
+            double measured_time = getTime(t1, t2);
+            std::cout << "time of rrt steps: " << measured_time << "\n";
 
             /*
             distance check always:
