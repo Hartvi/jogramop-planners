@@ -534,7 +534,10 @@ int main(int argc, char **argv)
             for (int j = 0; j < 3; ++j)
             {
                 getTime(&t1);
-                double d_c = jprbt->GetClosestDistance(start_state);
+                auto [dci, dc] = jprbt->GetClosestDistances(start_state);
+                start_state.closest_distance_ids = dci;
+                start_state.closest_dists = dc;
+                start_state.hasClosestDists = true;
                 for (int i = 0; i < params.max_iters; ++i)
                 {
                     Eigen::MatrixXd rand_configs = jprbt->GetRandomQ(params.num_spikes);
@@ -543,7 +546,7 @@ int main(int argc, char **argv)
                         rand_configs.col(i) = start_state.config + params.delta_q * rand_configs.col(i).normalized();
                     }
                     std::vector<RS> new_states = jprbt->NewStates(rand_configs, DistanceEstimateType::None);
-                    jprbt->GetEndpointsGeneral(start_state, new_states, d_c, (DistanceEstimateType)j);
+                    jprbt->GetEndpointsGeneral(start_state, new_states, (DistanceEstimateType)j, false);
                 }
                 getTime(&t2);
                 double t = getTime(t1, t2);

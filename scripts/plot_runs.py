@@ -35,11 +35,9 @@ def get_planners_on_scenarios(planner_ids: list[str], scenario_ids: list[str], f
 
 if __name__ == "__main__":
 
-    parser: argparse.ArgumentParser = argparse.ArgumentParser(
-        description="Process the results")
+    parser = argparse.ArgumentParser(description="Process the results")
 
-    parser.add_argument('-results', nargs=1,
-                        help='Results directory')
+    parser.add_argument('-results', nargs=1, help='Results directory')
 
     args = parser.parse_args()
     if not args.results:
@@ -55,6 +53,7 @@ if __name__ == "__main__":
     # planners = ["ikrrt"]
     linestyles = ["-.", "--", ":"]
     planner_colours = [(1, 0, 0), (1, 0.5, 0), (0, 0.8, 0)]
+
     for scenario in ALL_SCENARIOS:
         planners_on_scenarios = get_planners_on_scenarios(
             planners, [scenario], txts)
@@ -84,13 +83,17 @@ if __name__ == "__main__":
             plot_vals = times_vals[np.argsort(times_vals[:, 0])]
             plot_vals[:, 1] = np.cumsum(plot_vals[:, 1]) / len(p) * 100
             ax.plot(np.concatenate([[0], plot_vals[:, 0]]), np.concatenate([[0], plot_vals[:, 1]]),
-                    label=planners[l], linestyle=linestyles[l % len(linestyles)], linewidth=2)
-            ax.set_xlabel("Time [s]")
-            ax.set_ylabel("Success rate [%]")
+                    label=planners[l], linestyle=linestyles[l % len(linestyles)], linewidth=4)
+            ax.set_xlabel("Time [s]", fontsize=18)
+            ax.set_ylabel("Success rate [%]", fontsize=18)
+            ax.tick_params(axis='both', which='major', labelsize=18)
 
-        ax.legend(loc='upper right')  # Changed here
-        ax.set_title("Scenario "+str(scenario))
-        fig.savefig(os.path.join(my_results, "scenario-"+str(scenario)+".png"))
+        ax.legend(loc='upper right', fontsize=18)
+        ax.set_title("Scenario " + str(scenario), fontsize=22)
+        fig.savefig(os.path.join(
+            my_results, "scenario-" + str(scenario) + ".png"), bbox_inches='tight')
+        plt.close(fig)
+
     planners_on_scenarios = get_planners_on_scenarios(
         planners, ALL_SCENARIOS, txts)
 
@@ -110,9 +113,13 @@ if __name__ == "__main__":
         plot_vals = times_vals[np.argsort(times_vals[:, 0])]
         plot_vals[:, 1] = np.cumsum(plot_vals[:, 1]) / len(p) * 100
         ax.plot(np.concatenate([[0], plot_vals[:, 0]]), np.concatenate([[0], plot_vals[:, 1]]),
-                label=planners[l], linestyle=linestyles[l % len(linestyles)], linewidth=2)
-        ax.set_xlabel("Time [s]")
-        ax.set_ylabel("Success rate [%]")
+                label=planners[l], linestyle=linestyles[l % len(linestyles)], linewidth=4)
+        ax.set_xlabel("Time [s]", fontsize=18)
+        ax.set_ylabel("Success rate [%]", fontsize=18)
+        ax.tick_params(axis='both', which='major', labelsize=18)
 
-    ax.legend(loc='upper left')  # Changed here
-    fig.savefig(os.path.join(my_results, "scenario-ALL.png"))
+    ax.legend(loc='upper left', fontsize=18)
+    ax.set_title("Scenario ALL", fontsize=22)
+    fig.savefig(os.path.join(my_results, "scenario-ALL.png"),
+                bbox_inches='tight')
+    plt.close(fig)

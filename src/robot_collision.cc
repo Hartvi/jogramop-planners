@@ -152,6 +152,7 @@ namespace Burs
         // TODO: for small changes this should return small values
         auto f1 = state1.frames;
         auto f2 = state2.frames;
+        std::cout << "f2 frames: " << f2.size() << "\n";
         std::vector<double> max_dists(this->numberOfModels);
         int frame_id = 0;
         for (auto &it : this->segmentIdToModel)

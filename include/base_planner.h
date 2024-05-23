@@ -36,7 +36,7 @@ namespace Burs
         GetDeltaTkGeneral(const RS &state_near, double tk, const RS &end_state, const RS &k_state, const DistanceEstimateType &det, const bool &expanded_bubble = true) const;
 
         std::vector<RS>
-        GetEndpointsGeneral(RS &state_near, const std::vector<RS> &rand_states, const DistanceEstimateType &det, const size_t &max_iters = 5, const bool &expanded_bubble = true);
+        GetEndpointsGeneral(RS &state_near, const std::vector<RS> &rand_states, const DistanceEstimateType &det, const size_t &max_iters = 5, const bool &expanded_bubble = false);
 
         std::vector<RS>
         GetEndpointsGeometry(const RS &state_near, const std::vector<RS> &rand_states, double d_max);

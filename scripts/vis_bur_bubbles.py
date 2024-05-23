@@ -83,7 +83,7 @@ class LineRobot:
     def scatter_distance_configs(self, q: np.ndarray, max_dist, ax: plt.axes, color) -> list[list[float]]:
         epsilon_q = 0.01
         rotation_resolution = 7
-        rotation_resolution_edge = 10000
+        rotation_resolution_edge = 1000
         self.scatter_config(q, ax, color)
         tmp_configs = list()
         for i in range(rotation_resolution_edge):
@@ -327,7 +327,7 @@ class Env:
 
 
 if __name__ == "__main__":
-    plot_thing = 2
+    plot_thing = 0
     robot = LineRobot([1.0, 0.5])
     # test_config = [1.57/2, 1.57/2]
     test_config = [0, -1.57/2]

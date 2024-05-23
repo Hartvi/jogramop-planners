@@ -23,11 +23,11 @@ find_package(yaml-cpp REQUIRED)
 # Include directories
 include_directories(include /usr/local/include /usr/include /usr/local/include/eigen3)
 
-#add_compile_options(-O2)     
+add_compile_options(-O2)     
 
 #for profilling, slows down the code a lot!!!!    
-add_compile_options(-ggdb3 -pg )     
-add_link_options(-ggdb3 -pg )     
+#add_compile_options(-ggdb3 -pg )     
+#add_link_options(-ggdb3 -pg )     
 
 
 # 2. cmake .

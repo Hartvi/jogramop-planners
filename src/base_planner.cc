@@ -126,7 +126,7 @@ namespace Burs
             double tk = 0;
 
             // always start out from the center
-            RS state_k;
+            RS state_k = state_near;
             // double phi_result = d_max;
             const RS &end_state = rand_states[i];
             // double delta_tk = this->GetDeltaTkGeneral(phi_result, tk, end_state, state_near, det, expanded_bubble);
