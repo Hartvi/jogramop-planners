@@ -26,11 +26,11 @@ namespace Burs
 
         virtual ~BasePlanner() = default;
 
-        double
-        GetDeltaTk(double phi_tk, double tk, const RS &end_state, const RS &k_state) const;
+        // double
+        // GetDeltaTk(double phi_tk, double tk, const RS &end_state, const RS &k_state) const;
 
-        double
-        GetDeltaTkGeometry(double phi_tk, double tk, const RS &end_state, const RS &k_state) const;
+        // double
+        // GetDeltaTkGeometry(double phi_tk, double tk, const RS &end_state, const RS &k_state) const;
 
         double
         GetDeltaTkGeneral(const RS &state_near, double tk, const RS &end_state, const RS &k_state, const DistanceEstimateType &det, const bool &expanded_bubble = true) const;
@@ -38,17 +38,17 @@ namespace Burs
         std::vector<RS>
         GetEndpointsGeneral(RS &state_near, const std::vector<RS> &rand_states, const DistanceEstimateType &det, const size_t &max_iters = 5, const bool &expanded_bubble = false);
 
-        std::vector<RS>
-        GetEndpointsGeometry(const RS &state_near, const std::vector<RS> &rand_states, double d_max);
+        // std::vector<RS>
+        // GetEndpointsGeometry(const RS &state_near, const std::vector<RS> &rand_states, double d_max);
 
-        std::vector<RS>
-        GetEndpointsCollisionCheck(const RS &state_near, const std::vector<RS> &rand_states, double d_max) const;
+        // std::vector<RS>
+        // GetEndpointsCollisionCheck(const RS &state_near, const std::vector<RS> &rand_states, double d_max) const;
 
-        std::vector<RS>
-        GetEndpointsCollisionCheckOriginal(const RS &state_near, const std::vector<RS> &rand_states, double d_max) const;
+        // std::vector<RS>
+        // GetEndpointsCollisionCheckOriginal(const RS &state_near, const std::vector<RS> &rand_states, double d_max) const;
 
-        std::vector<RS>
-        GetEndpoints(const RS &state_near, const std::vector<RS> &rand_states, double d_max) const;
+        // std::vector<RS>
+        // GetEndpoints(const RS &state_near, const std::vector<RS> &rand_states, double d_max) const;
 
         // EXAMPLE USAGE OF BASIC FUNCTIONS
         void

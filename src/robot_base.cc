@@ -20,6 +20,11 @@ namespace Burs
 
     RobotBase::RobotBase(std::string urdf_filename)
     {
+        if (!std::filesystem::exists(urdf_filename))
+        {
+            std::cerr << "Error: File " << urdf_filename << " does not exist." << std::endl;
+            throw std::runtime_error("URDF file doesn't exist " + urdf_filename);
+        }
         this->urdf_file = std::filesystem::absolute(urdf_filename);
 
         auto opt_robot = this->GetRobotURDF(urdf_filename);

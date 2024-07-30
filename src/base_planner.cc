@@ -16,8 +16,6 @@ namespace Burs
         std::shared_ptr<BaseEnv> my_env = std::make_shared<BaseEnv>(path_to_urdf_file);
 
         this->SetEnv(my_env);
-        // this->epsilon_q = some random number
-        // this->max_iters = some random number
 
         std::vector<std::vector<double>>
             min_max_bounds = this->env->robot->GetMinMaxBounds();
@@ -34,29 +32,9 @@ namespace Burs
             }
         }
         this->bounds = minMaxBounds;
-
-        // this->myEnv = this->GetEnv<URDFEnv>();
-        // this->myRobot = this->myEnv->robot;
     }
 
     BasePlanner::BasePlanner() {}
-
-    double
-    BasePlanner::GetDeltaTkGeometry(double phi_tk, double tk, const RS &end_state, const RS &k_state) const
-    {
-        VectorXd deltaConfigs = (end_state.config - k_state.config).cwiseAbs();
-        // radii are positive => can add the vectors then dot product
-        VectorXd radiiSum = k_state.radii + k_state.rigidRadii;
-        double denominator = deltaConfigs.dot(radiiSum);
-        return phi_tk * (1.0 - tk) / denominator;
-    }
-
-    double
-    BasePlanner::GetDeltaTk(double phi_tk, double tk, const RS &end_state, const RS &k_state) const
-    {
-        double denominator = (end_state.config - k_state.config).cwiseAbs().dot(k_state.radii);
-        return phi_tk * (1.0 - tk) / denominator;
-    }
 
     double
     BasePlanner::GetDeltaTkGeneral(const RS &state_near, double tk, const RS &end_state, const RS &k_state, const DistanceEstimateType &det, const bool &expanded_bubble) const
@@ -113,8 +91,6 @@ namespace Burs
     std::vector<RS>
     BasePlanner::GetEndpointsGeneral(RS &state_near, const std::vector<RS> &rand_states, const DistanceEstimateType &det, const size_t &max_iters, const bool &expanded_bubble)
     {
-        // double d_small = 0.1 * d_max;
-
         std::vector<RS> new_states;
         if (!state_near.hasDistanceEstimate)
         {
@@ -127,10 +103,7 @@ namespace Burs
 
             // always start out from the center
             RS state_k = state_near;
-            // double phi_result = d_max;
             const RS &end_state = rand_states[i];
-            // double delta_tk = this->GetDeltaTkGeneral(phi_result, tk, end_state, state_near, det, expanded_bubble);
-            // double max_travelled_dist = 0;
 
             size_t k = 0;
             while (true)
@@ -154,208 +127,27 @@ namespace Burs
                     continue;
                 }
             }
-            // state_k.distanceFromParent = max_travelled_dist;
-            // state_k.hasDistFromParent = true;
             new_states.push_back(state_k);
         }
         return new_states;
     }
 
-    std::vector<RS>
-    BasePlanner::GetEndpointsGeometry(const RS &state_near, const std::vector<RS> &rand_states, double d_max)
-    {
-        double d_small = 0.1 * d_max;
+    // double
+    // BasePlanner::GetDeltaTkGeometry(double phi_tk, double tk, const RS &end_state, const RS &k_state) const
+    // {
+    //     VectorXd deltaConfigs = (end_state.config - k_state.config).cwiseAbs();
+    //     // radii are positive => can add the vectors then dot product
+    //     VectorXd radiiSum = k_state.radii + k_state.rigidRadii;
+    //     double denominator = deltaConfigs.dot(radiiSum);
+    //     return phi_tk * (1.0 - tk) / denominator;
+    // }
 
-        std::vector<RS> new_states;
-        new_states.reserve(rand_states.size());
-
-        for (int i = 0; i < rand_states.size(); ++i)
-        {
-            double tk = 0;
-
-            // always start out from the center
-            RS state_k = state_near;
-            double phi_result = d_max;
-            double max_travelled_dist = 0;
-
-            const RS &end_state = rand_states[i];
-
-            // They said 4-5 iterations to reach 0.1*closest_distance
-            // So either:
-            //  1. iterate until 0.1*dc
-            //  2. 4-5 iterations
-            size_t k = 0;
-            // for (; phi_result > d_small; ++k)
-            for (; k < 6; ++k)
-            {
-                double delta_tk = this->GetDeltaTkGeometry(phi_result, tk, end_state, state_k);
-
-                tk = tk + delta_tk;
-                VectorXd q_k = state_near.config + tk * (end_state.config - state_near.config);
-                state_k = this->NewState(q_k, DistanceEstimateType::JacPosRot);
-                max_travelled_dist = this->env->robot->MaxDistanceMeshes(state_near, state_k);
-                phi_result = d_max - max_travelled_dist;
-            }
-            // std::cout << "k: " << k << " max travelled dist: " << max_travelled_dist << " d_c: " << d_max << "\n";
-            // the below has never actually happened
-            // if (max_travelled_dist > d_max)
-            // {
-            //     std::cout << "k: " << k << " max travelled dist: " << max_travelled_dist << " d_c: " << d_max << "\n";
-            //     throw std::runtime_error("MAX TRAVELED DIST > DMAX");
-            // }
-            state_k.distanceFromParent = max_travelled_dist;
-            state_k.hasDistFromParent = true;
-            new_states.push_back(state_k);
-        }
-        return new_states;
-    }
-
-    std::vector<RS>
-    BasePlanner::GetEndpointsCollisionCheck(const RS &state_near, const std::vector<RS> &rand_states, double d_max) const
-    {
-        double d_small = 0.1 * d_max;
-
-        std::vector<RS> new_states;
-        // new_states.reserve(rand_states.size());
-
-        for (int i = 0; i < rand_states.size(); ++i)
-        {
-            double tk = 0;
-            double max_travelled_dist = 0;
-
-            // always start out from the center
-            RS state_k = state_near;
-            double phi_result = d_max;
-
-            const RS &end_state = rand_states[i];
-
-            // They said 4-5 iterations to reach 0.1*closest_distance
-            // So either:
-            //  1. iterate until 0.1*dc
-            //  2. 4-5 iterations
-            size_t k = 0;
-            bool hasCollided = false;
-            for (; k < 5; ++k)
-            {
-                double delta_tk = this->GetDeltaTk(phi_result, tk, end_state, state_k);
-
-                // has actually never reached > 1
-                tk = tk + delta_tk;
-                // q_k = q_near + tk * (q_e - q_near);
-                VectorXd q_k = state_near.config + tk * (end_state.config - state_near.config);
-                state_k = this->NewState(q_k, DistanceEstimateType::Projection);
-                max_travelled_dist = this->env->robot->MaxDistance(state_near, state_k);
-                phi_result = d_max - max_travelled_dist;
-            }
-            if (this->IsColliding(state_k))
-            {
-                hasCollided = true;
-                break;
-            }
-            if (!hasCollided)
-            {
-                state_k.distanceFromParent = max_travelled_dist;
-                state_k.hasDistFromParent = true;
-                new_states.push_back(state_k);
-            }
-        }
-        return new_states;
-    }
-
-    std::vector<RS>
-    BasePlanner::GetEndpointsCollisionCheckOriginal(const RS &state_near, const std::vector<RS> &rand_states, double d_max) const
-    {
-        double d_small = 0.1 * d_max;
-
-        std::vector<RS> new_states;
-        // new_states.reserve(rand_states.size());
-
-        for (int i = 0; i < rand_states.size(); ++i)
-        {
-            double tk = 0;
-            double max_travelled_dist = 0;
-
-            // always start out from the center
-            RS state_k = state_near;
-            double phi_result = d_max;
-
-            const RS &end_state = rand_states[i];
-
-            // They said 4-5 iterations to reach 0.1*closest_distance
-            // So either:
-            //  1. iterate until 0.1*dc
-            //  2. 4-5 iterations
-            size_t k = 0;
-            bool hasCollided = false;
-            for (; k < 5; ++k)
-            {
-                double delta_tk = this->GetDeltaTk(phi_result, tk, end_state, state_k);
-                // has actually never reached > 1
-                tk = tk + delta_tk;
-                // q_k = q_near + tk * (q_e - q_near);
-                VectorXd q_k = state_near.config + tk * (end_state.config - state_near.config);
-                state_k = this->NewState(q_k, DistanceEstimateType::Projection);
-                max_travelled_dist = this->env->robot->MaxDistance(state_near, state_k);
-                phi_result = d_max - max_travelled_dist;
-            }
-            if (this->IsColliding(state_k))
-            {
-                hasCollided = true;
-                break;
-            }
-            if (!hasCollided)
-            {
-                state_k.distanceFromParent = max_travelled_dist;
-                state_k.hasDistFromParent = true;
-                new_states.push_back(state_k);
-            }
-        }
-        return new_states;
-    }
-
-    std::vector<RS>
-    BasePlanner::GetEndpoints(const RS &state_near, const std::vector<RS> &rand_states, double d_max) const
-    {
-        double d_small = 0.1 * d_max;
-
-        std::vector<RS> new_states;
-        new_states.reserve(rand_states.size());
-
-        for (int i = 0; i < rand_states.size(); ++i)
-        {
-
-            double tk = 0;
-            double max_travelled_dist = 0;
-
-            // always start out from the center
-            RS state_k = state_near;
-            double phi_result = d_max;
-
-            const RS &end_state = rand_states[i];
-
-            // They said 4-5 iterations to reach 0.1*closest_distance
-            // So either:
-            //  1. iterate until 0.1*dc
-            //  2. 4-5 iterations
-            // for (unsigned int k = 0; k < 5; ++k)
-            for (unsigned int k = 0; k < 5 && phi_result > d_small; ++k)
-            {
-                double delta_tk = this->GetDeltaTk(phi_result, tk, end_state, state_k);
-
-                tk = tk + delta_tk;
-                // has actually never reached > 1
-                // q_k = q_near + tk * (q_e - q_near);
-                VectorXd q_k = state_near.config + tk * (end_state.config - state_near.config);
-                state_k = this->NewState(q_k, DistanceEstimateType::Projection);
-                max_travelled_dist = this->env->robot->MaxDistance(state_near, state_k);
-                phi_result = d_max - max_travelled_dist;
-            }
-            state_k.distanceFromParent = max_travelled_dist;
-            state_k.hasDistFromParent = true;
-            new_states.push_back(state_k);
-        }
-        return new_states;
-    }
+    // double
+    // BasePlanner::GetDeltaTk(double phi_tk, double tk, const RS &end_state, const RS &k_state) const
+    // {
+    //     double denominator = (end_state.config - k_state.config).cwiseAbs().dot(k_state.radii);
+    //     return phi_tk * (1.0 - tk) / denominator;
+    // }
 
     int
     BasePlanner::AddObstacle(std::string obstacle_file, Eigen::Matrix3d R, Eigen::Vector3d t)

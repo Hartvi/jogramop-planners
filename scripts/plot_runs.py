@@ -37,11 +37,11 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Process the results")
 
-    parser.add_argument('-results', nargs=1, help='Results directory')
+    parser.add_argument('--results', nargs=1, help='Results directory')
 
     args = parser.parse_args()
     if not args.results:
-        print("ENTER RESULTS DIRECTORY e.g. `-results path/to/results/dir`")
+        print("ENTER RESULTS DIRECTORY e.g. `--results path/to/results/dir`")
         exit(1)
     my_results = args.results[0]
 

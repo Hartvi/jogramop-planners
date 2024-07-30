@@ -1,1 +1,0 @@
-python3 scripts/run_script.py -planners jrrt jrbt ikrrt -scenarios 014 024 034 044 -num_runs 100 -params collision_resolution 0.005 max_iters 1000000

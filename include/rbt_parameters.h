@@ -23,14 +23,14 @@ namespace Burs
         int num_spikes;
         int seed;
 
-        RbtParameters(int max_iters, double d_crit, double delta_q, double epsilon_q, int num_spikes, double q_resolution)
-            : RRTParameters(max_iters, epsilon_q, q_resolution),
+        RbtParameters(int max_iters, double d_crit, double delta_q, double epsilon_q, int num_spikes)
+            : RRTParameters(max_iters, epsilon_q),
               d_crit(d_crit), delta_q(delta_q), num_spikes(num_spikes)
         {
         }
 
         RbtParameters()
-            : RRTParameters(0, 0, 0),
+            : RRTParameters(0, 0),
               d_crit(0), delta_q(0), num_spikes(0) {}
 
         std::string
@@ -40,8 +40,7 @@ namespace Burs
             oss << RRTParameters::toString();
             oss << ", d_crit: " << d_crit
                 << ", delta_q: " << delta_q
-                << ", num_spikes: " << num_spikes
-                << ", q_resolution: " << q_resolution;
+                << ", num_spikes: " << num_spikes;
             return oss.str();
         }
     };

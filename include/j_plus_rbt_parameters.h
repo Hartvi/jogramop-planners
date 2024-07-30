@@ -71,10 +71,9 @@ namespace Burs
                            int num_spikes,
                            double p_close_enough,
                            double probability_to_steer_to_target,
-                           std::vector<Grasp> target_poses_input,
-                           double q_resolution)
+                           std::vector<Grasp> target_poses_input)
 
-            : RbtParameters(max_iters, d_crit, delta_q, epsilon_q, num_spikes, q_resolution),
+            : RbtParameters(max_iters, d_crit, delta_q, epsilon_q, num_spikes),
               p_close_enough(p_close_enough), probability_to_steer_to_target(probability_to_steer_to_target)
         {
             if (!target_poses_input.empty())

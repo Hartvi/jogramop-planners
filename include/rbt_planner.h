@@ -25,11 +25,11 @@ namespace Burs
 
         virtual ~RbtPlanner() = default;
 
-        std::optional<std::vector<Eigen::VectorXd>>
-        RbtConnect(const VectorXd &q_start, const VectorXd &q_goal, const RbtParameters &plan_parameters, PlanningResult &planning_result);
+        // std::optional<std::vector<Eigen::VectorXd>>
+        // RbtConnect(const VectorXd &q_start, const VectorXd &q_goal, const RbtParameters &plan_parameters, PlanningResult &planning_result);
 
-        std::pair<AlgorithmState, int>
-        BurConnect(std::shared_ptr<BurTree> t, const RS &state, const RbtParameters &plan_parameters, const RS &goal_state, RS &best_state, double &best_dist);
+        // std::pair<AlgorithmState, int>
+        // BurConnect(std::shared_ptr<BurTree> t, const RS &state, const RbtParameters &plan_parameters, const RS &goal_state, RS &best_state, double &best_dist);
 
         void
         InitGraspClosestConfigs(JPlusRbtParameters &planner_parameters, std::shared_ptr<BurTree> t, const int &start_idx) const;

@@ -50,19 +50,6 @@ namespace Burs
         return m;
     }
 
-    // VectorXd
-    // MinPlanner::Nearest(std::shared_ptr<BurTree> t, VectorXd &q)
-    // {
-    //     return t->GetQ(t->Nearest(q.data()));
-    // }
-
-    // int
-    // MinPlanner::NearestIndex(std::shared_ptr<BurTree> t, VectorXd &q)
-    // {
-    //     return t->Nearest(q.data());
-    // }
-
-    // std::pair<int, std::vector<double>>
     std::pair<std::vector<size_t>, std::vector<double>>
     MinPlanner::GetClosestDistances(const RS &state) const
     {

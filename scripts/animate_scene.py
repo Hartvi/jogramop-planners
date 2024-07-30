@@ -1,3 +1,5 @@
+import pathlib
+import argparse
 import time
 import math
 from scipy.spatial.transform import Rotation
@@ -8,21 +10,33 @@ import os
 import sys
 sys.path.append("/usr/local/lib/python3.10/site-packages")
 
+FPS = 24
+WIDTH = 1920
+HEIGHT = 1080
+FRAME_INCREMENT = 1
+FILE_ARG = "--test_file"
+TARGET_DIR_ARG = "--target_dir"
+CAMX_ARG = "--camx"
+CAMY_ARG = "--camy"
+CAMZ_ARG = "--camz"
+GRASP_ARG = "--grasp_file"
+TREE_ARG = "--tree_file"
+
 
 scene = bpy.context.scene
 collection = bpy.context.collection
 
 
 def float_to_colour(val):
-    fill_speed = 1.0/3.0
+    fill_speed = 1.0 / 3.0
     if val < fill_speed:
-        return (0, 0, val/fill_speed, 1)
-    elif val < fill_speed*2:
+        return (0, 0, val / fill_speed, 1)
+    elif val < fill_speed * 2:
         colval = (val - fill_speed) / fill_speed
         return (0, colval, 1 - colval, 1)
     else:
-        colval = (val - 2*fill_speed) / fill_speed
-        return (colval, 1-colval, 0, 1)
+        colval = (val - 2 * fill_speed) / fill_speed
+        return (colval, 1 - colval, 0, 1)
     # fill_speed = 1.0/3.0
     # fill_speed = 1.0/3.0
     # return (min())
@@ -235,13 +249,11 @@ class ObjectMode:
     obstacle = 1
 
 
-def render_env(path_to_file, extra_points_file=None, tree_points_file=None):
+def render_env(path_to_file: str, extra_points_file: str = None, tree_points_file: str = None, target_dir: str = "", cam_pos=(-1, 3, 3)):
 
     start_scene()
 
-    # exit(1)
-
-    if extra_points_file:
+    if extra_points_file and not extra_points_file == "None" and not extra_points_file.isspace() and not extra_points_file == "":
         with open(extra_points_file, "r") as f:
             lines = f.read().split("\n")
             for k in range(len(lines)):
@@ -252,12 +264,6 @@ def render_env(path_to_file, extra_points_file=None, tree_points_file=None):
                     values = list(map(float, numbers))
                     for i in range(16):
                         T[i//4, i % 4] = values[i]
-
-                    # rotation: Rotation = Rotation.from_matrix(T)
-                    # euler = rotation.as_euler('xyz', False)
-
-                    # for i in range(3):
-                        # current_object.rotation_euler[i] = euler[i]
 
                     position = T[:3, 3]
                     current_object = create_point(
@@ -270,8 +276,7 @@ def render_env(path_to_file, extra_points_file=None, tree_points_file=None):
                     print("invalid data:", numbers)
                     pass
 
-                # k += 1
-
+    print(f"PATH TO FILE: {path_to_file}")
     with open(path_to_file, "r") as f:
         lines = f.read().split("\n")
         k = 0
@@ -279,7 +284,6 @@ def render_env(path_to_file, extra_points_file=None, tree_points_file=None):
 
         frame = -1
         # changes the speed at which it animates. Higher = slower
-        frame_increment = 1
 
         while k < len(lines):
             # currently displaying robot segments: THEY ARE UNIQUE, SO NO ID NEEDED
@@ -296,7 +300,7 @@ def render_env(path_to_file, extra_points_file=None, tree_points_file=None):
                     segment_num = lines[k].split(",")[1]
 
                     if segment_num == "0":
-                        frame += frame_increment
+                        frame += FRAME_INCREMENT
 
                 object_mode = ObjectMode.robot
                 k += 1
@@ -348,14 +352,6 @@ def render_env(path_to_file, extra_points_file=None, tree_points_file=None):
                         current_object.keyframe_insert(
                             data_path="rotation_euler", frame=frame)
 
-                        # quat = rotation.as_quat(True)
-                        # current_object.rotation_mode = "QUATERNION"
-                        # for i in range(4):
-                        #     current_object.rotation_quaternion[i] = quat[i]
-
-                        # # insert frame of current rotation
-                        # current_object.keyframe_insert(data_path="rotation_quaternion", frame=frame)
-
                     if "t" in lines[k] and len(lines[k]) < 2 or "t," in lines[k] and len(lines[k]) < 3:
                         k += 1
                         t = np.zeros((3, ))
@@ -374,10 +370,9 @@ def render_env(path_to_file, extra_points_file=None, tree_points_file=None):
                         # insert frame of current rotation
                         current_object.keyframe_insert(
                             data_path="location", frame=frame)
-
             k += 1
 
-    if tree_points_file:
+    if tree_points_file and not tree_points_file == "None" and not tree_points_file.isspace() and not tree_points_file == "":
         try:
             tree_points = load_csv_floats(tree_points_file)
             vis_points(tree_points, frame)
@@ -386,22 +381,23 @@ def render_env(path_to_file, extra_points_file=None, tree_points_file=None):
             print("NO TREE FILE", tree_points_file)
 
     camera = bpy.data.objects["Camera"]
-    camera.location = (camX, camY, camZ)
+    camera.location = cam_pos
 
     center_point = create_point((0, 0, 0.5), (1, 0, 0, 0.5), 0.001)
     look_at_object(center_point)
 
-    render_animation(0, frame + frame_increment, 1)
     # CANNOT OVERWRITE FILES
+    render_animation(0, frame + FRAME_INCREMENT,
+                     FRAME_INCREMENT, path_to_file, target_dir)
 
 
-def render_animation(frame_start, frame_end, frame_step):
+def render_animation(frame_start: int, frame_end: int, frame_step: int, path_to_src_file: str = None, target_dir: str = None):
     # Render animation
     scene = bpy.context.scene
     scene.render.engine = "BLENDER_EEVEE"
 
-    scene.render.resolution_x = 1920
-    scene.render.resolution_y = 1080
+    scene.render.resolution_x = WIDTH
+    scene.render.resolution_y = HEIGHT
 
     scene.frame_start = frame_start
     scene.frame_end = frame_end
@@ -415,35 +411,87 @@ def render_animation(frame_start, frame_end, frame_step):
     timestamp = time.time()
     date_time = datetime.fromtimestamp(timestamp)
     str_date_time = date_time.strftime("%d_%m_%Y_%H_%M_%S")
-    scene.render.filepath = f"{os.getcwd()}/test_scene_{str_date_time}.mp4"
+
+    # the file name that will be save
+    output_file_name = f"vid-{str_date_time}.mp4"
+    if path_to_src_file is not None:
+        tgt_name = pathlib.Path(os.path.basename(path_to_src_file)).stem
+        output_file_name = f"{tgt_name}.mp4"
+
+    output_dir_name = f"{os.getcwd()}/"
+    # the directory where to save the file
+    if target_dir is not None:
+        output_file_name = target_dir
+
+    print(f"OUTPUT DIR: {output_dir_name}")
+    print(f"OUTPUT FILE: {output_file_name}")
+    scene.render.filepath = os.path.join(output_dir_name, output_file_name)
 
     scene.render.use_overwrite = True
 
     scene = bpy.context.scene
-    scene.render.fps = 24
+    scene.render.fps = FPS
     bpy.ops.render.render(animation=True)
 
 
-if __name__ == "__main__":
-    test_path = "/home/hartvi/Documents/CVUT/diploma_thesis/burs_of_free_space/lel.vis"
-    # grasps_file = "/home/hartvi/Documents/CVUT/diploma_thesis/burs_of_free_space/jogramop/scenarios/005/export/grasps.csv"
-    grasps_file = None
-    tree_file = None
-    camX = -3
-    camY = 2
-    camZ = 3
-    if len(sys.argv) > 1:
-        test_path = sys.argv[1]
-        print("try file", test_path)
-        camX = float(sys.argv[2])
-        camY = float(sys.argv[3])
-        camZ = float(sys.argv[4])
-        if len(sys.argv) > 5:
-            # grasps
-            grasps_file = sys.argv[5]
-            print("visualizing grasps", grasps_file)
-        if len(sys.argv) > 6:
-            tree_file = sys.argv[6]
-            print("visualizing tree from", tree_file)
+# if __name__ == "__main__":
+#     test_path = "/home/hartvi/Documents/CVUT/diploma_thesis/burs_of_free_space/lel.vis"
+#     # grasps_file = "/home/hartvi/Documents/CVUT/diploma_thesis/burs_of_free_space/jogramop/scenarios/005/export/grasps.csv"
+#     grasps_file = None
+#     tree_file = None
+#     camX = -3
+#     camY = 2
+#     camZ = 3
+#     if len(sys.argv) > 1:
+#         test_path = sys.argv[1]
+#         print("try file", test_path)
+#         camX = float(sys.argv[2])
+#         camY = float(sys.argv[3])
+#         camZ = float(sys.argv[4])
+#         if len(sys.argv) > 5:
+#             # grasps
+#             grasps_file = sys.argv[5]
+#             print("visualizing grasps", grasps_file)
+#         if len(sys.argv) > 6:
+#             tree_file = sys.argv[6]
+#             print("visualizing tree from", tree_file)
 
-    render_env(test_path, grasps_file, tree_file)
+#     render_env(test_path, grasps_file, tree_file)
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Render environment with optional grasps and tree visualization.")
+
+    parser.add_argument(FILE_ARG, type=str,
+                        default=None, help="Path to the test file")
+    parser.add_argument(TARGET_DIR_ARG, type=str,
+                        default=None, help="Path to the directory where to save animations to")
+    parser.add_argument(CAMX_ARG, type=float, default=-
+                        3, help="Camera X position")
+    parser.add_argument(CAMY_ARG, type=float, default=2,
+                        help="Camera Y position")
+    parser.add_argument(CAMZ_ARG, type=float, default=3,
+                        help="Camera Z position")
+    parser.add_argument(GRASP_ARG, type=str, default=None,
+                        help="File for grasps visualization")
+    parser.add_argument(TREE_ARG, type=str, required=False, default=None,
+                        help="File for tree visualization")
+
+    args = parser.parse_args()
+
+    print(f"Animating file {args.test_file}")
+    print(f"Camera position: X={args.camx}, Y={args.camy}, Z={args.camz}")
+
+    # if args.grasp_file:
+    # print(f"visualizing grasps {args.grasp_file}")
+
+    # if args.tree_file:
+    # print(f"visualizing tree from {args.tree_file}")
+
+    render_env(args.test_file, extra_points_file=args.grasp_file, tree_points_file=args.tree_file,
+               target_dir=args.target_dir, cam_pos=(args.camx, args.camy, args.camz))
+
+
+if __name__ == "__main__":
+    main()

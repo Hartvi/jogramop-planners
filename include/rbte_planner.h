@@ -25,8 +25,8 @@ namespace Burs
 
         virtual ~RbtePlanner() = default;
 
-        std::optional<std::vector<Eigen::VectorXd>>
-        RbteConnect(const VectorXd &q_start, const VectorXd &q_goal, const JPlusRbtParameters &plan_parameters, PlanningResult &planning_result);
+        // std::optional<std::vector<Eigen::VectorXd>>
+        // RbteConnect(const VectorXd &q_start, const VectorXd &q_goal, const JPlusRbtParameters &plan_parameters, PlanningResult &planning_result);
 
         void
         TestFunctions();

@@ -3,7 +3,11 @@ cmake_minimum_required(VERSION 3.2.0)
 project(jogramop-planners)
 
 ## SET NINJA AS BUILD TOOL --- CAN BREAK STUFF => CHECK THIS
-set(CMAKE_MAKE_PROGRAM /usr/bin/ninja CACHE STRING "Ninja location")
+#set(CMAKE_MAKE_PROGRAM /usr/bin/ninja CACHE STRING "Ninja location")
+if(NOT CMAKE_GENERATOR)
+    set(CMAKE_GENERATOR "Unix Makefiles" CACHE STRING "Default generator")
+endif()
+
 
 # Set C++17 Standard
 set(CMAKE_CXX_STANDARD 17)
@@ -23,28 +27,11 @@ find_package(yaml-cpp REQUIRED)
 # Include directories
 include_directories(include /usr/local/include /usr/include /usr/local/include/eigen3)
 
-add_compile_options(-O2)     
+add_compile_options(-O2)
 
 #for profilling, slows down the code a lot!!!!    
 #add_compile_options(-ggdb3 -pg )     
 #add_link_options(-ggdb3 -pg )     
-
-
-# 2. cmake .
-# 3. make clean
-# 4. make
-# 5. spust program, treba pres ./run_jrbt.sh
-# 6. vysledek je v gmon.out
-# 7. gprof ./burs_of_free_space gmon.out > gmon.prof   #mozna budes muset zmenit cestu k binarce?
-# 8. vysledek je v gmon.prof, coz je textak, ktery popisuje co kde jak dlouho trva
-
-# Pro graficke zobrazeni pouzivam : https://github.com/jrfonseca/gprof2dot
-
-# 9. Stahni gprof2dot a jdi do slozky, kam jsi ho stahnul, rozbalil
-# 10.  python3 gprof2dot.py -n 5  -o burs.dot cesta/k/souboru/gmon.prof   #toto vytvori soubor burs.dot v tzv. 'dot' formatu
-# 11.  dot -Tpng burs.dot > burs.png
-
-# V kroku 10 volba "-n 5" znamena, ze se neukazuji volani, ktere celkove trvaly mene nez 5 procent casu. S toudle volbou je potreba si obcas pohrat..
 
 
 # Add subdirectory for PQP
@@ -54,7 +41,7 @@ add_subdirectory(../PQP PQP_build)
 # file(GLOB SOURCES "src/*.cc")
 
 
-
+# add all .cc files as source code, they will then find the *.h files from the above include_directories
 file(GLOB_RECURSE SOURCES "src/*.cc")
 
 # set(CC_DIR

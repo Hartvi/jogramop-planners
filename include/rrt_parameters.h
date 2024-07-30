@@ -18,22 +18,16 @@ namespace Burs
         int visualize_tree = 0;
         int max_iters;
         double epsilon_q;
-        double q_resolution;
         double collision_resolution;
         int minCollisionIdx = 999;
 
         RRTParameters(int max_iters, double epsilon_q)
-            : max_iters(max_iters), epsilon_q(epsilon_q), q_resolution(0)
-        {
-        }
-
-        RRTParameters(int max_iters, double epsilon_q, double q_resolution)
-            : max_iters(max_iters), epsilon_q(epsilon_q), q_resolution(q_resolution)
+            : max_iters(max_iters), epsilon_q(epsilon_q)
         {
         }
 
         RRTParameters()
-            : max_iters(0), epsilon_q(0), q_resolution(0) {}
+            : max_iters(0), epsilon_q(0) {}
 
         virtual ~RRTParameters() = default;
 
@@ -43,7 +37,6 @@ namespace Burs
             std::ostringstream oss;
             oss << "max_iters: " << max_iters
                 << ", epsilon_q: " << epsilon_q
-                << ", q_resolution: " << q_resolution
                 << ", collision_resolution: " << collision_resolution;
             return oss.str();
         }

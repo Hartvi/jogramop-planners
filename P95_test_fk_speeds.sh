@@ -1,4 +1,4 @@
-./build/jogramop-planners test \
+./build/jogramop-planners \
 -grasp jogramop/scenarios/021/export/grasps.csv \
 -urdf jogramop/robots/franka_panda/mobile_panda.urdf \
 -obstacle jogramop/scenarios/021/export/obstacles.obj \

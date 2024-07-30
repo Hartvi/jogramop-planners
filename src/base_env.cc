@@ -12,7 +12,6 @@ namespace Burs
     void
     BaseEnv::SetPoses(const RS &state)
     {
-        // std::cout << "num models: " << this->robot_models.size() << "\n";
         unsigned int k = 0;
         for (int i = 0; i < state.frames.size(); ++i)
         {
@@ -20,41 +19,13 @@ namespace Burs
             {
                 auto [R, t] = this->robot->KDLFrameToEigen(state.frames[i]);
 
-                // std::cout << "rot: \n"
-                //           << R << "\n";
-                // std::cout << "tr: \n"
-                //           << t.transpose() << "\n";
-                // std::cout << "k: " << k << "\n";
-                // std::cout << "model: " << *this->robot_models[k] << "\n";
                 this->robot_models[k]->SetRotation(R);
                 this->robot_models[k]->SetTranslation(t);
                 ++k;
             }
-            // std::cout << "Setting robot position to " << translations[i].transpose() << std::endl;
         }
         this->poses_are_set = true;
-
-        // auto [rotations, translations] = this->forwardRt(q);
-
-        // for (int i = 0; i < rotations.size(); ++i)
-        // {
-        //     this->robot_models[i]->SetRotation(rotations[i]);
-        //     this->robot_models[i]->SetTranslation(translations[i]);
-        //     // std::cout << "Setting robot position to " << translations[i].transpose() << std::endl;
-        // }
-        // this->poses_are_set = true;
     }
-
-    // void BaseEnv::SetObstaclePose(Matrix3d R, Vector3d t)
-    // {
-    //     for (int i = 0; i < rotations.size(); ++i)
-    //     {
-    //         this->robot_models[i]->SetRotation(rotations[i]);
-    //         this->robot_models[i]->SetTranslation(translations[i]);
-    //         // std::cout << "Setting robot position to " << translations[i].transpose() << std::endl;
-    //     }
-    //     this->obstacle_poses_are_set = true;
-    // }
 
     bool
     BaseEnv::IsColliding() const
@@ -189,11 +160,6 @@ namespace Burs
                   {
                       return segment_distances[i1] < segment_distances[i2];
                   });
-
-        // if (segment_distances[indices[0]] < 1e-4)
-        // {
-        //     throw std::runtime_error("MIN DIST WAS ZERO");
-        // }
 
         // Return both the overall minimum distance and the vector of per-segment minimum distances
         return {indices, segment_distances};
